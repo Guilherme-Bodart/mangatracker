@@ -1,0 +1,9 @@
+# Root secrets and local environment files
+secretAuth.json
+*.pem
+*.key
+.env
+.env.*
+!.env.example
+!.env.production.example
+!.env.local.example

@@ -1,0 +1,293 @@
+{
+  "Auth": {
+    "login": {
+      "title": "Bem-vindo de volta",
+      "subtitle": "Insira suas credenciais para acessar sua cole\u00e7\u00e3o de mang\u00e1s",
+      "emailParams": {
+        "label": "E-mail",
+        "placeholder": "seu@email.com"
+      },
+      "passwordParams": {
+        "label": "Senha",
+        "placeholder": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",
+        "forgot": "Esqueceu a senha?"
+      },
+      "rememberMe": "Lembrar de mim por 30 dias",
+      "submit": "Entrar",
+      "divider": "Ou continue com",
+      "google": "Google",
+      "github": "Github",
+      "noAccount": "N\u00e3o tem uma conta?",
+      "signUp": "Cadastre-se",
+      "success": "Bem-vindo de volta!",
+      "successDescription": "Login realizado com sucesso.",
+      "error": "Falha no login",
+      "errorDescription": "Verifique suas credenciais e tente novamente."
+    },
+    "register": {
+      "title": "Criar Conta",
+      "subtitle": "Junte-se \u00e0 nossa comunidade de mang\u00e1s",
+      "usernameParams": {
+        "label": "Nome de Usu\u00e1rio",
+        "placeholder": "seu_usuario",
+        "description": "Este \u00e9 seu nome p\u00fablico de exibi\u00e7\u00e3o"
+      },
+      "emailParams": {
+        "label": "E-mail",
+        "placeholder": "seu@email.com"
+      },
+      "passwordParams": {
+        "label": "Senha",
+        "placeholder": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+      },
+      "confirmPasswordParams": {
+        "label": "Confirmar Senha",
+        "placeholder": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+      },
+      "submit": "Criar Conta",
+      "divider": "Ou cadastre-se com",
+      "google": "Google",
+      "hasAccount": "J\u00e1 tem uma conta?",
+      "signIn": "Entrar",
+      "success": "Conta criada!",
+      "successDescription": "Bem-vindo \u00e0 comunidade de mang\u00e1s.",
+      "error": "Falha no cadastro",
+      "errorDescription": "Verifique suas informa\u00e7\u00f5es e tente novamente.",
+      "passwordMismatch": "As senhas n\u00e3o coincidem."
+    },
+    "page": {
+      "title": "Login | Manga Tracker",
+      "quote": "O mundo dos mang\u00e1s \u00e9 vasto e infinito. Acompanhe sua jornada, descubra novas hist\u00f3rias e compartilhe sua paix\u00e3o com outros.",
+      "quoteAuthor": "Guilherme",
+      "subtitle": "Bem-vindo de volta",
+      "description": "Fa\u00e7a login para acessar sua conta",
+      "noAccount": "N\u00e3o tem uma conta?",
+      "register": "Cadastre-se",
+      "footer": "Guilherme",
+      "brand": "Manga Tracker",
+      "terms": "Termos de Servi\u00e7o",
+      "privacy": "Pol\u00edtica de Privacidade",
+      "agreementPrefix": "Ao clicar em continuar, voc\u00ea concorda com nossos",
+      "agreementAnd": "e"
+    }
+  },
+  "Home": {
+    "hero": {
+      "title": "Acompanhe Sua Jornada Manga",
+      "subtitle": "Crie sua lista, compartilhe com amigos e descubra novas hist\u00f3rias",
+      "cta": "Come\u00e7ar Agora"
+    },
+    "trending": {
+      "title": "Em Alta Agora",
+      "subtitle": "Os mang\u00e1s mais populares do momento",
+      "viewAll": "Ver Todos"
+    },
+    "features": {
+      "title": "Por que usar o Manga Tracker?",
+      "track": {
+        "title": "Acompanhe",
+        "description": "Mantenha registro de todos os mang\u00e1s que voc\u00ea est\u00e1 lendo, j\u00e1 completou ou planeja ler"
+      },
+      "share": {
+        "title": "Compartilhe",
+        "description": "Mostre sua cole\u00e7\u00e3o para amigos e descubra o que outras pessoas est\u00e3o lendo"
+      },
+      "discover": {
+        "title": "Descubra",
+        "description": "Explore novos t\u00edtulos, veja recomenda\u00e7\u00f5es e encontre seu pr\u00f3ximo mang\u00e1 favorito"
+      }
+    },
+    "cta": {
+      "title": "Pronto para come\u00e7ar?",
+      "subtitle": "Junte-se a milhares de f\u00e3s de mang\u00e1 hoje",
+      "button": "Criar Conta Gr\u00e1tis"
+    }
+  },
+  "Browse": {
+    "title": "Explorar Mang\u00e1s",
+    "search": "Pesquisar mang\u00e1s...",
+    "searchPlaceholder": "Digite o nome do mang\u00e1",
+    "filters": "Filtros",
+    "genres": "G\u00eaneros",
+    "genresPlaceholder": "Selecione os g\u00eaneros",
+    "matchAny": "Pelo menos um dos g\u00eaneros",
+    "matchAll": "Todos os g\u00eaneros selecionados",
+    "type": "Tipo de Obra",
+    "types": {
+      "all": "Todos",
+      "manga": "Mang\u00e1 (Japon\u00eas)",
+      "manhwa": "Manhwa (Coreano)",
+      "manhua": "Manhua (Chin\u00eas)",
+      "novel": "Light Novel",
+      "oneshot": "One-shot"
+    },
+    "filterMode": "Modo de Filtro",
+    "addToList": "Adicionar \u00e0 Lista",
+    "noResults": "Nenhum resultado encontrado",
+    "loading": "Carregando...",
+    "startSearching": "Comece pesquisando um mang\u00e1"
+  },
+  "AddManga": {
+    "title": "Adicionar \u00e0 Lista",
+    "status": {
+      "label": "Status",
+      "reading": "Lendo",
+      "completed": "Completo",
+      "planToRead": "Planejo Ler",
+      "dropped": "Dropado"
+    },
+    "rating": {
+      "label": "Avalia\u00e7\u00e3o",
+      "placeholder": "0-10"
+    },
+    "currentChapter": {
+      "label": "Cap\u00edtulo Atual",
+      "placeholder": "0"
+    },
+    "notes": {
+      "label": "Notas",
+      "placeholder": "Suas anota\u00e7\u00f5es..."
+    },
+    "actions": {
+      "cancel": "Cancelar",
+      "add": "Adicionar",
+      "save": "Salvar"
+    },
+    "success": "Mang\u00e1 adicionado com sucesso!",
+    "error": "Erro ao adicionar mang\u00e1"
+  },
+  "Profile": {
+    "title": "Configura\u00e7\u00f5es de Perfil",
+    "viewPublic": "Ver Perfil P\u00fablico",
+    "subtitle": "Gerencie suas configura\u00e7\u00f5es e prefer\u00eancias",
+    "images": {
+      "title": "Imagens do Perfil",
+      "description": "Atualize seu avatar e banner",
+      "bannerUrl": {
+        "label": "Imagem de Banner",
+        "placeholder": "https://exemplo.com/banner.jpg",
+        "description": "Recomendado: 1500x500px"
+      },
+      "avatar": "Foto de Perfil",
+      "avatarPlaceholder": "https://exemplo.com/avatar.jpg"
+    },
+    "allowNsfw": {
+      "label": "Permitir Conte\u00fado Adulto (+18)",
+      "description": "Mostrar mang\u00e1s com conte\u00fado mature/NSFW nas buscas"
+    },
+    "account": {
+      "title": "Informa\u00e7\u00f5es da Conta",
+      "description": "Atualize os detalhes da sua conta",
+      "username": "Nome de Usu\u00e1rio",
+      "usernamePlaceholder": "seu-usuario",
+      "usernameHint": "Seu perfil estar\u00e1 dispon\u00edvel em /@{username}",
+      "email": "E-mail",
+      "emailHint": "O e-mail n\u00e3o pode ser alterado"
+    },
+    "password": {
+      "title": "Alterar Senha",
+      "description": "Atualize sua senha (deixe em branco para manter a atual)",
+      "current": "Senha Atual",
+      "new": "Nova Senha",
+      "confirm": "Confirmar Nova Senha",
+      "placeholder": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+    },
+    "actions": {
+      "cancel": "Cancelar",
+      "save": "Salvar Altera\u00e7\u00f5es",
+      "saving": "Salvando..."
+    },
+    "messages": {
+      "noChanges": "Nenhuma altera\u00e7\u00e3o para salvar",
+      "passwordMismatch": "As senhas n\u00e3o coincidem",
+      "success": "Perfil atualizado com sucesso!",
+      "error": "Erro ao atualizar perfil"
+    }
+  },
+  "MyTrack": {
+    "title": "Minha Lista",
+    "empty": "Sua lista est\u00e1 vazia",
+    "addFirst": "Adicione seu primeiro mang\u00e1!",
+    "latestChapters": "\u00daltimos cap\u00edtulos",
+    "noChapterData": "Sem dados de cap\u00edtulos",
+    "chapterLabel": "Cap.",
+    "chapterRead": {
+      "read": "Lido",
+      "unread": "N\u00e3o lido",
+      "success": "Leitura atualizada at\u00e9 o cap\u00edtulo {chapter}",
+      "error": "Erro ao atualizar leitura",
+      "noValidChapter": "N\u00e3o foi poss\u00edvel identificar o cap\u00edtulo"
+    },
+    "actions": {
+      "edit": "Editar",
+      "delete": "Excluir",
+      "cancel": "Cancelar",
+      "confirmDelete": "Tem certeza que deseja remover este mang\u00e1 da sua lista?",
+      "deleteSuccess": "Mang\u00e1 removido com sucesso",
+      "deleteError": "Erro ao remover mang\u00e1"
+    },
+    "edit": {
+      "title": "Editar Mang\u00e1"
+    }
+  },
+  "PublicProfile": {
+    "loading": "Carregando perfil...",
+    "notFound": "Usu\u00e1rio n\u00e3o encontrado",
+    "notFoundDesc": "Este usu\u00e1rio n\u00e3o existe ou foi deletado",
+    "likes": "curtidas",
+    "likeToLogin": "Entrar para curtir",
+    "likeProfile": "Curtir perfil",
+    "unlikeProfile": "Remover curtida",
+    "mangaList": "Lista de Mang\u00e1s",
+    "emptyList": "Nenhum mang\u00e1 nesta lista ainda",
+    "stats": {
+      "totalManga": "Total de Mang\u00e1s",
+      "total": "total",
+      "favorites": "Favoritos"
+    },
+    "status": {
+      "reading": "Lendo",
+      "completed": "Completo",
+      "planToRead": "Quero Ler",
+      "plan_to_read": "Quero Ler",
+      "dropped": "Dropado"
+    },
+    "details": {
+      "rating": "Avalia\u00e7\u00e3o",
+      "chapter": "Cap\u00edtulo",
+      "notes": "Notas",
+      "addedOn": "Adicionado em",
+      "added": "Adicionado",
+      "showDetails": "Mostrar Detalhes",
+      "hideDetails": "Ocultar"
+    },
+    "empty": "Nenhum mang\u00e1 na lista ainda"
+  },
+  "Ranking": {
+    "title": "Ranking de Perfis",
+    "subtitle": "Top 100 perfis com mais curtidas",
+    "loading": "Carregando ranking...",
+    "error": "N\u00e3o foi poss\u00edvel carregar o ranking",
+    "empty": "Ainda n\u00e3o h\u00e1 perfis ranqueados",
+    "likes": "Curtidas",
+    "completed": "Completos",
+    "reading": "Lendo"
+  },
+  "Header": {
+    "explore": "Explorar",
+    "ranking": "Ranking",
+    "myTrack": "Minha Lista",
+    "login": "Entrar",
+    "profileMenu": "Menu do perfil",
+    "profile": "Perfil",
+    "publicProfile": "Perfil P\u00fablico",
+    "logout": "Sair"
+  },
+  "Footer": {
+    "copyright": "Todos os direitos reservados.",
+    "terms": "Termos",
+    "privacy": "Privacidade",
+    "contact": "Contato",
+    "language": "Idioma"
+  }
+}

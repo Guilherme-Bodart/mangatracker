@@ -1,2 +1,1 @@
-# mangalist
-
+# Manga Tracker

@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "noEmit": true
+  },
+  "include": [
+    "src/main.ts",
+    "src/app*.ts",
+    "src/cache/**/*.ts",
+    "src/common/**/*.ts",
+    "src/mangadex/**/*.ts",
+    "src/prisma/**/*.ts",
+    "src/tasks/**/*.ts"
+  ]
+}

@@ -1,0 +1,294 @@
+{
+  "Auth": {
+    "login": {
+      "title": "Welcome Back",
+      "subtitle": "Enter your credentials to access your manga collection",
+      "emailParams": {
+        "label": "Email",
+        "placeholder": "manga@example.com"
+      },
+      "passwordParams": {
+        "label": "Password",
+        "placeholder": "••••••••",
+        "forgot": "Forgot password?"
+      },
+      "rememberMe": "Remember me for 30 days",
+      "submit": "Sign In",
+      "divider": "Or continue with",
+      "google": "Google",
+      "github": "Github",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign up",
+      "success": "Welcome back!",
+      "successDescription": "Successfully logged in to your account.",
+      "error": "Login failed",
+      "errorDescription": "Please check your credentials and try again."
+    },
+    "register": {
+      "title": "Create Account",
+      "subtitle": "Join our manga community",
+      "usernameParams": {
+        "label": "Username",
+        "placeholder": "your_username",
+        "description": "This is your public display name"
+      },
+      "emailParams": {
+        "label": "Email",
+        "placeholder": "manga@example.com"
+      },
+      "passwordParams": {
+        "label": "Password",
+        "placeholder": "••••••••"
+      },
+      "confirmPasswordParams": {
+        "label": "Confirm Password",
+        "placeholder": "••••••••"
+      },
+      "submit": "Create Account",
+      "divider": "Or sign up with",
+      "google": "Google",
+      "hasAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "success": "Account created!",
+      "successDescription": "Welcome to the manga community.",
+      "error": "Registration failed",
+      "errorDescription": "Please check your information and try again.",
+      "passwordMismatch": "Passwords do not match."
+    },
+    "page": {
+      "title": "Login | Manga Tracker",
+      "quote": "The world of manga is vast and infinite. Keep track of your journey, discover new stories, and share your passion with others.",
+      "quoteAuthor": "Guilherme",
+      "subtitle": "Welcome back",
+      "description": "Log in to access your account",
+      "noAccount": "Don't have an account?",
+      "register": "Sign up",
+      "footer": "Guilherme",
+      "brand": "Manga Tracker",
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy",
+      "agreementPrefix": "By clicking continue, you agree to our",
+      "agreementAnd": "and"
+    }
+  },
+  "Home": {
+    "hero": {
+      "title": "Track Your Manga Journey",
+      "subtitle": "Create your list, share with friends, and discover new stories",
+      "cta": "Get Started"
+    },
+    "trending": {
+      "title": "Trending Now",
+      "subtitle": "The most popular manga right now",
+      "viewAll": "View All"
+    },
+    "features": {
+      "title": "Why use Manga Tracker?",
+      "track": {
+        "title": "Track",
+        "description": "Keep track of all the manga you're reading, completed, or planning to read"
+      },
+      "share": {
+        "title": "Share",
+        "description": "Show your collection to friends and discover what others are reading"
+      },
+      "discover": {
+        "title": "Discover",
+        "description": "Explore new titles, see recommendations, and find your next favorite manga"
+      }
+    },
+    "cta": {
+      "title": "Ready to start?",
+      "subtitle": "Join thousands of manga fans today",
+      "button": "Sign Up For Free"
+    }
+  },
+  "Browse": {
+    "title": "Browse Manga",
+    "search": "Search manga...",
+    "searchPlaceholder": "Type manga name",
+    "filters": "Filters",
+    "genres": "Genres",
+    "genresPlaceholder": "Select genres",
+    "matchAny": "At least one of the genres",
+    "matchAll": "All selected genres",
+    "type": "Type",
+    "types": {
+      "all": "All",
+      "manga": "Manga (Japanese)",
+      "manhwa": "Manhwa (Korean)",
+      "manhua": "Manhua (Chinese)",
+      "novel": "Light Novel",
+      "oneshot": "One-shot"
+    },
+    "filterMode": "Filter Mode",
+    "addToList": "Add to List",
+    "noResults": "No results found",
+    "loading": "Loading...",
+    "startSearching": "Start searching for manga"
+  },
+  "AddManga": {
+    "title": "Add to List",
+    "status": {
+      "label": "Status",
+      "reading": "Reading",
+      "completed": "Completed",
+      "planToRead": "Plan to Read",
+      "dropped": "Dropped"
+    },
+    "rating": {
+      "label": "Rating",
+      "placeholder": "0-10"
+    },
+    "currentChapter": {
+      "label": "Current Chapter",
+      "placeholder": "0"
+    },
+    "notes": {
+      "label": "Notes",
+      "placeholder": "Your notes..."
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "add": "Add",
+      "save": "Save"
+    },
+    "success": "Manga added successfully!",
+    "error": "Error adding manga"
+  },
+  "Profile": {
+    "title": "Profile Settings",
+    "viewPublic": "View Public Profile",
+    "subtitle": "Manage your account settings and preferences",
+    "images": {
+      "title": "Profile Images",
+      "description": "Update your avatar and banner images",
+      "bannerUrl": {
+        "label": "Banner Image",
+        "placeholder": "https://example.com/banner.jpg",
+        "description": "Recommended: 1500x500px"
+      },
+      "avatar": "Profile Picture"
+    },
+    "allowNsfw": {
+      "label": "Allow Adult Content (18+)",
+      "description": "Show manga with mature/NSFW content in searches"
+    },
+    "account": {
+      "title": "Account Information",
+      "description": "Update your account details",
+      "username": "Username",
+      "usernamePlaceholder": "your-username",
+      "usernameHint": "Your profile will be available at /@{username}",
+      "email": "Email",
+      "emailHint": "Email cannot be changed"
+    },
+    "password": {
+      "title": "Change Password",
+      "description": "Update your password (leave blank to keep current)",
+      "current": "Current Password",
+      "new": "New Password",
+      "confirm": "Confirm New Password",
+      "placeholder": "••••••••"
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "save": "Save Changes",
+      "saving": "Saving..."
+    },
+    "messages": {
+      "noChanges": "No changes to save",
+      "passwordMismatch": "Passwords don't match",
+      "success": "Profile updated successfully!",
+      "error": "Failed to update profile"
+    }
+  },
+  "MyTrack": {
+    "title": "My Track",
+    "empty": "Your list is empty",
+    "addFirst": "Add your first manga!",
+    "latestChapters": "Latest chapters",
+    "noChapterData": "No chapter data yet",
+    "chapterLabel": "Ch.",
+    "chapterRead": {
+      "read": "Read",
+      "unread": "Unread",
+      "success": "Reading progress updated to chapter {chapter}",
+      "error": "Failed to update reading progress",
+      "noValidChapter": "Could not detect a valid chapter number"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "confirmDelete": "Are you sure you want to remove this manga from your list?",
+      "deleteSuccess": "Manga removed successfully",
+      "deleteError": "Error removing manga"
+    },
+    "edit": {
+      "title": "Edit Manga"
+    }
+  },
+  "PublicProfile": {
+    "loading": "Loading profile...",
+    "notFound": "User not found",
+    "notFoundDesc": "This user doesn't exist or has been deleted",
+    "likes": "likes",
+    "likeToLogin": "Sign in to like",
+    "likeProfile": "Like profile",
+    "unlikeProfile": "Remove like",
+    "mangaList": "Manga Tracker",
+    "emptyList": "No manga in this list yet",
+    "stats": {
+      "totalManga": "Total Manga",
+      "total": "total",
+      "favorites": "Favorites"
+    },
+    "status": {
+      "reading": "Reading",
+      "completed": "Completed",
+      "planToRead": "Plan to Read",
+      "plan_to_read": "Plan to Read",
+      "dropped": "Dropped"
+    },
+    "details": {
+      "rating": "Rating",
+      "chapter": "Chapter",
+      "notes": "Notes",
+      "addedOn": "Added on",
+      "added": "Added",
+      "showDetails": "Show Details",
+      "hideDetails": "Hide"
+    },
+    "empty": "No manga in the list yet"
+  },
+  "Ranking": {
+    "title": "Profile Ranking",
+    "subtitle": "Top 100 profiles by likes",
+    "loading": "Loading ranking...",
+    "error": "Could not load ranking",
+    "empty": "No ranked profiles yet",
+    "likes": "Likes",
+    "completed": "Completed",
+    "reading": "Reading"
+  },
+  "Header": {
+    "explore": "Explore",
+    "ranking": "Ranking",
+    "myTrack": "My Track",
+    "login": "Sign In",
+    "profileMenu": "Profile menu",
+    "profile": "Profile",
+    "publicProfile": "Public Profile",
+    "logout": "Log out"
+  },
+  "Footer": {
+    "copyright": "All rights reserved.",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "contact": "Contact",
+    "language": "Language"
+  }
+}
+
+

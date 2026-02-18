@@ -10,13 +10,19 @@ interface ProvidersProps {
   children: React.ReactNode;
   messages: AbstractIntlMessages;
   locale: string;
+  initialHasSession: boolean;
 }
 
-export function Providers({ children, messages, locale }: ProvidersProps) {
+export function Providers({
+  children,
+  messages,
+  locale,
+  initialHasSession,
+}: ProvidersProps) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <NextIntlClientProvider messages={messages} locale={locale}>
-        <AuthProvider>
+        <AuthProvider initialHasSession={initialHasSession}>
           {children}
           <Toaster />
         </AuthProvider>

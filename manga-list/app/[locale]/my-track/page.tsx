@@ -269,14 +269,6 @@ export default function MyTrackPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   const favoriteCount = mangaList.filter((m) => m.isFavorite).length;
 
   return (
@@ -287,7 +279,7 @@ export default function MyTrackPage() {
           <img
             src={user.bannerUrl}
             alt="Banner"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-center"
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-orange-500/20" />
@@ -325,7 +317,7 @@ export default function MyTrackPage() {
             </div>
             <div className="pb-2">
               <Button asChild variant="outline">
-                <Link href="/profile">Edit Profile</Link>
+                <Link href="/profile">{tProfile("editProfile")}</Link>
               </Button>
             </div>
           </div>
@@ -339,19 +331,23 @@ export default function MyTrackPage() {
           <Button asChild>
             <Link href="/manga">
               <Plus className="mr-2 h-4 w-4" />
-              Add Manga
+              {t("browseManga")}
             </Link>
           </Button>
         </div>
 
-        {mangaList.length === 0 ? (
+        {isLoading ? (
+          <div className="flex min-h-[240px] items-center justify-center">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          </div>
+        ) : mangaList.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-xl font-semibold mb-2">{t("empty")}</p>
             <p className="text-muted-foreground mb-6">{t("addFirst")}</p>
             <Button asChild>
               <Link href="/manga">
                 <Plus className="mr-2 h-4 w-4" />
-                Browse Manga
+                {t("title")}
               </Link>
             </Button>
           </div>
@@ -598,4 +594,3 @@ function MangaCard({
     </div>
   );
 }
-

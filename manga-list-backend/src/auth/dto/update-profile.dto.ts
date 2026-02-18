@@ -6,6 +6,7 @@ import {
   IsBoolean,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { IsStaticImageUrl } from '../../common/validators/is-static-image-url.validator';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -28,10 +29,12 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsUrl()
+  @IsStaticImageUrl()
   avatarUrl?: string;
 
   @IsOptional()
   @IsUrl()
+  @IsStaticImageUrl()
   bannerUrl?: string;
 
   @IsOptional()

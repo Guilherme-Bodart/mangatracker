@@ -29,10 +29,16 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({
+  children,
+  initialHasSession = false,
+}: {
+  children: React.ReactNode;
+  initialHasSession?: boolean;
+}) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(initialHasSession);
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
   const refreshUser = React.useCallback(async (): Promise<User | null> => {
@@ -57,12 +63,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [API_URL]);
 
   useEffect(() => {
+    if (!initialHasSession) {
+      setIsLoading(false);
+      return;
+    }
+
     const load = async () => {
       await refreshUser();
       setIsLoading(false);
     };
     load();
-  }, [refreshUser]);
+  }, [initialHasSession, refreshUser]);
 
   const login = React.useCallback(
     async (email: string, password: string) => {

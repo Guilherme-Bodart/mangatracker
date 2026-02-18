@@ -207,9 +207,10 @@
     }
   },
   "MyTrack": {
-    "title": "My Track",
+    "title": "Add Manga",
     "empty": "Your list is empty",
     "addFirst": "Add your first manga!",
+    "browseManga": "Browse Manga",
     "latestChapters": "Latest chapters",
     "noChapterData": "No chapter data yet",
     "chapterLabel": "Ch.",
@@ -236,6 +237,7 @@
     "loading": "Loading profile...",
     "notFound": "User not found",
     "notFoundDesc": "This user doesn't exist or has been deleted",
+    "editProfile": "Edit Profile",
     "likes": "likes",
     "likeToLogin": "Sign in to like",
     "likeProfile": "Like profile",

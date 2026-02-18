@@ -4,6 +4,7 @@ import "../globals.css";
 import { Header } from "@/components/layouts/header";
 import { Footer } from "@/components/layouts/footer";
 import { getMessages } from "next-intl/server";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { LangAndFontProvider } from "@/components/providers/lang-and-font-provider";
@@ -41,13 +42,19 @@ export default async function LocaleLayout({
   // Providing all messages to the client
   // side is the easiest way to get started
   const messages = await getMessages();
+  const cookieStore = await cookies();
+  const initialHasSession = !!cookieStore.get("auth_token")?.value;
 
   return (
     <LangAndFontProvider
       locale={locale}
       fonts={`${geistSans.variable} ${geistMono.variable}`}
     >
-      <Providers messages={messages} locale={locale}>
+      <Providers
+        messages={messages}
+        locale={locale}
+        initialHasSession={initialHasSession}
+      >
         <div className="min-h-screen flex flex-col">
           <Header />
           <main className="flex-1">{children}</main>

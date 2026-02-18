@@ -18,7 +18,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Header() {
   const t = useTranslations("Header");
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -52,7 +52,9 @@ export function Header() {
           {/* Theme Toggle + Auth */}
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            {user ? (
+            {isLoading ? (
+              <div className="size-10 rounded-full border-2 border-primary/20 animate-pulse" />
+            ) : user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button

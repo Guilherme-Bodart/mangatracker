@@ -19,7 +19,7 @@ import {
 import { AddMangaModal } from "@/components/manga/add-manga-modal";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { createCsrfHeaders, ensureCsrfToken } from "@/lib/csrf";
+import { createCsrfHeaders, ensureAuthenticatedCsrfToken } from "@/lib/csrf";
 
 interface Manga {
   id: string;
@@ -133,7 +133,7 @@ export default function MyTrackPage() {
     try {
       const API_URL =
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-      await ensureCsrfToken(API_URL);
+      await ensureAuthenticatedCsrfToken(API_URL);
       const response = await fetch(
         `${API_URL}/manga/list/${selectedManga.id}`,
         {
@@ -172,7 +172,7 @@ export default function MyTrackPage() {
     try {
       const API_URL =
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-      await ensureCsrfToken(API_URL);
+      await ensureAuthenticatedCsrfToken(API_URL);
       const response = await fetch(
         `${API_URL}/manga/list/${mangaId}/favorite`,
         {
@@ -243,7 +243,7 @@ export default function MyTrackPage() {
     try {
       const API_URL =
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-      await ensureCsrfToken(API_URL);
+      await ensureAuthenticatedCsrfToken(API_URL);
       const response = await fetch(
         `${API_URL}/manga/list/${userMangaId}`,
         {

@@ -22,7 +22,7 @@ import {
 import { StarRating } from "@/components/ui/star-rating";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { createCsrfHeaders, ensureCsrfToken } from "@/lib/csrf";
+import { createCsrfHeaders, ensureAuthenticatedCsrfToken } from "@/lib/csrf";
 
 type MangaListStatus = "READING" | "COMPLETED" | "PLAN_TO_READ" | "DROPPED";
 
@@ -111,7 +111,7 @@ export function AddMangaModal({
     try {
       const API_URL =
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-      await ensureCsrfToken(API_URL);
+      await ensureAuthenticatedCsrfToken(API_URL);
 
       const payload: {
         status: MangaListStatus;

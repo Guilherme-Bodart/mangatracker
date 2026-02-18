@@ -29,8 +29,29 @@ export function createCsrfHeaders(
 }
 
 export async function ensureCsrfToken(apiUrl: string): Promise<void> {
-  await fetch(`${apiUrl}/auth/csrf`, {
+  const url = `${apiUrl}/auth/csrf?_t=${Date.now()}`;
+  await fetch(url, {
     method: "GET",
     credentials: "include",
+    cache: "no-store",
+    headers: {
+      "cache-control": "no-cache, no-store, must-revalidate",
+      pragma: "no-cache",
+    },
+  });
+}
+
+export async function ensureAuthenticatedCsrfToken(
+  apiUrl: string,
+): Promise<void> {
+  const url = `${apiUrl}/auth/me?_t=${Date.now()}`;
+  await fetch(url, {
+    method: "GET",
+    credentials: "include",
+    cache: "no-store",
+    headers: {
+      "cache-control": "no-cache, no-store, must-revalidate",
+      pragma: "no-cache",
+    },
   });
 }

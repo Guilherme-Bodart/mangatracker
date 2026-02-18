@@ -18,7 +18,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { User, Camera, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import { createCsrfHeaders } from "@/lib/csrf";
+import { createCsrfHeaders, ensureAuthenticatedCsrfToken } from "@/lib/csrf";
 
 export default function ProfilePage() {
   const { user, isLoading: isAuthLoading } = useAuth();
@@ -98,6 +98,7 @@ export default function ProfilePage() {
 
       const API_URL =
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+      await ensureAuthenticatedCsrfToken(API_URL);
       const response = await fetch(`${API_URL}/auth/profile`, {
         method: "PATCH",
         headers: createCsrfHeaders({

@@ -17,7 +17,7 @@ import { User, BookOpen, Star, Heart } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/routing";
 import { useAuth } from "@/contexts/auth-context";
-import { createCsrfHeaders } from "@/lib/csrf";
+import { createCsrfHeaders, ensureAuthenticatedCsrfToken } from "@/lib/csrf";
 
 interface MangaListItem {
   id: string;
@@ -188,6 +188,7 @@ export default function PublicProfilePage() {
     try {
       setIsLikeLoading(true);
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+      await ensureAuthenticatedCsrfToken(API_URL);
       const response = await fetch(`${API_URL}/manga/user/${username}/like`, {
         method: "POST",
         headers: createCsrfHeaders(),

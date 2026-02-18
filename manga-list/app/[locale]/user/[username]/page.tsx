@@ -493,7 +493,7 @@ export default function PublicProfilePage() {
                       {selectedManga.manga.lastChapter && (
                         <div>
                           <p className="text-sm text-muted-foreground mb-0.5">
-                            {t("details.latestChapter") || "Último Cap."}
+                            {t("details.latestChapter")}
                           </p>
                           <p className="font-medium text-sm">
                             Cap. {selectedManga.manga.lastChapter}

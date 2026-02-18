@@ -259,6 +259,7 @@
     "details": {
       "rating": "Rating",
       "chapter": "Chapter",
+      "latestChapter": "Latest Chapter",
       "notes": "Notes",
       "addedOn": "Added on",
       "added": "Added",

@@ -19,7 +19,7 @@ import {
 import { AddMangaModal } from "@/components/manga/add-manga-modal";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { createCsrfHeaders } from "@/lib/csrf";
+import { createCsrfHeaders, ensureCsrfToken } from "@/lib/csrf";
 
 interface Manga {
   id: string;
@@ -131,8 +131,11 @@ export default function MyTrackPage() {
 
     setIsDeleting(true);
     try {
+      const API_URL =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+      await ensureCsrfToken(API_URL);
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/manga/list/${selectedManga.id}`,
+        `${API_URL}/manga/list/${selectedManga.id}`,
         {
           method: "DELETE",
           headers: createCsrfHeaders(),
@@ -167,8 +170,11 @@ export default function MyTrackPage() {
     );
 
     try {
+      const API_URL =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+      await ensureCsrfToken(API_URL);
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/manga/list/${mangaId}/favorite`,
+        `${API_URL}/manga/list/${mangaId}/favorite`,
         {
           method: "PATCH",
           headers: createCsrfHeaders({
@@ -235,8 +241,11 @@ export default function MyTrackPage() {
     );
 
     try {
+      const API_URL =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+      await ensureCsrfToken(API_URL);
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/manga/list/${userMangaId}`,
+        `${API_URL}/manga/list/${userMangaId}`,
         {
           method: "PATCH",
           headers: createCsrfHeaders({

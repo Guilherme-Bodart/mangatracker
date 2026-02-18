@@ -29,8 +29,6 @@ export function createCsrfHeaders(
 }
 
 export async function ensureCsrfToken(apiUrl: string): Promise<void> {
-  if (getCsrfToken()) return;
-
   await fetch(`${apiUrl}/auth/csrf`, {
     method: "GET",
     credentials: "include",

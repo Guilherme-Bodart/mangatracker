@@ -162,7 +162,7 @@ export class AuthController {
     );
     this.setCsrfSessionCookie(res, result.sessionId);
     this.setCsrfCookie(res, result.csrfToken);
-    return { success: true };
+    return { success: true, csrfToken: result.csrfToken };
   }
 
   @Post('register')
@@ -183,7 +183,7 @@ export class AuthController {
       result.user.id,
     );
     this.setCsrfCookie(res, csrfToken);
-    return { user: result.user };
+    return { user: result.user, csrfToken };
   }
 
   @Post('login')
@@ -204,7 +204,7 @@ export class AuthController {
       result.user.id,
     );
     this.setCsrfCookie(res, csrfToken);
-    return { user: result.user };
+    return { user: result.user, csrfToken };
   }
 
   @Get('me')
@@ -217,6 +217,7 @@ export class AuthController {
     const csrfToken = await this.authService.getOrCreateCsrfToken(user.id);
     this.setCsrfCookie(res, csrfToken);
     return {
+      csrfToken,
       user: {
         id: user.id,
         username: user.username,
@@ -241,7 +242,7 @@ export class AuthController {
     this.setAuthCookie(res, token);
     const csrfToken = await this.authService.getOrCreateCsrfToken(user.id);
     this.setCsrfCookie(res, csrfToken);
-    return { success: true };
+    return { success: true, csrfToken };
   }
 
   @Post('exchange')
@@ -255,7 +256,7 @@ export class AuthController {
       result.user.id,
     );
     this.setCsrfCookie(res, csrfToken);
-    return { user: result.user };
+    return { user: result.user, csrfToken };
   }
 
   @Post('logout')

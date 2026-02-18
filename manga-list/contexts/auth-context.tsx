@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { createCsrfHeaders, ensureCsrfToken } from "@/lib/csrf";
+import { createCsrfHeaders, ensureCsrfToken, setCsrfToken } from "@/lib/csrf";
 import { useRouter } from "@/i18n/routing";
 
 interface User {
@@ -52,7 +52,10 @@ export function AuthProvider({
         return null;
       }
 
-      const data = (await response.json()) as { user: User };
+      const data = (await response.json()) as { user: User; csrfToken?: string };
+      if (data.csrfToken) {
+        setCsrfToken(data.csrfToken);
+      }
       setUser(data.user);
       return data.user;
     } catch (error) {
@@ -92,7 +95,10 @@ export function AuthProvider({
         throw new Error(error.message || "Login failed");
       }
 
-      const data = (await response.json()) as { user: User };
+      const data = (await response.json()) as { user: User; csrfToken?: string };
+      if (data.csrfToken) {
+        setCsrfToken(data.csrfToken);
+      }
       setUser(data.user);
     },
     [API_URL],
@@ -115,7 +121,10 @@ export function AuthProvider({
         throw new Error(error.error || "Registration failed");
       }
 
-      const data = (await response.json()) as { user: User };
+      const data = (await response.json()) as { user: User; csrfToken?: string };
+      if (data.csrfToken) {
+        setCsrfToken(data.csrfToken);
+      }
       setUser(data.user);
     },
     [API_URL],
@@ -131,6 +140,7 @@ export function AuthProvider({
     } catch (error) {
       console.error("Logout request failed:", error);
     } finally {
+      setCsrfToken(null);
       setUser(null);
       router.replace("/auth/login");
     }

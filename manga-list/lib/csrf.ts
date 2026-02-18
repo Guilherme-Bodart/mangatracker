@@ -1,3 +1,5 @@
+let csrfTokenMemory: string | null = null;
+
 export function getCookieValue(name: string): string | null {
   if (typeof document === "undefined") return null;
   const cookies = document.cookie ? document.cookie.split(";") : [];
@@ -13,7 +15,11 @@ export function getCookieValue(name: string): string | null {
 }
 
 export function getCsrfToken(): string | null {
-  return getCookieValue("csrf_token");
+  return csrfTokenMemory || getCookieValue("csrf_token");
+}
+
+export function setCsrfToken(token: string | null): void {
+  csrfTokenMemory = token;
 }
 
 export function createCsrfHeaders(
@@ -30,20 +36,30 @@ export function createCsrfHeaders(
 
 export async function ensureCsrfToken(apiUrl: string): Promise<void> {
   const url = `${apiUrl}/auth/csrf?_t=${Date.now()}`;
-  await fetch(url, {
+  const response = await fetch(url, {
     method: "GET",
     credentials: "include",
     cache: "no-store",
   });
+  if (!response.ok) return;
+  const data = (await response.json()) as { csrfToken?: string };
+  if (data.csrfToken) {
+    setCsrfToken(data.csrfToken);
+  }
 }
 
 export async function ensureAuthenticatedCsrfToken(
   apiUrl: string,
 ): Promise<void> {
   const url = `${apiUrl}/auth/me?_t=${Date.now()}`;
-  await fetch(url, {
+  const response = await fetch(url, {
     method: "GET",
     credentials: "include",
     cache: "no-store",
   });
+  if (!response.ok) return;
+  const data = (await response.json()) as { csrfToken?: string };
+  if (data.csrfToken) {
+    setCsrfToken(data.csrfToken);
+  }
 }

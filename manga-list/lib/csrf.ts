@@ -34,10 +34,6 @@ export async function ensureCsrfToken(apiUrl: string): Promise<void> {
     method: "GET",
     credentials: "include",
     cache: "no-store",
-    headers: {
-      "cache-control": "no-cache, no-store, must-revalidate",
-      pragma: "no-cache",
-    },
   });
 }
 
@@ -49,9 +45,5 @@ export async function ensureAuthenticatedCsrfToken(
     method: "GET",
     credentials: "include",
     cache: "no-store",
-    headers: {
-      "cache-control": "no-cache, no-store, must-revalidate",
-      pragma: "no-cache",
-    },
   });
 }

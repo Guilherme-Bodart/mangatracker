@@ -31,14 +31,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({
   children,
-  initialHasSession = false,
 }: {
   children: React.ReactNode;
-  initialHasSession?: boolean;
 }) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(initialHasSession);
+  const [isLoading, setIsLoading] = useState(true);
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
   const refreshUser = React.useCallback(async (): Promise<User | null> => {
@@ -66,17 +64,12 @@ export function AuthProvider({
   }, [API_URL]);
 
   useEffect(() => {
-    if (!initialHasSession) {
-      setIsLoading(false);
-      return;
-    }
-
     const load = async () => {
       await refreshUser();
       setIsLoading(false);
     };
     load();
-  }, [initialHasSession, refreshUser]);
+  }, [refreshUser]);
 
   const login = React.useCallback(
     async (email: string, password: string) => {

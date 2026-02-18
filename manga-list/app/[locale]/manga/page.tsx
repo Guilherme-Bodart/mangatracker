@@ -160,6 +160,8 @@ export default function BrowsePage() {
     setIsModalOpen(true);
   };
 
+  const showInitialSkeleton = isLoading && mangas.length === 0;
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
@@ -266,112 +268,135 @@ export default function BrowsePage() {
           </CardContent>
         </Card>
       )}
-
       {/* Results */}
-      {isLoading ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">{t("loading")}</p>
-        </div>
-      ) : mangas.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {mangas.map((manga) => (
-            <Card
-              key={manga.mal_id}
-              className="overflow-hidden group hover:shadow-lg transition-shadow"
-            >
-              <div className="aspect-[2/3] relative overflow-hidden">
-                <img
-                  src={manga.images.jpg.large_image_url}
-                  alt={manga.title}
-                  className="object-cover w-full h-full group-hover:scale-105 transition-transform"
-                />
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Button
-                    size="sm"
-                    onClick={() => handleAddToList(manga)}
-                    className="gap-1"
-                  >
-                    <Plus className="size-4" />
-                    {t("addToList")}
-                  </Button>
-                </div>
-              </div>
-              <CardContent className="p-3">
-                <div className="flex justify-between items-start gap-2 mb-2">
-                  <h3
-                    className="font-semibold text-sm line-clamp-2"
-                    title={manga.title}
-                  >
-                    {manga.title}
-                  </h3>
-                  {manga.score && (
-                    <Badge
-                      variant="secondary"
-                      className="text-[10px] px-1 h-5 shrink-0"
+      <div className="relative">
+        {showInitialSkeleton ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {Array.from({ length: 20 }).map((_, index) => (
+              <Card key={`skeleton-${index}`} className="overflow-hidden">
+                <div className="aspect-[2/3] bg-muted animate-pulse" />
+                <CardContent className="p-3 space-y-2">
+                  <div className="h-4 bg-muted rounded animate-pulse" />
+                  <div className="h-3 w-2/3 bg-muted rounded animate-pulse" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : mangas.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {mangas.map((manga, index) => (
+              <Card
+                key={`${manga.mal_id}-${page}-${index}`}
+                className="overflow-hidden group hover:shadow-lg transition-shadow"
+              >
+                <div className="aspect-[2/3] relative overflow-hidden">
+                  <img
+                    src={manga.images.jpg.large_image_url}
+                    alt={manga.title}
+                    className="object-cover w-full h-full group-hover:scale-105 transition-transform"
+                  />
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Button
+                      size="sm"
+                      onClick={() => handleAddToList(manga)}
+                      className="gap-1 cursor-pointer"
                     >
-                      ⭐ {manga.score}
-                    </Badge>
-                  )}
+                      <Plus className="size-4" />
+                      {t("addToList")}
+                    </Button>
+                  </div>
                 </div>
-
-                <div className="space-y-2">
-                  {/* Status & Chapters */}
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>
-                      {manga.status
-                        ? locale === "pt"
-                          ? statusTranslations[manga.status] || manga.status
-                          : manga.status
-                        : "Unknown"}
-                    </span>
-                    {manga.chapters && (
-                      <span className="font-medium">
-                        {manga.chapters} {locale === "pt" ? "Caps" : "Chs"}
-                      </span>
+                <CardContent className="p-3">
+                  <div className="flex justify-between items-start gap-2 mb-2">
+                    <h3
+                      className="font-semibold text-sm line-clamp-2"
+                      title={manga.title}
+                    >
+                      {manga.title}
+                    </h3>
+                    {manga.score && (
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] px-1 h-5 shrink-0"
+                      >
+                        ⭐ {manga.score}
+                      </Badge>
                     )}
                   </div>
 
-                  {/* Genres */}
-                  {manga.genres && manga.genres.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {manga.genres.slice(0, 3).map((genre) => (
-                        <span
-                          key={genre.mal_id}
-                          className="text-[10px] px-1.5 py-0.5 bg-secondary text-secondary-foreground rounded-full whitespace-nowrap"
-                        >
-                          {genre.name}
+                  <div className="space-y-2">
+                    {/* Status & Chapters */}
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>
+                        {manga.status
+                          ? locale === "pt"
+                            ? statusTranslations[manga.status] || manga.status
+                            : manga.status
+                          : "Unknown"}
+                      </span>
+                      {manga.chapters && (
+                        <span className="font-medium">
+                          {manga.chapters} {locale === "pt" ? "Caps" : "Chs"}
                         </span>
-                      ))}
+                      )}
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">{t("noResults")}</p>
-        </div>
-      )}
 
+                    {/* Genres */}
+                    {manga.genres && manga.genres.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {manga.genres.slice(0, 3).map((genre) => (
+                          <span
+                            key={genre.mal_id}
+                            className="text-[10px] px-1.5 py-0.5 bg-secondary text-secondary-foreground rounded-full whitespace-nowrap"
+                          >
+                            {genre.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">
+              {isLoading ? t("loading") : t("noResults")}
+            </p>
+          </div>
+        )}
+
+        {isLoading && mangas.length > 0 && (
+          <div className="absolute inset-0 bg-background/70 backdrop-blur-[1px] flex items-center justify-center rounded-md">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" />
+              <span>{t("loading")}</span>
+            </div>
+          </div>
+        )}
+      </div>
       {/* Pagination */}
       {mangas.length > 0 && (
         <div className="flex justify-center items-center gap-4 mt-8">
           <Button
             variant="outline"
             onClick={handlePrevPage}
+            className="cursor-pointer"
             disabled={page === 1 || isLoading}
           >
-            Previous
+            {t("previous")}
           </Button>
-          <span className="text-sm font-medium">Page {page}</span>
+          <span className="text-sm font-medium">
+            {t("page")} {page}
+          </span>
           <Button
             variant="outline"
             onClick={handleNextPage}
+            className="cursor-pointer"
             disabled={!hasNextPage || isLoading}
           >
-            Next
+            {t("next")}
           </Button>
         </div>
       )}
@@ -387,3 +412,4 @@ export default function BrowsePage() {
     </div>
   );
 }
+

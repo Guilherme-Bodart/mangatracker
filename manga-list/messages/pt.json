@@ -123,6 +123,9 @@
     },
     "filterMode": "Modo de Filtro",
     "addToList": "Adicionar \u00e0 Lista",
+    "previous": "Anterior",
+    "next": "Pr\u00f3xima",
+    "page": "P\u00e1gina",
     "noResults": "Nenhum resultado encontrado",
     "loading": "Carregando...",
     "startSearching": "Comece pesquisando um mang\u00e1"

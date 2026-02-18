@@ -123,6 +123,9 @@
     },
     "filterMode": "Filter Mode",
     "addToList": "Add to List",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page",
     "noResults": "No results found",
     "loading": "Loading...",
     "startSearching": "Start searching for manga"

@@ -15,8 +15,13 @@ export function LangAndFontProvider({
     // Set the lang attribute on <html>
     document.documentElement.lang = locale;
 
-    // Set font classes on <body>
-    document.body.className = fonts;
+    // Merge font classes into <body> without overwriting existing classes (e.g. theme classes)
+    const fontClasses = fonts.split(" ").filter(Boolean);
+    document.body.classList.add(...fontClasses);
+
+    return () => {
+      document.body.classList.remove(...fontClasses);
+    };
   }, [locale, fonts]);
 
   return <>{children}</>;

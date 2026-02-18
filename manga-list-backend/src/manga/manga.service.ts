@@ -99,6 +99,9 @@ export class MangaService {
       // Default to sorting by members (most read) if not specified
       // "Trending" usually means most people reading it.
       let url = `${this.JIKAN_BASE_URL}/manga?page=${page}&limit=20&order_by=members&sort=desc`;
+      if (!allowNsfw) {
+        url += '&sfw=true';
+      }
 
       if (query) {
         // If there's a search query, Jikan might prioritize relevance,
@@ -138,9 +141,6 @@ export class MangaService {
       }
 
       const data = (await response.json()) as JikanSearchResponse;
-      if (!allowNsfw) {
-        data.data = this.filterNsfwResults(data.data);
-      }
 
       // Cache the result for 24 hours
       await this.cacheManager.set(cacheKey, data, 60 * 60 * 24 * 1000);
@@ -300,9 +300,12 @@ export class MangaService {
     }
 
     try {
-      const response = await this.fetchWithRetry(
-        `${this.JIKAN_BASE_URL}/top/manga?page=${page}&limit=20`,
-      );
+      let url = `${this.JIKAN_BASE_URL}/top/manga?page=${page}&limit=20`;
+      if (!allowNsfw) {
+        url += '&sfw=true';
+      }
+
+      const response = await this.fetchWithRetry(url);
 
       if (!response.ok) {
         throw new HttpException(
@@ -312,9 +315,6 @@ export class MangaService {
       }
 
       const data = (await response.json()) as JikanSearchResponse;
-      if (!allowNsfw) {
-        data.data = this.filterNsfwResults(data.data);
-      }
 
       // Cache for 24 hours
       await this.cacheManager.set(cacheKey, data, 60 * 60 * 24 * 1000);

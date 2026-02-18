@@ -36,7 +36,7 @@ export function Footer() {
             className="hidden size-8 rounded-md dark:block"
           />
           <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-            (c) {new Date().getFullYear()} Manga Tracker. {t("copyright")}
+            © {new Date().getFullYear()} Manga Tracker. {t("copyright")}
           </p>
         </div>
 

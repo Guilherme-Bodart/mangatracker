@@ -206,6 +206,9 @@ export function RegisterForm() {
         variant="outline"
         type="button"
         disabled={isLoading}
+        onClick={() =>
+          (window.location.href = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/auth/google`)
+        }
         className="w-full h-11 bg-background/50 border-input/50 hover:bg-accent hover:text-accent-foreground transition-all duration-300 hover:-translate-y-0.5"
       >
         <Chrome className="mr-2 h-4 w-4" />

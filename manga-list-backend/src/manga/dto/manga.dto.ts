@@ -21,10 +21,10 @@ export interface JikanMangaSearchResult {
     };
   };
   authors?: Array<{ name: string }>;
-  genres?: Array<{ name: string }>;
-  explicit_genres?: Array<{ name: string }>;
-  themes?: Array<{ name: string }>;
-  demographics?: Array<{ name: string }>;
+  genres?: Array<{ mal_id?: number; name: string }>;
+  explicit_genres?: Array<{ mal_id?: number; name: string }>;
+  themes?: Array<{ mal_id?: number; name: string }>;
+  demographics?: Array<{ mal_id?: number; name: string }>;
   rating?: string;
   chapters?: number;
   synopsis?: string;

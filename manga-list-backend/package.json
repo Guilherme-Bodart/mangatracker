@@ -12,17 +12,22 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "lint": "eslint src test --ext .ts --fix",
+    "lint:ci": "eslint src test --ext .ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "typecheck": "tsc --noEmit",
     "typecheck:strict:auth": "tsc -p tsconfig.strict-auth.json",
     "typecheck:strict:manga": "tsc -p tsconfig.strict-manga.json",
-    "typecheck:strict:core": "tsc -p tsconfig.strict-core.json"
+    "typecheck:strict:core": "tsc -p tsconfig.strict-core.json",
+    "security:audit": "pnpm audit --audit-level=critical",
+    "security:audit:high": "pnpm audit --audit-level=high"
   },
   "dependencies": {
+    "@keyv/redis": "^5.1.6",
     "@nestjs/cache-manager": "^3.1.0",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^4.0.2",
@@ -34,7 +39,6 @@
     "@prisma/client": "5.22.0",
     "bcryptjs": "^3.0.3",
     "cache-manager": "^7.2.8",
-    "cache-manager-redis-store": "^3.0.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
     "cron": "^4.4.0",
@@ -91,5 +95,17 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "pnpm": {
+    "overrides": {
+      "eslint>minimatch": "10.2.1",
+      "@eslint/eslintrc>minimatch": "10.2.1",
+      "@humanwhocodes/config-array>minimatch": "10.2.1",
+      "@typescript-eslint/typescript-estree>minimatch": "10.2.1",
+      "test-exclude>minimatch": "10.2.1",
+      "@nestjs/cli>glob": "10.5.0",
+      "glob>minimatch": "10.2.1",
+      "fork-ts-checker-webpack-plugin>minimatch": "10.2.1"
+    }
   }
 }

@@ -19,7 +19,8 @@ import {
 import { AddMangaModal } from "@/components/manga/add-manga-modal";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { createCsrfHeaders, ensureAuthenticatedCsrfToken } from "@/lib/csrf";
+import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
+import { logger } from "@/lib/logger";
 
 interface Manga {
   id: string;
@@ -70,34 +71,15 @@ export default function MyTrackPage() {
 
   const fetchMangaList = useCallback(async () => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/manga/list`,
-        {
-          credentials: "include",
-        },
+      const data = await apiRequest<UserManga[]>("/manga/list");
+      setMangaList(data);
+
+      const latestChaptersData = await apiRequest<Record<string, LatestChapter[]>>(
+        "/manga/list/latest-chapters",
       );
-
-      if (response.ok) {
-        const data = await response.json();
-        setMangaList(data);
-
-        const latestChaptersResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/manga/list/latest-chapters`,
-          {
-            credentials: "include",
-          },
-        );
-
-        if (latestChaptersResponse.ok) {
-          const latestChaptersData = (await latestChaptersResponse.json()) as Record<
-            string,
-            LatestChapter[]
-          >;
-          setLatestChaptersByManga(latestChaptersData);
-        }
-      }
+      setLatestChaptersByManga(latestChaptersData);
     } catch (error) {
-      console.error("Failed to fetch manga list:", error);
+      logger.error("Failed to fetch manga list", error);
     } finally {
       setIsLoading(false);
     }
@@ -131,27 +113,18 @@ export default function MyTrackPage() {
 
     setIsDeleting(true);
     try {
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-      await ensureAuthenticatedCsrfToken(API_URL);
-      const response = await fetch(
-        `${API_URL}/manga/list/${selectedManga.id}`,
-        {
-          method: "DELETE",
-          headers: createCsrfHeaders(),
-          credentials: "include",
-        },
-      );
-
-      if (!response.ok) throw new Error("Failed to delete");
+      await apiRequest(`/manga/list/${selectedManga.id}`, {
+        method: "DELETE",
+        csrf: "authenticated-required",
+      });
 
       setMangaList((prev) =>
         prev.filter((item) => item.id !== selectedManga.id),
       );
       toast.success(t("actions.deleteSuccess"));
       setIsDeleteModalOpen(false);
-    } catch {
-      toast.error(t("actions.deleteError"));
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, t("actions.deleteError")));
     } finally {
       setIsDeleting(false);
       setSelectedManga(null);
@@ -170,38 +143,19 @@ export default function MyTrackPage() {
     );
 
     try {
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-      await ensureAuthenticatedCsrfToken(API_URL);
-      const response = await fetch(
-        `${API_URL}/manga/list/${mangaId}/favorite`,
-        {
-          method: "PATCH",
-          headers: createCsrfHeaders({
-            "Content-Type": "application/json",
-          }),
-          credentials: "include",
-          body: JSON.stringify({ isFavorite: !currentStatus }),
-        },
-      );
-
-      if (!response.ok) {
-        // Revert if failed
-        setMangaList((prev) =>
-          prev.map((item) =>
-            item.id === mangaId ? { ...item, isFavorite: currentStatus } : item,
-          ),
-        );
-        toast.error("Failed to update favorite");
-      }
-    } catch {
+      await apiRequest(`/manga/list/${mangaId}/favorite`, {
+        method: "PATCH",
+        csrf: "authenticated-required",
+        body: { isFavorite: !currentStatus },
+      });
+    } catch (error) {
       // Revert if failed
       setMangaList((prev) =>
         prev.map((item) =>
           item.id === mangaId ? { ...item, isFavorite: currentStatus } : item,
         ),
       );
-      toast.error("Failed to update favorite");
+      toast.error(getApiErrorMessage(error, "Failed to update favorite"));
     }
   };
 
@@ -241,27 +195,14 @@ export default function MyTrackPage() {
     );
 
     try {
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-      await ensureAuthenticatedCsrfToken(API_URL);
-      const response = await fetch(
-        `${API_URL}/manga/list/${userMangaId}`,
-        {
-          method: "PATCH",
-          headers: createCsrfHeaders({
-            "Content-Type": "application/json",
-          }),
-          credentials: "include",
-          body: JSON.stringify({ currentChapter: nextChapter }),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to update chapter");
-      }
+      await apiRequest(`/manga/list/${userMangaId}`, {
+        method: "PATCH",
+        csrf: "authenticated-required",
+        body: { currentChapter: nextChapter },
+      });
 
       toast.success(t("chapterRead.success", { chapter: nextChapter }));
-    } catch {
+    } catch (error) {
       setMangaList((prev) =>
         prev.map((item) =>
           item.id === userMangaId
@@ -269,7 +210,7 @@ export default function MyTrackPage() {
             : item,
         ),
       );
-      toast.error(t("chapterRead.error"));
+      toast.error(getApiErrorMessage(error, t("chapterRead.error")));
     } finally {
       setIsUpdatingChapterByManga((prev) => ({
         ...prev,

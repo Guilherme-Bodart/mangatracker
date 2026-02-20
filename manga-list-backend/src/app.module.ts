@@ -6,6 +6,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { MangaModule } from './manga/manga.module';
 import { CacheModule } from './cache/cache.module';
 import { TasksModule } from './tasks/tasks.module';
+import { ObservabilityModule } from './observability/observability.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { TasksModule } from './tasks/tasks.module';
     MangaModule,
     CacheModule,
     TasksModule,
+    ObservabilityModule,
   ],
 })
 export class AppModule {}

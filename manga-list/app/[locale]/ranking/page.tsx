@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Heart, User } from "lucide-react";
+import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
 
 interface RankedProfile {
   rank: number;
@@ -27,17 +28,12 @@ export default function RankingPage() {
   useEffect(() => {
     const fetchRanking = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-        const response = await fetch(`${API_URL}/manga/ranking/profiles?limit=100`);
-
-        if (!response.ok) {
-          throw new Error("Failed to load ranking");
-        }
-
-        const data = (await response.json()) as { ranking: RankedProfile[] };
+        const data = await apiRequest<{ ranking: RankedProfile[] }>(
+          "/manga/ranking/profiles?limit=100",
+        );
         setProfiles(data.ranking);
       } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : "Failed to load ranking");
+        setError(getApiErrorMessage(err, "Failed to load ranking"));
       } finally {
         setIsLoading(false);
       }

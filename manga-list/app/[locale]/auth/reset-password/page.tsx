@@ -1,22 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useRouter, Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
 
 export default function ResetPasswordPage() {
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const token = searchParams.get("token") ?? "";
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  const [token, setToken] = useState("");
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const value = new URLSearchParams(window.location.search).get("token") ?? "";
+    setToken(value);
+  }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,30 +36,19 @@ export default function ResetPasswordPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}/auth/reset-password`, {
+      await apiRequest("/auth/reset-password", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
+        body: {
           token,
           password,
           confirmPassword,
-        }),
+        },
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Could not reset password");
-      }
 
       toast.success("Password updated successfully.");
       router.push("/auth/login");
     } catch (error: unknown) {
-      toast.error(
-        error instanceof Error ? error.message : "Could not reset password",
-      );
+      toast.error(getApiErrorMessage(error, "Could not reset password"));
     } finally {
       setIsLoading(false);
     }
@@ -79,7 +71,7 @@ export default function ResetPasswordPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            minLength={8}
+            minLength={10}
             required
           />
         </div>
@@ -90,7 +82,7 @@ export default function ResetPasswordPage() {
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            minLength={8}
+            minLength={10}
             required
           />
         </div>

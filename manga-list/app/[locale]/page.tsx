@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
+import { logger } from "@/lib/logger";
 import { BookOpen, Share2, Compass } from "lucide-react";
 
 interface TrendingManga {
@@ -15,16 +17,21 @@ interface TrendingManga {
   };
 }
 
+type TopMangaResponse = {
+  data?: TrendingManga[];
+};
+
 async function getTrendingManga() {
   try {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-    const response = await fetch(`${API_URL}/manga/top?page=1`, {
+    const data = await apiRequest<TopMangaResponse>("/manga/top?page=1", {
       cache: "no-store",
     });
-    const data = await response.json();
     return data.data?.slice(0, 6) || [];
   } catch (error) {
-    console.error("Error fetching trending manga:", error);
+    logger.error(
+      "Error fetching trending manga:",
+      getApiErrorMessage(error, "Request failed"),
+    );
     return [];
   }
 }

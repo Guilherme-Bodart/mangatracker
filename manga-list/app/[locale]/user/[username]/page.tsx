@@ -1,7 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,9 +14,10 @@ import {
 } from "@/components/ui/dialog";
 import { User, BookOpen, Star, Heart } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
-import { Link } from "@/i18n/routing";
+import { Link, usePathname } from "@/i18n/routing";
 import { useAuth } from "@/contexts/auth-context";
-import { createCsrfHeaders, ensureAuthenticatedCsrfToken } from "@/lib/csrf";
+import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
+import { toast } from "sonner";
 
 interface MangaListItem {
   id: string;
@@ -62,8 +62,14 @@ interface UserData {
 }
 
 export default function PublicProfilePage() {
-  const params = useParams();
-  const username = params.username as string;
+  const pathname = usePathname();
+  const username = useMemo(() => {
+    const segments = pathname.split("/").filter(Boolean);
+    if (segments[0] !== "user" || !segments[1]) {
+      return "";
+    }
+    return decodeURIComponent(segments[1]);
+  }, [pathname]);
   const t = useTranslations("PublicProfile");
   const locale = useLocale();
   const { user: authUser, isLoading: authLoading } = useAuth();
@@ -126,20 +132,21 @@ export default function PublicProfilePage() {
   const [isOwnProfile, setIsOwnProfile] = useState(false);
 
   useEffect(() => {
+    if (!username) {
+      setError("Failed to load profile");
+      setIsLoading(false);
+      return;
+    }
+
     const fetchUserData = async () => {
       try {
-        const API_URL =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-        const response = await fetch(`${API_URL}/manga/user/${username}`);
-
-        if (!response.ok) {
-          throw new Error("User not found");
-        }
-
-        const data = await response.json();
+        const data = await apiRequest<UserData>(
+          `/manga/user/${encodeURIComponent(username)}`,
+        );
         setUserData(data);
+        setError(null);
       } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : "Failed to load profile");
+        setError(getApiErrorMessage(err, "Failed to load profile"));
       } finally {
         setIsLoading(false);
       }
@@ -149,34 +156,33 @@ export default function PublicProfilePage() {
   }, [username]);
 
   useEffect(() => {
+    if (!username) return;
+
     const fetchLikeState = async () => {
       if (authLoading || !authUser) return;
 
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-      const response = await fetch(`${API_URL}/manga/user/${username}/like-state`, {
-        credentials: "include",
-      });
+      try {
+        const data = await apiRequest<{
+          liked: boolean;
+          isOwnProfile: boolean;
+          totalLikes: number;
+        }>(`/manga/user/${encodeURIComponent(username)}/like-state`);
 
-      if (!response.ok) return;
-
-      const data = (await response.json()) as {
-        liked: boolean;
-        isOwnProfile: boolean;
-        totalLikes: number;
-      };
-
-      setIsLikedByMe(data.liked);
-      setIsOwnProfile(data.isOwnProfile);
-      setUserData((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          user: {
-            ...prev.user,
-            totalLikes: data.totalLikes,
-          },
-        };
-      });
+        setIsLikedByMe(data.liked);
+        setIsOwnProfile(data.isOwnProfile);
+        setUserData((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            user: {
+              ...prev.user,
+              totalLikes: data.totalLikes,
+            },
+          };
+        });
+      } catch {
+        // Ignore like state failures for anonymous-like experience.
+      }
     };
 
     void fetchLikeState();
@@ -187,19 +193,13 @@ export default function PublicProfilePage() {
 
     try {
       setIsLikeLoading(true);
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-      await ensureAuthenticatedCsrfToken(API_URL);
-      const response = await fetch(`${API_URL}/manga/user/${username}/like`, {
-        method: "POST",
-        headers: createCsrfHeaders(),
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to toggle like");
-      }
-
-      const data = (await response.json()) as { liked: boolean; totalLikes: number };
+      const data = await apiRequest<{ liked: boolean; totalLikes: number }>(
+        `/manga/user/${encodeURIComponent(username)}/like`,
+        {
+          method: "POST",
+          csrf: "authenticated-required",
+        },
+      );
       setIsLikedByMe(data.liked);
       setUserData((prev) => {
         if (!prev) return prev;
@@ -211,6 +211,8 @@ export default function PublicProfilePage() {
           },
         };
       });
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Failed to toggle like"));
     } finally {
       setIsLikeLoading(false);
     }

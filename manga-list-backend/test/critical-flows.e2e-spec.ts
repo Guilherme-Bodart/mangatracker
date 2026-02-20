@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { ApiExceptionFilter } from '../src/common/filters/api-exception.filter';
@@ -148,6 +148,13 @@ describe('Auth and Manga critical flows (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     app.use(requestTraceMiddleware);
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        transform: true,
+        forbidNonWhitelisted: true,
+      }),
+    );
     app.useGlobalFilters(new ApiExceptionFilter());
     await app.init();
 

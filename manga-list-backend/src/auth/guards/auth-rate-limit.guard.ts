@@ -9,6 +9,7 @@ import {
 import { Request, Response } from 'express';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
+import { CACHE_TTL_MS } from '../../cache/cache-ttl.constants';
 
 type RateLimitConfig = {
   maxAttempts: number;
@@ -17,7 +18,7 @@ type RateLimitConfig = {
 
 @Injectable()
 export class AuthRateLimitGuard implements CanActivate {
-  private static readonly METRICS_TTL_MS = 24 * 60 * 60 * 1000;
+  private static readonly METRICS_TTL_MS = CACHE_TTL_MS.AUTH_RATE_LIMIT_METRICS;
 
   constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
 
@@ -104,12 +105,16 @@ export class AuthRateLimitGuard implements CanActivate {
   }
 
   private getClientIp(request: Request): string {
-    const forwardedFor = request.headers['x-forwarded-for'];
-    if (typeof forwardedFor === 'string') {
-      const firstIp = forwardedFor.split(',')[0]?.trim();
-      if (firstIp) return firstIp;
+    const ip = request.ip ?? request.socket?.remoteAddress ?? 'unknown';
+    return this.normalizeIp(ip);
+  }
+
+  private normalizeIp(ip: string): string {
+    const normalized = ip.trim();
+    if (normalized.startsWith('::ffff:')) {
+      return normalized.slice(7);
     }
-    return request.ip ?? request.socket?.remoteAddress ?? 'unknown';
+    return normalized;
   }
 
   private normalizeEmail(email?: string): string | undefined {
@@ -158,15 +163,15 @@ export class AuthRateLimitGuard implements CanActivate {
       routeKey.endsWith(':/auth/reset-password');
 
     if (isLogin || isRegister) {
-      return { maxAttempts: 10, windowMs: 15 * 60 * 1000 };
+      return { maxAttempts: 10, windowMs: CACHE_TTL_MS.AUTH_RATE_LIMIT_WINDOW };
     }
 
     if (isRefresh) {
-      return { maxAttempts: 30, windowMs: 15 * 60 * 1000 };
+      return { maxAttempts: 30, windowMs: CACHE_TTL_MS.AUTH_RATE_LIMIT_WINDOW };
     }
 
     if (isForgotPassword || isResetPassword) {
-      return { maxAttempts: 8, windowMs: 15 * 60 * 1000 };
+      return { maxAttempts: 8, windowMs: CACHE_TTL_MS.AUTH_RATE_LIMIT_WINDOW };
     }
 
     return null;

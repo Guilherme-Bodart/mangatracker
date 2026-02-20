@@ -9,6 +9,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
 import { AuthRateLimitGuard } from './guards/auth-rate-limit.guard';
 import { CsrfGuard } from './guards/csrf.guard';
 import { MailModule } from '../mail/mail.module';
+import { GoogleAuthGuard } from './guards/google-auth.guard';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { MailModule } from '../mail/mail.module';
     AuthService,
     JwtStrategy,
     GoogleStrategy,
+    GoogleAuthGuard,
     AuthRateLimitGuard,
     CsrfGuard,
   ],

@@ -16,6 +16,9 @@ import { MangaService } from './manga.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CsrfGuard } from '../auth/guards/csrf.guard';
 import { AddMangaToListDto, UpdateMangaListDto } from './dto/manga.dto';
+import { SearchMangaQueryDto } from './dto/search-manga-query.dto';
+import { TopMangaQueryDto } from './dto/top-manga-query.dto';
+import { ProfileRankingQueryDto } from './dto/profile-ranking-query.dto';
 
 type AuthenticatedRequest = ExpressRequest & {
   user?: {
@@ -26,24 +29,6 @@ type AuthenticatedRequest = ExpressRequest & {
 @Controller('manga')
 export class MangaController {
   constructor(private readonly mangaService: MangaService) {}
-
-  private parsePage(page?: string): number {
-    if (!page) return 1;
-    const parsed = Number(page);
-    return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
-  }
-
-  private parseBoolean(value?: string): boolean {
-    if (!value) return false;
-    return value === 'true' || value === '1';
-  }
-
-  private parseLimit(limit?: string): number {
-    if (!limit) return 100;
-    const parsed = Number(limit);
-    if (!Number.isInteger(parsed) || parsed <= 0) return 100;
-    return Math.min(parsed, 100);
-  }
 
   private requireUserId(req: AuthenticatedRequest): string {
     if (!req.user?.id) {
@@ -57,21 +42,14 @@ export class MangaController {
    * GET /manga/search?q=naruto&page=1&genres=1,2&genresMode=AND
    */
   @Get('search')
-  async searchManga(
-    @Query('q') query: string,
-    @Query('page') page?: string,
-    @Query('genres') genres?: string, // comma-separated genre IDs: "1,2,3"
-    @Query('genresMode') genresMode?: 'AND' | 'OR', // default: 'OR'
-    @Query('type') type?: string,
-    @Query('allowNsfw') allowNsfw?: string,
-  ) {
+  async searchManga(@Query() query: SearchMangaQueryDto) {
     return this.mangaService.searchManga(
-      query,
-      this.parsePage(page),
-      genres,
-      genresMode || 'OR',
-      type,
-      this.parseBoolean(allowNsfw),
+      query.q,
+      query.page,
+      query.genres,
+      query.genresMode,
+      query.type,
+      query.allowNsfw,
     );
   }
 
@@ -80,14 +58,8 @@ export class MangaController {
    * GET /manga/top?page=1
    */
   @Get('top')
-  async getTopManga(
-    @Query('page') page?: string,
-    @Query('allowNsfw') allowNsfw?: string,
-  ) {
-    return this.mangaService.getTopManga(
-      this.parsePage(page),
-      this.parseBoolean(allowNsfw),
-    );
+  async getTopManga(@Query() query: TopMangaQueryDto) {
+    return this.mangaService.getTopManga(query.page, query.allowNsfw);
   }
 
   /**
@@ -95,8 +67,8 @@ export class MangaController {
    * GET /manga/ranking/profiles?limit=100
    */
   @Get('ranking/profiles')
-  async getProfileRanking(@Query('limit') limit?: string) {
-    return this.mangaService.getProfileRanking(this.parseLimit(limit));
+  async getProfileRanking(@Query() query: ProfileRankingQueryDto) {
+    return this.mangaService.getProfileRanking(query.limit);
   }
 
   /**

@@ -21,6 +21,8 @@ import { AddMangaModal } from "@/components/manga/add-manga-modal";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useAuth } from "@/contexts/auth-context";
+import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
+import { buildBrowseMangaEndpoint } from "@/lib/manga-search-query";
 
 // Common manga genres (MAL genre IDs)
 const GENRES = [
@@ -51,6 +53,13 @@ interface Manga {
   status?: string;
   chapters?: number;
 }
+
+type MangaSearchResponse = {
+  data?: Manga[];
+  pagination?: {
+    has_next_page?: boolean;
+  };
+};
 
 const statusTranslations: Record<string, string> = {
   Publishing: "Em lançamento",
@@ -87,39 +96,19 @@ export default function BrowsePage() {
 
   useEffect(() => {
     const fetchMangas = async () => {
-      // Don't search if query is too short (unless empty to show top manga)
-      if (debouncedSearch.length > 0 && debouncedSearch.length < 3) return;
+      const endpoint = buildBrowseMangaEndpoint({
+        allowNsfw,
+        debouncedSearch,
+        selectedGenres,
+        genreMode,
+        selectedType,
+        page,
+      });
+      if (!endpoint) return;
 
       setIsLoading(true);
       try {
-        const API_URL =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-        let url = "";
-
-        if (debouncedSearch) {
-          url = `${API_URL}/manga/search?q=${encodeURIComponent(debouncedSearch)}&page=${page}&allowNsfw=${allowNsfw}`;
-        } else {
-          // If no search, show top manga
-          // Only fetch top manga if no genres selected either
-          if (selectedGenres.length === 0 && selectedType === "all") {
-            url = `${API_URL}/manga/top?page=${page}&allowNsfw=${allowNsfw}`;
-          } else {
-            // If genres selected but no text, still use search endpoint
-            url = `${API_URL}/manga/search?q=&page=${page}&allowNsfw=${allowNsfw}`;
-          }
-        }
-
-        // Add filters
-        if (selectedType && selectedType !== "all") {
-          url += `&type=${selectedType}`;
-        }
-
-        if (selectedGenres.length > 0) {
-          url += `&genres=${selectedGenres.join(",")}&genresMode=${genreMode}`;
-        }
-
-        const response = await fetch(url);
-        const data = await response.json();
+        const data = await apiRequest<MangaSearchResponse>(endpoint);
 
         const newMangas = data.data || [];
         setMangas(newMangas);
@@ -127,8 +116,7 @@ export default function BrowsePage() {
           data.pagination?.has_next_page || newMangas.length === 20,
         );
       } catch (error) {
-        toast.error("Error searching manga");
-        console.error(error);
+        toast.error(getApiErrorMessage(error, "Error searching manga"));
       } finally {
         setIsLoading(false);
       }

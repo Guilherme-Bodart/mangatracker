@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { Logger } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
+import { recordHttpMetric } from '../../observability/http-metrics.registry';
 
 type RequestWithTrace = Request & { traceId?: string };
 
@@ -23,6 +24,13 @@ export function requestTraceMiddleware(
 
   res.on('finish', () => {
     const durationMs = Date.now() - startedAt;
+    recordHttpMetric(
+      req.method,
+      req.originalUrl || req.url,
+      res.statusCode,
+      durationMs,
+    );
+
     const payload = {
       traceId,
       method: req.method,

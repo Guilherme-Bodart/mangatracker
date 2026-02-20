@@ -1,9 +1,19 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { MangaService } from './manga.service';
 import { MangaListStatus } from './dto/manga.dto';
+import { MangaSearchService } from './manga-search.service';
+import { MangaListService } from './manga-list.service';
+import { MangaProfileService } from './manga-profile.service';
+import { MangaChaptersService } from './manga-chapters.service';
+import { ExternalApiHttpClient } from '../common/http/external-api-client';
 
 describe('MangaService', () => {
   let service: MangaService;
+  let mangaSearchService: MangaSearchService;
+  let mangaListService: MangaListService;
+  let mangaProfileService: MangaProfileService;
+  let mangaChaptersService: MangaChaptersService;
+  let externalApiClient: ExternalApiHttpClient;
 
   const prisma = {
     manga: {
@@ -31,14 +41,39 @@ describe('MangaService', () => {
   const mangaDexService = {
     searchMangaByTitle: jest.fn(),
     getDescriptions: jest.fn(),
+    getLatestChapters: jest.fn(),
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new MangaService(
+    externalApiClient = new ExternalApiHttpClient({
+      timeoutMs: 1000,
+      retries: 2,
+      failureThreshold: 5,
+      cooldownMs: 30000,
+      initialBackoffMs: 1,
+      maxBackoffMs: 2,
+    });
+    mangaSearchService = new MangaSearchService(
+      cacheManager as never,
+      externalApiClient,
+    );
+    mangaListService = new MangaListService(
+      prisma as never,
+      mangaDexService as never,
+      externalApiClient,
+    );
+    mangaProfileService = new MangaProfileService(prisma as never);
+    mangaChaptersService = new MangaChaptersService(
       prisma as never,
       cacheManager as never,
       mangaDexService as never,
+    );
+    service = new MangaService(
+      mangaSearchService,
+      mangaListService,
+      mangaProfileService,
+      mangaChaptersService,
     );
   });
 
@@ -58,6 +93,91 @@ describe('MangaService', () => {
 
     expect(result).toEqual(cached);
     expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  it('applies AND genre filtering when genresMode is AND', async () => {
+    cacheManager.get.mockResolvedValue(null);
+    const payload = {
+      data: [
+        {
+          mal_id: 1,
+          title: 'Manga 1',
+          images: { jpg: { image_url: 'x', large_image_url: 'x' } },
+          genres: [
+            { mal_id: 1, name: 'Action' },
+            { mal_id: 2, name: 'Adventure' },
+          ],
+        },
+        {
+          mal_id: 2,
+          title: 'Manga 2',
+          images: { jpg: { image_url: 'x', large_image_url: 'x' } },
+          genres: [{ mal_id: 1, name: 'Action' }],
+        },
+        {
+          mal_id: 3,
+          title: 'Manga 3',
+          images: { jpg: { image_url: 'x', large_image_url: 'x' } },
+          genres: [{ mal_id: 2, name: 'Adventure' }],
+        },
+      ],
+      pagination: {
+        has_next_page: false,
+        current_page: 1,
+        last_visible_page: 1,
+      },
+    };
+    const fetchSpy = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(
+        new Response(JSON.stringify(payload), { status: 200 }),
+      );
+
+    const result = await service.searchManga('', 1, '1,2', 'AND');
+
+    expect(result.data.map((manga) => manga.mal_id)).toEqual([1]);
+    fetchSpy.mockRestore();
+  });
+
+  it('applies OR genre filtering when genresMode is OR', async () => {
+    cacheManager.get.mockResolvedValue(null);
+    const payload = {
+      data: [
+        {
+          mal_id: 1,
+          title: 'Manga 1',
+          images: { jpg: { image_url: 'x', large_image_url: 'x' } },
+          genres: [{ mal_id: 1, name: 'Action' }],
+        },
+        {
+          mal_id: 2,
+          title: 'Manga 2',
+          images: { jpg: { image_url: 'x', large_image_url: 'x' } },
+          themes: [{ mal_id: 2, name: 'Adventure' }],
+        },
+        {
+          mal_id: 3,
+          title: 'Manga 3',
+          images: { jpg: { image_url: 'x', large_image_url: 'x' } },
+          genres: [{ mal_id: 4, name: 'Comedy' }],
+        },
+      ],
+      pagination: {
+        has_next_page: false,
+        current_page: 1,
+        last_visible_page: 1,
+      },
+    };
+    const fetchSpy = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(
+        new Response(JSON.stringify(payload), { status: 200 }),
+      );
+
+    const result = await service.searchManga('', 1, '1,2', 'OR');
+
+    expect(result.data.map((manga) => manga.mal_id)).toEqual([1, 2]);
     fetchSpy.mockRestore();
   });
 
@@ -106,7 +226,7 @@ describe('MangaService', () => {
   });
 
   it('should block duplicate manga when adding to user list', async () => {
-    jest.spyOn(service, 'getMangaDetails').mockResolvedValue({
+    jest.spyOn(mangaListService, 'getMangaDetails').mockResolvedValue({
       id: 'manga-1',
     } as never);
     prisma.userManga.findFirst.mockResolvedValue({
@@ -121,5 +241,79 @@ describe('MangaService', () => {
     ).rejects.toMatchObject({
       status: HttpStatus.CONFLICT,
     });
+  });
+
+  it('should limit latest chapter fetch concurrency using configured pool size', async () => {
+    const previousValue = process.env.LATEST_CHAPTERS_CONCURRENCY;
+    process.env.LATEST_CHAPTERS_CONCURRENCY = '2';
+
+    try {
+      externalApiClient = new ExternalApiHttpClient({
+        timeoutMs: 1000,
+        retries: 2,
+        failureThreshold: 5,
+        cooldownMs: 30000,
+        initialBackoffMs: 1,
+        maxBackoffMs: 2,
+      });
+      mangaSearchService = new MangaSearchService(
+        cacheManager as never,
+        externalApiClient,
+      );
+      mangaListService = new MangaListService(
+        prisma as never,
+        mangaDexService as never,
+        externalApiClient,
+      );
+      mangaProfileService = new MangaProfileService(prisma as never);
+      mangaChaptersService = new MangaChaptersService(
+        prisma as never,
+        cacheManager as never,
+        mangaDexService as never,
+      );
+      service = new MangaService(
+        mangaSearchService,
+        mangaListService,
+        mangaProfileService,
+        mangaChaptersService,
+      );
+
+      prisma.userManga.findMany.mockResolvedValue([
+        { manga: { id: 'm1', title: 'Manga 1' } },
+        { manga: { id: 'm2', title: 'Manga 2' } },
+        { manga: { id: 'm3', title: 'Manga 3' } },
+        { manga: { id: 'm4', title: 'Manga 4' } },
+        { manga: { id: 'm5', title: 'Manga 5' } },
+      ]);
+
+      let active = 0;
+      let maxActive = 0;
+      jest
+        .spyOn(
+          mangaChaptersService as unknown as {
+            getLatestChaptersForManga: (
+              mangaId: string,
+              title: string,
+            ) => Promise<unknown>;
+          },
+          'getLatestChaptersForManga',
+        )
+        .mockImplementation(async () => {
+          active++;
+          maxActive = Math.max(maxActive, active);
+          await new Promise((resolve) => setTimeout(resolve, 20));
+          active--;
+          return [];
+        });
+
+      await service.getLatestChaptersForUserList('user-1');
+      expect(maxActive).toBeLessThanOrEqual(2);
+    } finally {
+      if (previousValue === undefined) {
+        delete process.env.LATEST_CHAPTERS_CONCURRENCY;
+      } else {
+        process.env.LATEST_CHAPTERS_CONCURRENCY = previousValue;
+      }
+    }
   });
 });

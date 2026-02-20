@@ -7,6 +7,7 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { IsStaticImageUrl } from '../../common/validators/is-static-image-url.validator';
+import { ApplyPasswordPolicy } from './password-policy';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -15,13 +16,11 @@ export class UpdateProfileDto {
   username?: string;
 
   @IsOptional()
-  @IsString()
-  @MinLength(8)
+  @ApplyPasswordPolicy()
   password?: string;
 
   @IsOptional()
   @IsString()
-  @MinLength(8)
   @Transform(({ value }) =>
     typeof value === 'string' && value.trim() === '' ? undefined : value,
   )

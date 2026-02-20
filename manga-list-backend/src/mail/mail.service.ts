@@ -11,11 +11,18 @@ export class MailService {
   async sendPasswordResetEmail(email: string, resetUrl: string): Promise<void> {
     const provider =
       this.configService.get<string>('MAIL_PROVIDER')?.toLowerCase() ?? 'log';
+    const allowSensitiveLogging = this.shouldLogResetLink();
 
     if (provider !== 'smtp') {
-      this.logger.log(
-        `MAIL_PROVIDER=${provider} - password reset link for ${email}: ${resetUrl}`,
-      );
+      if (allowSensitiveLogging) {
+        this.logger.log(
+          `MAIL_PROVIDER=${provider} - password reset link for ${email}: ${resetUrl}`,
+        );
+      } else {
+        this.logger.log(
+          `MAIL_PROVIDER=${provider} - password reset requested (link redacted)`,
+        );
+      }
       return;
     }
 
@@ -31,7 +38,11 @@ export class MailService {
       this.logger.warn(
         'SMTP provider selected but SMTP_HOST/SMTP_USER/SMTP_PASS are missing; using log fallback',
       );
-      this.logger.log(`Password reset link for ${email}: ${resetUrl}`);
+      if (allowSensitiveLogging) {
+        this.logger.log(`Password reset link for ${email}: ${resetUrl}`);
+      } else {
+        this.logger.log('Password reset requested (link redacted)');
+      }
       return;
     }
 
@@ -52,5 +63,15 @@ export class MailService {
       text: `Use this link to reset your password: ${resetUrl}\n\nThis link expires in 15 minutes.`,
       html: `<p>Use this link to reset your password:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>This link expires in 15 minutes.</p>`,
     });
+  }
+
+  private shouldLogResetLink(): boolean {
+    const nodeEnv = this.configService.get<string>('NODE_ENV') ?? 'development';
+    const devResponseEnabled =
+      this.configService.get<string>('PASSWORD_RESET_DEV_RESPONSE') === 'true';
+
+    return (
+      devResponseEnabled && (nodeEnv === 'development' || nodeEnv === 'test')
+    );
   }
 }

@@ -4,11 +4,22 @@ import { MangaController } from './manga.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { MangaDexModule } from '../mangadex/mangadex.module';
 import { AuthModule } from '../auth/auth.module';
+import { MangaProfileService } from './manga-profile.service';
+import { MangaSearchService } from './manga-search.service';
+import { MangaListService } from './manga-list.service';
+import { MangaChaptersService } from './manga-chapters.service';
+import { ExternalApiHttpModule } from '../common/http/external-api-http.module';
 
 @Module({
-  imports: [PrismaModule, MangaDexModule, AuthModule],
+  imports: [PrismaModule, MangaDexModule, AuthModule, ExternalApiHttpModule],
   controllers: [MangaController],
-  providers: [MangaService],
+  providers: [
+    MangaService,
+    MangaSearchService,
+    MangaListService,
+    MangaProfileService,
+    MangaChaptersService,
+  ],
   exports: [MangaService],
 })
 export class MangaModule {}

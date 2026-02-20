@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ExternalApiHttpClient } from '../common/http/external-api-client';
 
 type MangaDexSearchResult = {
   id: string;
@@ -18,14 +19,7 @@ type MangaDexChapterResult = {
 export class MangaDexService {
   private readonly logger = new Logger(MangaDexService.name);
   private readonly BASE_URL = 'https://api.mangadex.org';
-  private readonly externalApiTimeoutMs = this.parseEnvInt(
-    process.env.EXTERNAL_API_TIMEOUT_MS,
-    10000,
-  );
-  private readonly externalApiRetries = this.parseEnvInt(
-    process.env.EXTERNAL_API_RETRIES,
-    2,
-  );
+  constructor(private readonly externalApiClient: ExternalApiHttpClient) {}
 
   async searchMangaByTitle(
     title: string,
@@ -166,57 +160,7 @@ export class MangaDexService {
     return cleaned.trim();
   }
 
-  private parseEnvInt(value: string | undefined, fallback: number): number {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-  }
-
-  private async sleep(ms: number) {
-    await new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  private getRetryDelayMs(attempt: number): number {
-    return Math.min(250 * 2 ** attempt, 2000);
-  }
-
   private async fetchJsonWithRetry<T>(url: string): Promise<T | null> {
-    let lastError: unknown;
-
-    for (let attempt = 0; attempt <= this.externalApiRetries; attempt++) {
-      const controller = new AbortController();
-      const timeout = setTimeout(
-        () => controller.abort(),
-        this.externalApiTimeoutMs,
-      );
-
-      try {
-        const response = await fetch(url, { signal: controller.signal });
-        clearTimeout(timeout);
-
-        const shouldRetryStatus =
-          response.status === 429 || response.status >= 500;
-        if (shouldRetryStatus && attempt < this.externalApiRetries) {
-          await this.sleep(this.getRetryDelayMs(attempt));
-          continue;
-        }
-
-        if (!response.ok) {
-          return null;
-        }
-
-        const payload = (await response.json()) as T;
-        return payload;
-      } catch (error) {
-        clearTimeout(timeout);
-        lastError = error;
-
-        if (attempt < this.externalApiRetries) {
-          await this.sleep(this.getRetryDelayMs(attempt));
-          continue;
-        }
-      }
-    }
-
-    throw lastError ?? new Error('External API request failed');
+    return this.externalApiClient.fetchJsonWithRetry<T>(url, 'mangadex');
   }
 }

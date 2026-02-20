@@ -2,7 +2,7 @@
 
 import { Link } from "@/i18n/routing";
 import { useTranslations, useLocale } from "next-intl";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname, useRouter } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Languages } from "lucide-react";
 
@@ -13,11 +13,7 @@ export function Footer() {
   const pathname = usePathname();
 
   const switchLanguage = (newLocale: string) => {
-    // Replace current locale in pathname with new locale
-    const segments = pathname.split("/");
-    segments[1] = newLocale; // Replace locale segment
-    const newPath = segments.join("/");
-    router.push(newPath);
+    router.replace(pathname, { locale: newLocale });
   };
 
   return (

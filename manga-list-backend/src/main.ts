@@ -1,26 +1,39 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
+import { Request, Response, NextFunction } from 'express';
 import { AppModule } from './app.module';
 import { ApiExceptionFilter } from './common/filters/api-exception.filter';
 import { requestTraceMiddleware } from './common/middleware/request-trace.middleware';
 
 async function bootstrap() {
   validateProductionConfig();
+  const nodeEnv = process.env.NODE_ENV ?? 'development';
+  const isProduction = nodeEnv === 'production';
 
   const app = await NestFactory.create(AppModule);
   const expressApp = app.getHttpAdapter().getInstance();
 
-  const trustProxy = process.env.TRUST_PROXY;
-  if (trustProxy) {
-    expressApp.set('trust proxy', trustProxy === 'true' ? 1 : trustProxy);
-  }
+  expressApp.set(
+    'trust proxy',
+    parseTrustProxySetting(process.env.TRUST_PROXY),
+  );
 
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: 'cross-origin' },
+      hsts: isProduction
+        ? {
+            maxAge: 31536000,
+            includeSubDomains: true,
+            preload: true,
+          }
+        : false,
     }),
   );
+  if (isProduction) {
+    app.use(enforceHttpsForAllRoutes);
+  }
   app.use(requestTraceMiddleware);
   expressApp.disable('x-powered-by');
 
@@ -64,7 +77,8 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3001;
   await app.listen(port);
-  console.log(`🚀 Backend running on http://localhost:${port}`);
+  const logger = new Logger('Bootstrap');
+  logger.log(`Backend running on http://localhost:${port}`);
 }
 
 function validateProductionConfig(): void {
@@ -77,6 +91,15 @@ function validateProductionConfig(): void {
   const cookieSecure = process.env.COOKIE_SECURE === 'true';
   const cookieSameSite = (process.env.COOKIE_SAMESITE ?? 'lax').toLowerCase();
   const resetDevResponse = process.env.PASSWORD_RESET_DEV_RESPONSE === 'true';
+  const hashRounds = parseHashRounds(process.env.PASSWORD_HASH_ROUNDS);
+  const frontendUrls = (
+    process.env.FRONTEND_URLS ||
+    process.env.FRONTEND_URL ||
+    ''
+  )
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
 
   if (!cookieSecure) {
     errors.push('COOKIE_SECURE must be true in production');
@@ -94,6 +117,17 @@ function validateProductionConfig(): void {
     errors.push('PASSWORD_RESET_DEV_RESPONSE must be false in production');
   }
 
+  if (hashRounds < 12) {
+    errors.push('PASSWORD_HASH_ROUNDS must be >= 12 in production');
+  }
+
+  if (
+    frontendUrls.length > 0 &&
+    frontendUrls.some((origin) => !origin.toLowerCase().startsWith('https://'))
+  ) {
+    errors.push('FRONTEND_URL/FRONTEND_URLS must use https in production');
+  }
+
   if (errors.length > 0) {
     throw new Error(
       `Invalid production configuration:\n- ${errors.join('\n- ')}`,
@@ -109,6 +143,65 @@ function normalizeOrigin(origin: string): string | null {
   } catch {
     return null;
   }
+}
+
+function parseTrustProxySetting(
+  value: string | undefined,
+): boolean | number | string {
+  const normalized = value?.trim();
+  if (!normalized) {
+    return false;
+  }
+
+  const lower = normalized.toLowerCase();
+  if (lower === 'false' || lower === '0') {
+    return false;
+  }
+
+  if (lower === 'true') {
+    return 1;
+  }
+
+  const asNumber = Number.parseInt(normalized, 10);
+  if (!Number.isNaN(asNumber) && asNumber >= 0) {
+    return asNumber;
+  }
+
+  return normalized;
+}
+
+function parseHashRounds(value: string | undefined): number {
+  const fallback = 12;
+  if (!value?.trim()) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 4) {
+    return fallback;
+  }
+
+  return parsed;
+}
+
+function enforceHttpsForAllRoutes(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  if (isHttpsRequest(req)) {
+    next();
+    return;
+  }
+
+  res.status(426).json({
+    code: 'HTTPS_REQUIRED',
+    message: 'HTTPS is required in production',
+  });
+}
+
+function isHttpsRequest(req: Request): boolean {
+  return req.secure || req.protocol === 'https';
 }
 
 bootstrap();

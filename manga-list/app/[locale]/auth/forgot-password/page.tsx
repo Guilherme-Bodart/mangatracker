@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
 
 type ForgotPasswordResponse = {
   success: boolean;
@@ -14,7 +15,6 @@ type ForgotPasswordResponse = {
 };
 
 export default function ForgotPasswordPage() {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [devResetUrl, setDevResetUrl] = useState<string | null>(null);
@@ -25,20 +25,14 @@ export default function ForgotPasswordPage() {
     setDevResetUrl(null);
 
     try {
-      const response = await fetch(`${API_URL}/auth/forgot-password`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const data = await apiRequest<ForgotPasswordResponse>(
+        "/auth/forgot-password",
+        {
+          method: "POST",
+          body: { email },
         },
-        credentials: "include",
-        body: JSON.stringify({ email }),
-      });
+      );
 
-      if (!response.ok) {
-        throw new Error("Could not request password reset");
-      }
-
-      const data = (await response.json()) as ForgotPasswordResponse;
       if (data.resetUrl) {
         setDevResetUrl(data.resetUrl);
       }
@@ -47,11 +41,7 @@ export default function ForgotPasswordPage() {
         "If this e-mail exists, a password reset link has been generated.",
       );
     } catch (error: unknown) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Could not request password reset",
-      );
+      toast.error(getApiErrorMessage(error, "Could not request password reset"));
     } finally {
       setIsLoading(false);
     }

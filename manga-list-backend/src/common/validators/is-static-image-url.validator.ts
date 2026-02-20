@@ -14,7 +14,10 @@ const ALWAYS_BLOCKED_EXTENSIONS = new Set([
   '.mkv',
 ]);
 
-function getExtensionFlags(value: string): { isGif: boolean; isAlwaysBlocked: boolean } {
+function getExtensionFlags(value: string): {
+  isGif: boolean;
+  isAlwaysBlocked: boolean;
+} {
   try {
     const parsed = new URL(value);
     const pathname = parsed.pathname.toLowerCase();

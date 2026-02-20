@@ -1,8 +1,10 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { createCsrfHeaders, ensureCsrfToken, setCsrfToken } from "@/lib/csrf";
+import { setCsrfToken } from "@/lib/csrf";
+import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
 import { useRouter } from "@/i18n/routing";
+import { logger } from "@/lib/logger";
 
 interface User {
   id: string;
@@ -37,31 +39,20 @@ export function AuthProvider({
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
   const refreshUser = React.useCallback(async (): Promise<User | null> => {
     try {
-      const response = await fetch(`${API_URL}/auth/me`, {
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        setUser(null);
-        return null;
-      }
-
-      const data = (await response.json()) as { user: User; csrfToken?: string };
-      if (data.csrfToken) {
-        setCsrfToken(data.csrfToken);
-      }
+      const data = await apiRequest<{ user: User; csrfToken?: string }>(
+        "/auth/me",
+      );
       setUser(data.user);
       return data.user;
     } catch (error) {
-      console.error("Failed to fetch user:", error);
+      logger.error("Failed to fetch user", error);
       setUser(null);
       return null;
     }
-  }, [API_URL]);
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -73,71 +64,48 @@ export function AuthProvider({
 
   const login = React.useCallback(
     async (email: string, password: string) => {
-      await ensureCsrfToken(API_URL);
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: "POST",
-        headers: createCsrfHeaders({
-          "Content-Type": "application/json",
-        }),
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Login failed");
-      }
-
-      const data = (await response.json()) as { user: User; csrfToken?: string };
-      if (data.csrfToken) {
-        setCsrfToken(data.csrfToken);
-      }
+      const data = await apiRequest<{ user: User; csrfToken?: string }>(
+        "/auth/login",
+        {
+          method: "POST",
+          csrf: "required",
+          body: { email, password },
+        },
+      );
       setUser(data.user);
     },
-    [API_URL],
+    [],
   );
 
   const register = React.useCallback(
     async (username: string, email: string, password: string) => {
-      await ensureCsrfToken(API_URL);
-      const response = await fetch(`${API_URL}/auth/register`, {
-        method: "POST",
-        headers: createCsrfHeaders({
-          "Content-Type": "application/json",
-        }),
-        credentials: "include",
-        body: JSON.stringify({ username, email, password }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Registration failed");
-      }
-
-      const data = (await response.json()) as { user: User; csrfToken?: string };
-      if (data.csrfToken) {
-        setCsrfToken(data.csrfToken);
-      }
+      const data = await apiRequest<{ user: User; csrfToken?: string }>(
+        "/auth/register",
+        {
+          method: "POST",
+          csrf: "required",
+          body: { username, email, password },
+        },
+      );
       setUser(data.user);
     },
-    [API_URL],
+    [],
   );
 
   const logout = React.useCallback(async () => {
     try {
-      await fetch(`${API_URL}/auth/logout`, {
+      await apiRequest("/auth/logout", {
         method: "POST",
-        headers: createCsrfHeaders(),
-        credentials: "include",
+        csrf: "if-present",
       });
     } catch (error) {
-      console.error("Logout request failed:", error);
+      logger.error("Logout request failed", getApiErrorMessage(error));
     } finally {
       setCsrfToken(null);
       setUser(null);
       router.replace("/auth/login");
     }
-  }, [API_URL, router]);
+  }, [router]);
 
   return (
     <AuthContext.Provider

@@ -76,7 +76,7 @@ describe('AuthController', () => {
         sameSite: 'lax',
       }),
     );
-    expect(result).toEqual({ user: { id: 'u1' } });
+    expect(result).toEqual({ user: { id: 'u1' }, csrfToken: 'csrf-token' });
   });
 
   it('should clear auth cookie on logout', async () => {

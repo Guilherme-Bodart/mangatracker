@@ -22,7 +22,7 @@ import {
 import { StarRating } from "@/components/ui/star-rating";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { createCsrfHeaders, ensureAuthenticatedCsrfToken } from "@/lib/csrf";
+import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
 
 type MangaListStatus = "READING" | "COMPLETED" | "PLAN_TO_READ" | "DROPPED";
 
@@ -108,11 +108,8 @@ export function AddMangaModal({
     }
 
     setIsLoading(true);
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     try {
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-      await ensureAuthenticatedCsrfToken(API_URL);
-
       const payload: {
         status: MangaListStatus;
         malId?: number;
@@ -133,29 +130,23 @@ export function AddMangaModal({
         payload.currentChapter = parseInt(formData.currentChapter);
       if (formData.notes) payload.notes = formData.notes;
 
+      if (mode === "edit" && !userMangaId) {
+        throw new Error("Missing manga entry id");
+      }
+
       const endpoint =
         mode === "add" ? "/manga/list" : `/manga/list/${userMangaId}`;
       const method = mode === "add" ? "POST" : "PATCH";
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      const response = await fetch(`${API_URL}${endpoint}`, {
+      await apiRequest(endpoint, {
         method,
-        headers: createCsrfHeaders({
-          "Content-Type": "application/json",
-        }),
-        credentials: "include",
-        body: JSON.stringify(payload),
+        csrf: "authenticated-required",
+        body: payload,
         signal: controller.signal,
       });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to save manga");
-      }
 
       toast.success(
         mode === "add" ? t("success") : "Manga updated successfully!",
@@ -166,9 +157,12 @@ export function AddMangaModal({
       if (error instanceof Error && error.name === "AbortError") {
         toast.error("Request timed out. Please try again.");
       } else {
-        toast.error(error instanceof Error ? error.message : t("error"));
+        toast.error(getApiErrorMessage(error, t("error")));
       }
     } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       setIsLoading(false);
     }
   };

@@ -11,16 +11,29 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { Cache } from 'cache-manager';
-import { randomBytes } from 'crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { MailService } from '../mail/mail.service';
+import { CACHE_TTL_MS } from '../cache/cache-ttl.constants';
+
+type ParsedOAuthState = {
+  nonce: string;
+  issuedAt: number;
+};
+
+type OAuthExchangePayload = {
+  userId: string;
+  contextHash: string;
+  stateNonce: string;
+};
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private readonly passwordHashRounds: number;
 
   constructor(
     private prisma: PrismaService,
@@ -28,7 +41,9 @@ export class AuthService {
     private configService: ConfigService,
     private mailService: MailService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-  ) {}
+  ) {
+    this.passwordHashRounds = this.resolvePasswordHashRounds();
+  }
 
   async register(registerDto: RegisterDto) {
     const { username, email, password } = registerDto;
@@ -50,7 +65,7 @@ export class AuthService {
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, this.passwordHashRounds);
 
     // Create user
     const user = await this.prisma.user.create({
@@ -264,7 +279,7 @@ export class AuthService {
         }
       }
 
-      hashedPassword = await bcrypt.hash(password, 10);
+      hashedPassword = await bcrypt.hash(password, this.passwordHashRounds);
     }
 
     // Update user
@@ -400,24 +415,93 @@ export class AuthService {
     };
   }
 
-  async createOAuthExchangeCode(userId: string): Promise<string> {
+  buildOAuthContextHash(sessionId: string, userAgent?: string): string {
+    const normalizedAgent = (userAgent ?? 'unknown').trim().toLowerCase();
+    return createHash('sha256')
+      .update(`${sessionId}|${normalizedAgent}`)
+      .digest('hex');
+  }
+
+  async createOAuthState(contextHash: string): Promise<string> {
+    const nonce = randomBytes(16).toString('hex');
+    const issuedAt = Date.now();
+    const unsigned = `${nonce}.${issuedAt}`;
+    const signature = this.signOAuthState(unsigned);
+    const state = `${unsigned}.${signature}`;
+
+    await this.cacheManager.set(
+      `oauth:state:${nonce}`,
+      contextHash,
+      CACHE_TTL_MS.OAUTH_STATE,
+    );
+
+    return state;
+  }
+
+  async validateAndConsumeOAuthState(
+    state: string,
+    expectedContextHash: string,
+  ): Promise<ParsedOAuthState> {
+    const parsedState = this.parseAndValidateOAuthState(state);
+    const cacheKey = `oauth:state:${parsedState.nonce}`;
+    const cachedContextHash = await this.cacheManager.get<string>(cacheKey);
+
+    if (!cachedContextHash) {
+      throw new UnauthorizedException('Invalid or expired oauth state');
+    }
+
+    await this.cacheManager.del(cacheKey);
+
+    if (cachedContextHash !== expectedContextHash) {
+      throw new UnauthorizedException('OAuth state context mismatch');
+    }
+
+    return parsedState;
+  }
+
+  async createOAuthExchangeCode(
+    userId: string,
+    contextHash: string,
+    stateNonce: string,
+  ): Promise<string> {
     const code = randomBytes(32).toString('hex');
-    await this.cacheManager.set(`oauth:code:${code}`, userId, 5 * 60 * 1000);
+    const payload: OAuthExchangePayload = {
+      userId,
+      contextHash,
+      stateNonce,
+    };
+
+    await this.cacheManager.set(
+      `oauth:code:${code}`,
+      payload,
+      CACHE_TTL_MS.OAUTH_EXCHANGE_CODE,
+    );
+
     return code;
   }
 
-  async exchangeOAuthCode(code: string) {
+  async exchangeOAuthCode(code: string, state: string, contextHash: string) {
+    const parsedState = this.parseAndValidateOAuthState(state);
     const cacheKey = `oauth:code:${code}`;
-    const userId = await this.cacheManager.get<string>(cacheKey);
+    const payload = await this.cacheManager.get<OAuthExchangePayload>(cacheKey);
 
-    if (!userId) {
+    if (!payload) {
       throw new UnauthorizedException('Invalid or expired exchange code');
     }
 
     await this.cacheManager.del(cacheKey);
-    const user = await this.getUserById(userId);
-    const tokenVersion = await this.getTokenVersion(userId);
-    const token = this.signToken(userId, tokenVersion);
+
+    if (payload.contextHash !== contextHash) {
+      throw new UnauthorizedException('OAuth exchange context mismatch');
+    }
+
+    if (payload.stateNonce !== parsedState.nonce) {
+      throw new UnauthorizedException('OAuth exchange state mismatch');
+    }
+
+    const user = await this.getUserById(payload.userId);
+    const tokenVersion = await this.getTokenVersion(payload.userId);
+    const token = this.signToken(payload.userId, tokenVersion);
 
     return {
       user,
@@ -434,7 +518,7 @@ export class AuthService {
     }
 
     const csrfToken = randomBytes(24).toString('hex');
-    await this.cacheManager.set(cacheKey, csrfToken, 24 * 60 * 60 * 1000);
+    await this.cacheManager.set(cacheKey, csrfToken, CACHE_TTL_MS.CSRF_TOKEN);
     return csrfToken;
   }
 
@@ -461,7 +545,11 @@ export class AuthService {
     }
 
     const csrfToken = randomBytes(24).toString('hex');
-    await this.cacheManager.set(cacheKey, csrfToken, 24 * 60 * 60 * 1000);
+    await this.cacheManager.set(
+      cacheKey,
+      csrfToken,
+      CACHE_TTL_MS.PRE_AUTH_CSRF_TOKEN,
+    );
     return { sessionId: effectiveSessionId, csrfToken };
   }
 
@@ -492,10 +580,11 @@ export class AuthService {
     }
 
     const token = randomBytes(32).toString('hex');
+    const cacheKey = this.buildPasswordResetCacheKey(token);
     await this.cacheManager.set(
-      `password-reset:${token}`,
+      cacheKey,
       user.id,
-      15 * 60 * 1000,
+      CACHE_TTL_MS.PASSWORD_RESET_TOKEN,
     );
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -513,7 +602,7 @@ export class AuthService {
   }
 
   async resetPassword(token: string, password: string) {
-    const cacheKey = `password-reset:${token}`;
+    const cacheKey = this.buildPasswordResetCacheKey(token);
     const userId = await this.cacheManager.get<string>(cacheKey);
 
     if (!userId) {
@@ -535,7 +624,7 @@ export class AuthService {
       );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, this.passwordHashRounds);
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
@@ -552,6 +641,65 @@ export class AuthService {
     return this.jwtService.sign({ sub: userId, tv: tokenVersion });
   }
 
+  private parseAndValidateOAuthState(state: string): ParsedOAuthState {
+    const parts = state.split('.');
+    if (parts.length !== 3) {
+      throw new UnauthorizedException('Invalid oauth state format');
+    }
+
+    const [nonce, issuedAtRaw, signature] = parts;
+    if (!/^[a-f0-9]{32}$/.test(nonce)) {
+      throw new UnauthorizedException('Invalid oauth state nonce');
+    }
+
+    if (!/^[a-f0-9]{64}$/.test(signature)) {
+      throw new UnauthorizedException('Invalid oauth state signature');
+    }
+
+    const issuedAt = Number.parseInt(issuedAtRaw, 10);
+    if (!Number.isFinite(issuedAt)) {
+      throw new UnauthorizedException('Invalid oauth state timestamp');
+    }
+
+    const now = Date.now();
+    const ageMs = now - issuedAt;
+    if (ageMs < -60_000 || ageMs > CACHE_TTL_MS.OAUTH_STATE) {
+      throw new UnauthorizedException('Expired oauth state');
+    }
+
+    const unsigned = `${nonce}.${issuedAtRaw}`;
+    const expectedSignature = this.signOAuthState(unsigned);
+
+    const receivedBuffer = Buffer.from(signature, 'hex');
+    const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+    if (
+      receivedBuffer.length !== expectedBuffer.length ||
+      !timingSafeEqual(receivedBuffer, expectedBuffer)
+    ) {
+      throw new UnauthorizedException('Invalid oauth state signature');
+    }
+
+    return { nonce, issuedAt };
+  }
+
+  private signOAuthState(value: string): string {
+    return createHmac('sha256', this.getOAuthStateSecret())
+      .update(value)
+      .digest('hex');
+  }
+
+  private getOAuthStateSecret(): string {
+    const secret =
+      this.configService.get<string>('OAUTH_STATE_SECRET') ??
+      this.configService.get<string>('JWT_SECRET');
+
+    if (!secret) {
+      throw new UnauthorizedException('OAuth state secret is not configured');
+    }
+
+    return secret;
+  }
+
   private async getTokenVersion(userId: string): Promise<number> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -561,5 +709,36 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
     return user.tokenVersion;
+  }
+
+  private resolvePasswordHashRounds(): number {
+    const raw = this.configService.get<string>('PASSWORD_HASH_ROUNDS');
+    const fallback = 12;
+
+    if (!raw?.trim()) {
+      return fallback;
+    }
+
+    const parsed = Number.parseInt(raw, 10);
+    if (!Number.isInteger(parsed) || parsed < 4) {
+      return fallback;
+    }
+
+    return parsed;
+  }
+
+  private buildPasswordResetCacheKey(token: string): string {
+    const secret =
+      this.configService.get<string>('PASSWORD_RESET_TOKEN_SECRET') ??
+      this.configService.get<string>('JWT_SECRET');
+    if (!secret) {
+      throw new BadRequestException('Password reset secret is not configured');
+    }
+
+    const digest = createHmac('sha256', secret)
+      .update(token.trim())
+      .digest('hex');
+
+    return `password-reset:${digest}`;
   }
 }

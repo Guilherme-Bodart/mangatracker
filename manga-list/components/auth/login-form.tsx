@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/contexts/auth-context";
+import { getApiUrl } from "@/lib/api-client";
 
 export function LoginForm() {
   const t = useTranslations("Auth.login");
@@ -145,9 +146,7 @@ export function LoginForm() {
         variant="outline"
         type="button"
         disabled={isLoading}
-        onClick={() =>
-          (window.location.href = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/auth/google`)
-        }
+        onClick={() => (window.location.href = getApiUrl("/auth/google/start"))}
         className="w-full h-11 bg-background/50 border-input/50 hover:bg-accent hover:text-accent-foreground transition-all duration-300 hover:-translate-y-0.5"
       >
         <Chrome className="mr-2 h-4 w-4" />

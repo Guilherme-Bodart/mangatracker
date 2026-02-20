@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,10 +18,14 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { User, Camera, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import { createCsrfHeaders, ensureAuthenticatedCsrfToken } from "@/lib/csrf";
+import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
+import {
+  buildProfileUpdatePayload,
+  hasPasswordMismatch,
+} from "@/lib/profile-update";
 
 export default function ProfilePage() {
-  const { user, isLoading: isAuthLoading } = useAuth();
+  const { user, refreshUser, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const t = useTranslations("Profile");
@@ -63,32 +67,13 @@ export default function ProfilePage() {
 
     try {
       // Validate password match if changing
-      if (
-        formData.newPassword &&
-        formData.newPassword !== formData.confirmPassword
-      ) {
+      if (hasPasswordMismatch(formData)) {
         toast.error(t("messages.passwordMismatch"));
         setIsLoading(false);
         return;
       }
 
-      const updateData: Record<string, string | boolean> = {};
-
-      // Only include changed fields
-      if (formData.username !== user.username)
-        updateData.username = formData.username;
-      if (formData.avatarUrl !== user.avatarUrl)
-        updateData.avatarUrl = formData.avatarUrl;
-      if (formData.bannerUrl !== user.bannerUrl)
-        updateData.bannerUrl = formData.bannerUrl;
-      if (formData.allowNsfw !== (user.allowNsfw || false))
-        updateData.allowNsfw = formData.allowNsfw;
-      if (formData.newPassword) {
-        updateData.password = formData.newPassword;
-        if (formData.currentPassword.trim()) {
-          updateData.currentPassword = formData.currentPassword;
-        }
-      }
+      const updateData = buildProfileUpdatePayload(formData, user);
 
       if (Object.keys(updateData).length === 0) {
         toast.info(t("messages.noChanges"));
@@ -96,24 +81,11 @@ export default function ProfilePage() {
         return;
       }
 
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-      await ensureAuthenticatedCsrfToken(API_URL);
-      const response = await fetch(`${API_URL}/auth/profile`, {
+      await apiRequest("/auth/profile", {
         method: "PATCH",
-        headers: createCsrfHeaders({
-          "Content-Type": "application/json",
-        }),
-        credentials: "include",
-        body: JSON.stringify(updateData),
+        csrf: "authenticated-required",
+        body: updateData,
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to update profile");
-      }
-
-      await response.json();
       toast.success(t("messages.success"));
 
       // Clear password fields
@@ -123,12 +95,9 @@ export default function ProfilePage() {
         newPassword: "",
         confirmPassword: "",
       }));
-
-      // Refresh page to get updated user data
-      window.location.reload();
+      await refreshUser();
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : t("messages.error");
+      const message = getApiErrorMessage(error, t("messages.error"));
       toast.error(message);
     } finally {
       setIsLoading(false);

@@ -25,6 +25,9 @@ import { AuthRateLimitGuard } from './guards/auth-rate-limit.guard';
 import { CsrfGuard } from './guards/csrf.guard';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { GoogleAuthGuard } from './guards/google-auth.guard';
+import { CACHE_TTL_MS } from '../cache/cache-ttl.constants';
+import { randomBytes } from 'crypto';
 
 type AuthenticatedUser = {
   id: string;
@@ -84,6 +87,18 @@ export class AuthController {
     });
   }
 
+  private setOAuthSessionCookie(res: Response, sessionId: string) {
+    const { secure, sameSite, domain } = this.getCookieOptions();
+    res.cookie('oauth_session', sessionId, {
+      httpOnly: true,
+      secure,
+      sameSite,
+      path: '/',
+      maxAge: CACHE_TTL_MS.OAUTH_STATE,
+      ...(domain ? { domain } : {}),
+    });
+  }
+
   private getCookieOptions() {
     const secure =
       this.configService.get<string>('COOKIE_SECURE') === 'true' ||
@@ -130,6 +145,17 @@ export class AuthController {
     });
   }
 
+  private clearOAuthSessionCookie(res: Response) {
+    const { secure, sameSite, domain } = this.getCookieOptions();
+    res.clearCookie('oauth_session', {
+      httpOnly: true,
+      secure,
+      sameSite,
+      path: '/',
+      ...(domain ? { domain } : {}),
+    });
+  }
+
   private readCookie(cookieHeader: string | undefined, name: string) {
     if (!cookieHeader) return null;
     const cookies = cookieHeader.split(';');
@@ -141,6 +167,19 @@ export class AuthController {
       }
     }
     return null;
+  }
+
+  private getOAuthContextHash(req: ExpressRequest): string {
+    const sessionId = this.readCookie(req.headers?.cookie, 'oauth_session');
+    if (!sessionId) {
+      throw new BadRequestException('Missing oauth session cookie');
+    }
+
+    const userAgent = req.headers['user-agent'];
+    return this.authService.buildOAuthContextHash(
+      sessionId,
+      typeof userAgent === 'string' ? userAgent : undefined,
+    );
   }
 
   private requireUser(req: RequestWithUser): AuthenticatedUser {
@@ -247,10 +286,17 @@ export class AuthController {
 
   @Post('exchange')
   async exchangeOAuthCode(
+    @Req() req: ExpressRequest,
     @Body() dto: OAuthExchangeDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.authService.exchangeOAuthCode(dto.code);
+    const contextHash = this.getOAuthContextHash(req);
+    const result = await this.authService.exchangeOAuthCode(
+      dto.code,
+      dto.state,
+      contextHash,
+    );
+    this.clearOAuthSessionCookie(res);
     this.setAuthCookie(res, result.token);
     const csrfToken = await this.authService.getOrCreateCsrfToken(
       result.user.id,
@@ -308,9 +354,24 @@ export class AuthController {
   }
 
   @Get('google')
-  @UseGuards(AuthGuard('google'))
+  @UseGuards(GoogleAuthGuard)
   async googleAuth() {
     // Initiates Google OAuth flow
+  }
+
+  @Get('google/start')
+  @UseGuards(AuthRateLimitGuard)
+  async googleAuthStart(@Req() req: ExpressRequest, @Res() res: Response) {
+    const sessionId = randomBytes(24).toString('hex');
+    const userAgent = req.headers['user-agent'];
+    const contextHash = this.authService.buildOAuthContextHash(
+      sessionId,
+      typeof userAgent === 'string' ? userAgent : undefined,
+    );
+    const state = await this.authService.createOAuthState(contextHash);
+
+    this.setOAuthSessionCookie(res, sessionId);
+    res.redirect(`/auth/google?state=${encodeURIComponent(state)}`);
   }
 
   @Get('google/callback')
@@ -330,12 +391,31 @@ export class AuthController {
     if (!req.user) {
       throw new BadRequestException('Google profile not found');
     }
+
+    const state =
+      typeof req.query.state === 'string' ? req.query.state : undefined;
+    if (!state) {
+      throw new BadRequestException('OAuth state not found');
+    }
+
+    const contextHash = this.getOAuthContextHash(req);
+    const parsedState = await this.authService.validateAndConsumeOAuthState(
+      state,
+      contextHash,
+    );
+
     // Validate Google user and mint a short-lived one-time exchange code
     const result = await this.authService.validateGoogleUser(req.user);
-    const code = await this.authService.createOAuthExchangeCode(result.user.id);
+    const code = await this.authService.createOAuthExchangeCode(
+      result.user.id,
+      contextHash,
+      parsedState.nonce,
+    );
 
     // Redirect to frontend with temporary code (never with JWT)
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-    res.redirect(`${frontendUrl}/auth/callback?code=${code}`);
+    res.redirect(
+      `${frontendUrl}/auth/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`,
+    );
   }
 }

@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from "@/lib/api-config";
+
 let csrfTokenMemory: string | null = null;
 
 export function getCookieValue(name: string): string | null {
@@ -34,7 +36,9 @@ export function createCsrfHeaders(
   };
 }
 
-export async function ensureCsrfToken(apiUrl: string): Promise<void> {
+export async function ensureCsrfToken(
+  apiUrl: string = getApiBaseUrl(),
+): Promise<void> {
   const url = `${apiUrl}/auth/csrf?_t=${Date.now()}`;
   const response = await fetch(url, {
     method: "GET",
@@ -49,7 +53,7 @@ export async function ensureCsrfToken(apiUrl: string): Promise<void> {
 }
 
 export async function ensureAuthenticatedCsrfToken(
-  apiUrl: string,
+  apiUrl: string = getApiBaseUrl(),
 ): Promise<void> {
   const url = `${apiUrl}/auth/me?_t=${Date.now()}`;
   const response = await fetch(url, {

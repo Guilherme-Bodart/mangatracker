@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
   let service: AuthService;
+  const cacheStore = new Map<string, unknown>();
 
   const prisma = {
     user: {
@@ -19,9 +20,13 @@ describe('AuthService', () => {
   };
 
   const cacheManager = {
-    get: jest.fn(),
-    set: jest.fn(),
-    del: jest.fn(),
+    get: jest.fn(async (key: string) => cacheStore.get(key)),
+    set: jest.fn(async (key: string, value: unknown) => {
+      cacheStore.set(key, value);
+    }),
+    del: jest.fn(async (key: string) => {
+      cacheStore.delete(key);
+    }),
   };
 
   const configService = {
@@ -34,6 +39,11 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    cacheStore.clear();
+    configService.get.mockImplementation((key: string) => {
+      if (key === 'JWT_SECRET') return 'test-jwt-secret';
+      return undefined;
+    });
     service = new AuthService(
       prisma as never,
       jwtService as never,
@@ -59,6 +69,44 @@ describe('AuthService', () => {
     expect(jwtService.sign).not.toHaveBeenCalled();
   });
 
+  it('should login without exposing password in response payload', async () => {
+    const password = 'StrongPass123';
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const createdAt = new Date();
+    const updatedAt = new Date();
+
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'u-login',
+      username: 'login-user',
+      email: 'login@example.com',
+      password: hashedPassword,
+      tokenVersion: 2,
+      allowNsfw: false,
+      createdAt,
+      updatedAt,
+    });
+    jwtService.sign.mockReturnValue('jwt-login-token');
+
+    const result = await service.login({
+      email: 'login@example.com',
+      password,
+    });
+
+    expect(jwtService.sign).toHaveBeenCalledWith({ sub: 'u-login', tv: 2 });
+    expect(result).toEqual({
+      user: {
+        id: 'u-login',
+        username: 'login-user',
+        email: 'login@example.com',
+        allowNsfw: false,
+        createdAt,
+        updatedAt,
+      },
+      token: 'jwt-login-token',
+    });
+    expect(result.user).not.toHaveProperty('password');
+  });
+
   it('should require current password when changing password for local account', async () => {
     const oldHash = await bcrypt.hash('old-password-123', 10);
     prisma.user.findUnique.mockResolvedValue({
@@ -72,16 +120,26 @@ describe('AuthService', () => {
   });
 
   it('should reject exchange code when code is invalid or expired', async () => {
-    cacheManager.get.mockResolvedValue(null);
+    const contextHash = service.buildOAuthContextHash('session-1', 'agent-a');
+    const state = await service.createOAuthState(contextHash);
 
-    await expect(service.exchangeOAuthCode('invalid-code')).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(
+      service.exchangeOAuthCode('invalid-code', state, contextHash),
+    ).rejects.toThrow(UnauthorizedException);
     expect(cacheManager.del).not.toHaveBeenCalled();
   });
 
   it('should exchange valid oauth code and return user + token', async () => {
-    cacheManager.get.mockResolvedValue('user-123');
+    const contextHash = service.buildOAuthContextHash('session-1', 'agent-a');
+    const state = await service.createOAuthState(contextHash);
+    const [stateNonce] = state.split('.');
+
+    await cacheManager.set('oauth:code:valid-code', {
+      userId: 'user-123',
+      contextHash,
+      stateNonce,
+    });
+
     prisma.user.findUnique.mockResolvedValue({
       id: 'user-123',
       username: 'guilh',
@@ -94,7 +152,11 @@ describe('AuthService', () => {
     });
     jwtService.sign.mockReturnValue('jwt-token');
 
-    const result = await service.exchangeOAuthCode('valid-code');
+    const result = await service.exchangeOAuthCode(
+      'valid-code',
+      state,
+      contextHash,
+    );
 
     expect(cacheManager.del).toHaveBeenCalledWith('oauth:code:valid-code');
     expect(jwtService.sign).toHaveBeenCalledWith({ sub: 'user-123', tv: 0 });
@@ -113,12 +175,54 @@ describe('AuthService', () => {
     });
   });
 
+  it('should reject oauth exchange when context hash does not match', async () => {
+    const contextHash = service.buildOAuthContextHash('session-1', 'agent-a');
+    const wrongContextHash = service.buildOAuthContextHash(
+      'session-2',
+      'agent-a',
+    );
+    const state = await service.createOAuthState(contextHash);
+    const [stateNonce] = state.split('.');
+
+    await cacheManager.set('oauth:code:valid-code', {
+      userId: 'user-123',
+      contextHash,
+      stateNonce,
+    });
+
+    await expect(
+      service.exchangeOAuthCode('valid-code', state, wrongContextHash),
+    ).rejects.toThrow('OAuth exchange context mismatch');
+  });
+
+  it('should consume oauth state and reject replay', async () => {
+    const contextHash = service.buildOAuthContextHash('session-1', 'agent-a');
+    const state = await service.createOAuthState(contextHash);
+
+    await expect(
+      service.validateAndConsumeOAuthState(state, contextHash),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        nonce: expect.any(String),
+        issuedAt: expect.any(Number),
+      }),
+    );
+
+    await expect(
+      service.validateAndConsumeOAuthState(state, contextHash),
+    ).rejects.toThrow('Invalid or expired oauth state');
+  });
+
   it('should create reset token for local account', async () => {
     prisma.user.findUnique.mockResolvedValue({
       id: 'u-reset',
       password: 'hashed-password',
     });
-    configService.get.mockReturnValue('true');
+    configService.get.mockImplementation((key: string) => {
+      if (key === 'PASSWORD_RESET_DEV_RESPONSE') return 'true';
+      if (key === 'JWT_SECRET') return 'test-jwt-secret';
+      return undefined;
+    });
     mailService.sendPasswordResetEmail.mockResolvedValue(undefined);
 
     const result = await service.requestPasswordReset('user@example.com');
@@ -126,6 +230,9 @@ describe('AuthService', () => {
     expect(result.success).toBe(true);
     expect(result.resetToken).toBeDefined();
     expect(cacheManager.set).toHaveBeenCalled();
+    const resetCacheKey = cacheManager.set.mock.calls[0][0] as string;
+    expect(resetCacheKey.startsWith('password-reset:')).toBe(true);
+    expect(resetCacheKey).not.toContain(result.resetToken as string);
     expect(mailService.sendPasswordResetEmail).toHaveBeenCalled();
   });
 

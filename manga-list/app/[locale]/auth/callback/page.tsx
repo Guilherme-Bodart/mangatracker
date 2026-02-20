@@ -1,22 +1,24 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { apiRequest } from "@/lib/api-client";
+import { useRouter } from "@/i18n/routing";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { refreshUser } = useAuth();
 
   useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
     const code = searchParams.get("code");
+    const state = searchParams.get("state");
 
-    if (!code) {
+    if (!code || !state) {
       toast.error("Authentication failed", {
-        description: "No authentication code received from server",
+        description: "Missing OAuth verification data",
       });
       router.push("/auth/login");
       return;
@@ -24,21 +26,10 @@ export default function AuthCallbackPage() {
 
     const exchangeCode = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-        const response = await fetch(`${API_URL}/auth/exchange`, {
+        await apiRequest("/auth/exchange", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({ code }),
+          body: { code, state },
         });
-
-        if (!response.ok) {
-          throw new Error("Failed to exchange authentication code");
-        }
-
-        await response.json();
         await refreshUser();
 
         toast.success("Login successful!", {
@@ -55,7 +46,7 @@ export default function AuthCallbackPage() {
     };
 
     exchangeCode();
-  }, [searchParams, router, refreshUser]);
+  }, [router, refreshUser]);
 
   return (
     <div className="flex h-screen w-full items-center justify-center">

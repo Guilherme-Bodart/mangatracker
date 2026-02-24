@@ -28,6 +28,7 @@ type MangaListStatus = "READING" | "COMPLETED" | "PLAN_TO_READ" | "DROPPED";
 
 interface Manga {
   mal_id: number;
+  anilist_id?: number;
   title: string;
   title_english?: string;
   images: {
@@ -113,6 +114,7 @@ export function AddMangaModal({
       const payload: {
         status: MangaListStatus;
         malId?: number;
+        anilistId?: number;
         rating?: number;
         currentChapter?: number;
         notes?: string;
@@ -122,6 +124,9 @@ export function AddMangaModal({
 
       if (mode === "add") {
         payload.malId = manga.mal_id;
+        if (typeof manga.anilist_id === "number") {
+          payload.anilistId = manga.anilist_id;
+        }
       }
 
       // Add optional fields

@@ -29,6 +29,9 @@ model User {
   bannerUrl     String?       // Profile banner/cover image URL
   allowNsfw     Boolean       @default(false) // Allow NSFW/adult content
   userMangas    UserManga[]
+  partnerConnections UserPartnerConnection[]
+  externalMangaMaps ExternalMangaMap[]
+  syncEvents    SyncEventLog[]
   likesGiven    ProfileLike[] @relation("ProfileLikesGiven")
   likesReceived ProfileLike[] @relation("ProfileLikesReceived")
   createdAt     DateTime      @default(now())
@@ -38,6 +41,7 @@ model User {
 model Manga {
   id            String      @id @default(uuid())
   malId         Int         @unique // MyAnimeList ID from Jikan
+  anilistId     Int?        @unique // AniList ID (optional, for multi-provider mapping)
   title         String
   coverImage    String?
   author        String?
@@ -49,6 +53,7 @@ model Manga {
   lastChapter   String?     // Latest chapter release (e.g. "1032")
   lastCheckedAt DateTime?   // Last time we checked for updates
   userMangas    UserManga[]
+  externalMangaMaps ExternalMangaMap[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 }
@@ -83,4 +88,67 @@ model ProfileLike {
 
   @@unique([likerId, likedUserId])
   @@index([likedUserId])
+}
+
+model IntegrationPartner {
+  id               String                  @id @default(uuid())
+  slug             String                  @unique
+  name             String
+  clientSecretHash String
+  allowedDomains   String[]                @default([])
+  isActive         Boolean                 @default(true)
+  connections      UserPartnerConnection[]
+  externalMangaMaps ExternalMangaMap[]
+  syncEvents       SyncEventLog[]
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+}
+
+model UserPartnerConnection {
+  id         String             @id @default(uuid())
+  userId     String
+  partnerId  String
+  isActive   Boolean            @default(true)
+  scopes     String[]           @default([])
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partner    IntegrationPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  @@unique([userId, partnerId])
+  @@index([partnerId])
+}
+
+model ExternalMangaMap {
+  id             String             @id @default(uuid())
+  userId         String
+  partnerId      String
+  externalMangaId String
+  mangaId        String
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partner        IntegrationPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  manga          Manga              @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@unique([userId, partnerId, externalMangaId])
+  @@index([userId, mangaId])
+  @@index([partnerId])
+}
+
+model SyncEventLog {
+  id              String             @id @default(uuid())
+  userId          String
+  partnerId       String
+  externalMangaId String
+  chapter         Int?
+  outcome         String
+  details         Json?
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partner         IntegrationPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  createdAt       DateTime           @default(now())
+
+  @@index([partnerId, createdAt])
+  @@index([userId, createdAt])
+  @@index([userId, partnerId, externalMangaId])
 }

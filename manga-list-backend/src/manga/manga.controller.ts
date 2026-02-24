@@ -50,6 +50,7 @@ export class MangaController {
       query.genresMode,
       query.type,
       query.allowNsfw,
+      query.provider,
     );
   }
 

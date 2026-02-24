@@ -25,8 +25,11 @@ export class MangaDexService {
     title: string,
   ): Promise<MangaDexSearchResult | null> {
     try {
-      // Clean title for search (remove special chars potentially)
-      const cleanTitle = encodeURIComponent(title);
+      const normalizedTitle = this.normalizeSearchTitle(title);
+      if (!normalizedTitle) {
+        return null;
+      }
+      const cleanTitle = encodeURIComponent(normalizedTitle);
 
       const searchUrl = `${this.BASE_URL}/manga?title=${cleanTitle}&limit=5&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&order[relevance]=desc`;
 
@@ -72,6 +75,39 @@ export class MangaDexService {
         `Failed to fetch descriptions: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
       return { en: null, pt: null };
+    }
+  }
+
+  async getCoverImageUrl(mangaDexId: string): Promise<string | null> {
+    try {
+      const data = await this.fetchJsonWithRetry<{
+        data?: {
+          relationships?: Array<{
+            type?: string;
+            attributes?: {
+              fileName?: string;
+            };
+          }>;
+        };
+      }>(`${this.BASE_URL}/manga/${mangaDexId}?includes[]=cover_art`);
+
+      const coverRelation = data?.data?.relationships?.find(
+        (relationship) =>
+          relationship?.type === 'cover_art' &&
+          !!relationship?.attributes?.fileName,
+      );
+
+      const fileName = coverRelation?.attributes?.fileName;
+      if (!fileName) {
+        return null;
+      }
+
+      return `https://uploads.mangadex.org/covers/${mangaDexId}/${fileName}`;
+    } catch (error: unknown) {
+      this.logger.warn(
+        `Failed to fetch cover image for ${mangaDexId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      return null;
     }
   }
 
@@ -162,5 +198,13 @@ export class MangaDexService {
 
   private async fetchJsonWithRetry<T>(url: string): Promise<T | null> {
     return this.externalApiClient.fetchJsonWithRetry<T>(url, 'mangadex');
+  }
+
+  private normalizeSearchTitle(value: string): string {
+    return value
+      .replace(/\s*[-|]\s*(mangalivre|manga livre)\s*$/i, '')
+      .replace(/\s*[-|]\s*cap[ií]tulo\s+\d+.*$/i, '')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 }

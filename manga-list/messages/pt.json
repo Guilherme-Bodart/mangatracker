@@ -105,6 +105,11 @@
   },
   "Browse": {
     "title": "Explorar Mang\u00e1s",
+    "provider": "Provedor",
+    "providers": {
+      "jikan": "MyAnimeList (Jikan)",
+      "anilist": "AniList"
+    },
     "search": "Pesquisar mang\u00e1s...",
     "searchPlaceholder": "Digite o nome do mang\u00e1",
     "filters": "Filtros",
@@ -123,6 +128,7 @@
     },
     "filterMode": "Modo de Filtro",
     "addToList": "Adicionar \u00e0 Lista",
+    "alreadyInList": "J\u00e1 est\u00e1 na lista",
     "previous": "Anterior",
     "next": "Pr\u00f3xima",
     "page": "P\u00e1gina",
@@ -198,7 +204,9 @@
     "actions": {
       "cancel": "Cancelar",
       "save": "Salvar Altera\u00e7\u00f5es",
-      "saving": "Salvando..."
+      "saving": "Salvando...",
+      "integrations": "Integrações",
+      "integrationsAdmin": "Admin Integrações"
     },
     "messages": {
       "noChanges": "Nenhuma altera\u00e7\u00e3o para salvar",
@@ -207,8 +215,93 @@
       "error": "Erro ao atualizar perfil"
     }
   },
+  "ProfileIntegrations": {
+    "title": "Integrações",
+    "subtitle": "Conecte sua conta com parceiros externos. O parceiro usa o código abaixo para concluir o vínculo e receber token de escrita.",
+    "connectCard": {
+      "title": "Gerar código de conexão",
+      "partnerLabel": "Parceiro",
+      "partnerPlaceholder": "Selecione um parceiro",
+      "sourceDomainLabel": "Domínio de origem (opcional)",
+      "sourceDomainPlaceholder": "site-parceiro.com",
+      "allowedDomainsPrefix": "Domínios permitidos:",
+      "generating": "Gerando...",
+      "generateButton": "Gerar código"
+    },
+    "codeCard": {
+      "title": "Código gerado",
+      "expiresInfo": "Expira em {minutes} minutos. Compartilhe este código com o parceiro para concluir o vínculo.",
+      "copyButton": "Copiar código"
+    },
+    "messages": {
+      "loadPartnersError": "Falha ao carregar parceiros",
+      "selectPartnerError": "Selecione um parceiro",
+      "codeGeneratedSuccess": "Código gerado com sucesso",
+      "generateCodeError": "Falha ao gerar código",
+      "codeCopiedSuccess": "Código copiado",
+      "codeCopyError": "Não foi possível copiar o código"
+    }
+  },
+  "ProfileIntegrationsAdmin": {
+    "title": "Admin de Integrações",
+    "subtitle": "Gerencie parceiros allowlist, rotacao de segredo e conexoes ativas.",
+    "createCard": {
+      "title": "Criar parceiro",
+      "slugLabel": "Slug",
+      "slugPlaceholder": "site-a",
+      "nameLabel": "Nome",
+      "namePlaceholder": "Site A",
+      "allowedDomainsLabel": "Domínios permitidos (CSV)",
+      "allowedDomainsPlaceholder": "site-a.com,app.site-a.com",
+      "activeLabel": "Parceiro ativo",
+      "submitButton": "Criar parceiro"
+    },
+    "secretCard": {
+      "title": "Client Secret gerado",
+      "description": "Armazene com segurança. Esse valor não é recuperável depois."
+    },
+    "partners": {
+      "title": "Parceiros",
+      "domainsLabel": "Domínios:",
+      "noDomainRestriction": "sem restrição",
+      "statusLabel": "Status:",
+      "statusActive": "ativo",
+      "statusInactive": "inativo",
+      "activateButton": "Ativar",
+      "deactivateButton": "Desativar",
+      "rotateSecretButton": "Rotacionar secret",
+      "empty": "Nenhum parceiro cadastrado."
+    },
+    "connections": {
+      "title": "Conexões",
+      "allPartners": "Todos",
+      "filterPlaceholder": "Filtrar por slug",
+      "filterButton": "Filtrar",
+      "partnerLabel": "Parceiro:",
+      "scopesLabel": "Scopes:",
+      "noScope": "sem scope",
+      "statusLabel": "Status:",
+      "statusActive": "ativo",
+      "statusRevoked": "revogado",
+      "revokeButton": "Revogar",
+      "empty": "Nenhuma conexão encontrada."
+    },
+    "messages": {
+      "loadDataError": "Falha ao carregar dados admin de integrações",
+      "partnerCreatedSuccess": "Parceiro criado com sucesso",
+      "createPartnerError": "Falha ao criar parceiro",
+      "partnerStatusUpdatedSuccess": "Status do parceiro atualizado",
+      "updatePartnerError": "Falha ao atualizar parceiro",
+      "secretRotatedSuccess": "Secret rotacionado para {slug}",
+      "rotateSecretError": "Falha ao rotacionar secret",
+      "connectionRevokedSuccess": "Conexão revogada",
+      "revokeConnectionError": "Falha ao revogar conexão"
+    }
+  },
   "MyTrack": {
     "title": "Adicionar Manga",
+    "heading": "Meus Mang\u00e1s",
+    "syncDisclaimer": "Cap\u00edtulos podem n\u00e3o refletir 100% o estado real em todos os t\u00edtulos.",
     "empty": "Sua lista est\u00e1 vazia",
     "addFirst": "Adicione seu primeiro mang\u00e1!",
     "browseManga": "Explorar Mang\u00e1s",

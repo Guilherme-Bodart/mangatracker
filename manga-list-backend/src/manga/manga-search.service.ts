@@ -3,10 +3,56 @@ import { Cache } from 'cache-manager';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { ExternalApiHttpClient } from '../common/http/external-api-client';
 import { JikanMangaSearchResult, JikanSearchResponse } from './dto/manga.dto';
+import { MangaSearchProvider } from './dto/search-manga-query.dto';
+
+type AniListMedia = {
+  id: number;
+  idMal: number | null;
+  title?: {
+    romaji?: string | null;
+    english?: string | null;
+    native?: string | null;
+  } | null;
+  coverImage?: {
+    large?: string | null;
+    medium?: string | null;
+  } | null;
+  genres?: string[] | null;
+  averageScore?: number | null;
+  chapters?: number | null;
+  description?: string | null;
+  status?: string | null;
+};
+
+type AniListSearchResponse = {
+  data?: {
+    Page?: {
+      pageInfo?: {
+        currentPage: number;
+        hasNextPage: boolean;
+        lastPage: number;
+      };
+      media?: AniListMedia[];
+    };
+  };
+};
 
 @Injectable()
 export class MangaSearchService {
   private readonly JIKAN_BASE_URL = 'https://api.jikan.moe/v4';
+  private readonly ANILIST_GRAPHQL_URL = 'https://graphql.anilist.co';
+  private readonly MAL_TO_ANILIST_GENRE: Record<number, string> = {
+    1: 'Action',
+    2: 'Adventure',
+    4: 'Comedy',
+    8: 'Drama',
+    10: 'Fantasy',
+    14: 'Horror',
+    22: 'Romance',
+    24: 'Sci-Fi',
+    36: 'Slice of Life',
+    37: 'Supernatural',
+  };
 
   constructor(
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
@@ -20,14 +66,28 @@ export class MangaSearchService {
     genresMode: 'AND' | 'OR' = 'OR',
     type?: string,
     allowNsfw: boolean = false,
+    provider: MangaSearchProvider = MangaSearchProvider.JIKAN,
   ): Promise<JikanSearchResponse> {
-    const cacheKey = `search:${query}:${page}:${genres}:${genresMode}:${type}:${allowNsfw}`;
+    const cacheKey = `search:${provider}:${query}:${page}:${genres}:${genresMode}:${type}:${allowNsfw}`;
     const selectedGenreIds = this.parseGenreIds(genres);
     const cachedResult =
       await this.cacheManager.get<JikanSearchResponse>(cacheKey);
 
     if (cachedResult) {
       return cachedResult;
+    }
+
+    if (provider === MangaSearchProvider.ANILIST) {
+      const result = await this.searchAniListManga(
+        query,
+        page,
+        type,
+        selectedGenreIds,
+        genresMode,
+        allowNsfw,
+      );
+      await this.cacheManager.set(cacheKey, result, 60 * 60 * 24 * 1000);
+      return result;
     }
 
     try {
@@ -187,5 +247,180 @@ export class MangaSearchService {
 
   private async fetchWithRetry(url: string): Promise<Response> {
     return this.externalApiClient.fetchWithRetry(url, 'jikan');
+  }
+
+  private async searchAniListManga(
+    query: string,
+    page: number,
+    type?: string,
+    selectedGenreIds: number[] = [],
+    genresMode: 'AND' | 'OR' = 'OR',
+    allowNsfw: boolean = false,
+  ): Promise<JikanSearchResponse> {
+    const typeFilter = this.mapAniListTypeFilter(type);
+    const selectedAniListGenres = selectedGenreIds
+      .map((id) => this.MAL_TO_ANILIST_GENRE[id])
+      .filter((genre): genre is string => !!genre);
+    const graphqlQuery = `
+      query (
+        $page: Int!,
+        $perPage: Int!,
+        $search: String,
+        $format: MediaFormat,
+        $countryOfOrigin: CountryCode,
+        $genreIn: [String],
+        $isAdult: Boolean
+      ) {
+        Page(page: $page, perPage: $perPage) {
+          pageInfo {
+            currentPage
+            hasNextPage
+            lastPage
+          }
+          media(
+            type: MANGA
+            search: $search
+            format: $format
+            countryOfOrigin: $countryOfOrigin
+            genre_in: $genreIn
+            isAdult: $isAdult
+            sort: POPULARITY_DESC
+          ) {
+            id
+            idMal
+            title {
+              romaji
+              english
+              native
+            }
+            coverImage {
+              large
+              medium
+            }
+            genres
+            averageScore
+            chapters
+            description(asHtml: false)
+            status
+          }
+        }
+      }
+    `;
+
+    const payload = {
+      query: graphqlQuery,
+      variables: {
+        page,
+        perPage: 20,
+        search: query?.trim() || undefined,
+        format: typeFilter.format,
+        countryOfOrigin: typeFilter.countryOfOrigin,
+        genreIn:
+          selectedAniListGenres.length > 0 ? selectedAniListGenres : undefined,
+        isAdult: allowNsfw ? undefined : false,
+      },
+    };
+
+    const response = await fetch(this.ANILIST_GRAPHQL_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new HttpException(
+        'Failed to search manga',
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
+
+    const data = (await response.json()) as AniListSearchResponse;
+    const media = data.data?.Page?.media ?? [];
+    const pageInfo = data.data?.Page?.pageInfo;
+
+    let mappedData: JikanMangaSearchResult[] = media.map((item) => {
+      const title =
+        item.title?.english?.trim() ||
+        item.title?.romaji?.trim() ||
+        item.title?.native?.trim() ||
+        'Unknown title';
+      const titleEnglish =
+        item.title?.english?.trim() || item.title?.romaji?.trim() || undefined;
+      const coverImage =
+        item.coverImage?.large?.trim() ||
+        item.coverImage?.medium?.trim() ||
+        '';
+
+      return {
+        mal_id: item.idMal ?? -item.id,
+        anilist_id: item.id,
+        provider: 'anilist',
+        title,
+        title_english: titleEnglish,
+        images: {
+          jpg: {
+            image_url: coverImage,
+            large_image_url: coverImage,
+          },
+        },
+        genres: (item.genres ?? []).map((genreName, index) => ({
+          mal_id: index + 1,
+          name: genreName,
+        })),
+        chapters: item.chapters ?? undefined,
+        synopsis: item.description ?? undefined,
+        score:
+          typeof item.averageScore === 'number'
+            ? Number((item.averageScore / 10).toFixed(2))
+            : undefined,
+      };
+    });
+
+    if (selectedAniListGenres.length > 0 && genresMode === 'AND') {
+      mappedData = mappedData.filter((item) => {
+        const names = new Set((item.genres ?? []).map((genre) => genre.name));
+        return selectedAniListGenres.every((genreName) => names.has(genreName));
+      });
+    }
+
+    return {
+      data: mappedData,
+      pagination: {
+        has_next_page: pageInfo?.hasNextPage ?? false,
+        current_page: pageInfo?.currentPage ?? page,
+        last_visible_page: pageInfo?.lastPage ?? page,
+      },
+    };
+  }
+
+  private mapAniListTypeFilter(type?: string): {
+    format?: 'MANGA' | 'NOVEL' | 'ONE_SHOT';
+    countryOfOrigin?: 'JP' | 'KR' | 'CN';
+  } {
+    const normalized = type?.trim().toLowerCase();
+    if (!normalized || normalized === 'all') {
+      return {};
+    }
+
+    if (normalized === 'novel') {
+      return { format: 'NOVEL' };
+    }
+    if (normalized === 'oneshot') {
+      return { format: 'ONE_SHOT' };
+    }
+    if (normalized === 'manga') {
+      return { countryOfOrigin: 'JP' };
+    }
+    if (normalized === 'manhwa') {
+      return { countryOfOrigin: 'KR' };
+    }
+    if (normalized === 'manhua') {
+      return { countryOfOrigin: 'CN' };
+    }
+
+    return {};
   }
 }

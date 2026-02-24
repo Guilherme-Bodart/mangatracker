@@ -12,6 +12,8 @@ import {
 
 export interface JikanMangaSearchResult {
   mal_id: number;
+  anilist_id?: number;
+  provider?: 'jikan' | 'anilist';
   title: string;
   title_english?: string;
   images: {
@@ -55,9 +57,14 @@ export enum MangaListStatus {
 }
 
 export class AddMangaToListDto {
+  @IsOptional()
+  @IsInt()
+  malId?: number;
+
+  @IsOptional()
   @IsInt()
   @Min(1)
-  malId!: number;
+  anilistId?: number;
 
   @IsEnum(MangaListStatus)
   status!: MangaListStatus;

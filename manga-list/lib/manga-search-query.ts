@@ -1,4 +1,5 @@
 export type GenreMode = "OR" | "AND";
+export type BrowseProvider = "jikan" | "anilist";
 
 export type BuildBrowseMangaEndpointInput = {
   allowNsfw: boolean;
@@ -7,6 +8,7 @@ export type BuildBrowseMangaEndpointInput = {
   genreMode: GenreMode;
   selectedType: string;
   page: number;
+  provider: BrowseProvider;
 };
 
 function shouldSkipSearch(query: string): boolean {
@@ -29,11 +31,19 @@ export function buildBrowseMangaEndpoint(
   if (query) {
     endpoint = "/manga/search";
     queryParams.set("q", query);
-  } else if (input.selectedGenres.length === 0 && input.selectedType === "all") {
+  } else if (
+    input.provider === "jikan" &&
+    input.selectedGenres.length === 0 &&
+    input.selectedType === "all"
+  ) {
     endpoint = "/manga/top";
   } else {
     endpoint = "/manga/search";
     queryParams.set("q", "");
+  }
+
+  if (endpoint === "/manga/search") {
+    queryParams.set("provider", input.provider);
   }
 
   if (input.selectedType && input.selectedType !== "all") {

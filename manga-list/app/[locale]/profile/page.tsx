@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "@/i18n/routing";
+import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -109,16 +110,26 @@ export default function ProfilePage() {
       {/* Header with Public Profile Button */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">{t("title")}</h1>
-        <Button variant="outline" asChild className="flex items-center gap-2">
-          <a
-            href={`/user/${user.username}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Eye className="size-4" />
-            {t("viewPublic")}
-          </a>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/profile/integrations">{t("actions.integrations")}</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/profile/integrations-admin">
+              {t("actions.integrationsAdmin")}
+            </Link>
+          </Button>
+          <Button variant="outline" asChild className="flex items-center gap-2">
+            <a
+              href={`/user/${user.username}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Eye className="size-4" />
+              {t("viewPublic")}
+            </a>
+          </Button>
+        </div>
       </div>
       <p className="text-muted-foreground">{t("subtitle")}</p>
 

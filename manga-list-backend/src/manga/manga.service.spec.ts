@@ -43,6 +43,9 @@ describe('MangaService', () => {
     getDescriptions: jest.fn(),
     getLatestChapters: jest.fn(),
   };
+  const mangaUpdatesService = {
+    getLatestChaptersByTitle: jest.fn(),
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -68,6 +71,7 @@ describe('MangaService', () => {
       prisma as never,
       cacheManager as never,
       mangaDexService as never,
+      mangaUpdatesService as never,
     );
     service = new MangaService(
       mangaSearchService,
@@ -270,6 +274,7 @@ describe('MangaService', () => {
         prisma as never,
         cacheManager as never,
         mangaDexService as never,
+        mangaUpdatesService as never,
       );
       service = new MangaService(
         mangaSearchService,

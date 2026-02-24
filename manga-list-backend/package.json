@@ -23,6 +23,7 @@
     "typecheck:strict:auth": "tsc -p tsconfig.strict-auth.json",
     "typecheck:strict:manga": "tsc -p tsconfig.strict-manga.json",
     "typecheck:strict:core": "tsc -p tsconfig.strict-core.json",
+    "tasks:run": "ts-node -r tsconfig-paths/register src/tasks/run-manual.ts",
     "security:audit": "pnpm audit --audit-level=critical",
     "security:audit:high": "pnpm audit --audit-level=high"
   },

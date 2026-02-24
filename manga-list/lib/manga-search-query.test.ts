@@ -11,6 +11,7 @@ describe("buildBrowseMangaEndpoint", () => {
       genreMode: "OR",
       selectedType: "all",
       page: 1,
+      provider: "jikan",
     });
 
     expect(endpoint).toBeNull();
@@ -24,6 +25,7 @@ describe("buildBrowseMangaEndpoint", () => {
       genreMode: "OR",
       selectedType: "all",
       page: 2,
+      provider: "jikan",
     });
 
     expect(endpoint).toBe("/manga/top?page=2&allowNsfw=true");
@@ -37,10 +39,11 @@ describe("buildBrowseMangaEndpoint", () => {
       genreMode: "AND",
       selectedType: "manga",
       page: 3,
+      provider: "jikan",
     });
 
     expect(endpoint).toBe(
-      "/manga/search?page=3&allowNsfw=false&q=berserk&type=manga&genres=1%2C2&genresMode=AND",
+      "/manga/search?page=3&allowNsfw=false&q=berserk&provider=jikan&type=manga&genres=1%2C2&genresMode=AND",
     );
   });
 
@@ -52,10 +55,27 @@ describe("buildBrowseMangaEndpoint", () => {
       genreMode: "OR",
       selectedType: "all",
       page: 1,
+      provider: "jikan",
     });
 
     expect(endpoint).toBe(
-      "/manga/search?page=1&allowNsfw=false&q=&genres=10&genresMode=OR",
+      "/manga/search?page=1&allowNsfw=false&q=&provider=jikan&genres=10&genresMode=OR",
+    );
+  });
+
+  it("uses AniList provider on search endpoint with genre filters", () => {
+    const endpoint = buildBrowseMangaEndpoint({
+      allowNsfw: false,
+      debouncedSearch: "magic emperor",
+      selectedGenres: [1, 2],
+      genreMode: "AND",
+      selectedType: "manhwa",
+      page: 1,
+      provider: "anilist",
+    });
+
+    expect(endpoint).toBe(
+      "/manga/search?page=1&allowNsfw=false&q=magic+emperor&provider=anilist&type=manhwa&genres=1%2C2&genresMode=AND",
     );
   });
 });

@@ -49,10 +49,41 @@ async function bootstrap() {
         .filter((origin): origin is string => !!origin),
     ),
   );
+  const extensionOrigins = Array.from(
+    new Set(
+      (process.env.EXTENSION_ORIGINS || '')
+        .split(',')
+        .map((origin) => normalizeOrigin(origin.trim()))
+        .filter((origin): origin is string => !!origin),
+    ),
+  );
+  const allowAnyExtensionOrigin =
+    process.env.ALLOW_ANY_EXTENSION_ORIGIN === 'true';
 
-  // Enable CORS for frontend
+  // Enable CORS for frontend and extension origins
   app.enableCors({
-    origin: frontendOrigins,
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      const normalizedOrigin = normalizeOrigin(origin);
+      if (!normalizedOrigin) {
+        callback(null, false);
+        return;
+      }
+
+      const isExtensionOrigin =
+        normalizedOrigin.startsWith('chrome-extension://') ||
+        normalizedOrigin.startsWith('moz-extension://');
+      const isAllowed =
+        frontendOrigins.includes(normalizedOrigin) ||
+        extensionOrigins.includes(normalizedOrigin) ||
+        (allowAnyExtensionOrigin && isExtensionOrigin);
+
+      callback(null, isAllowed);
+    },
     credentials: true,
     allowedHeaders: [
       'Content-Type',
@@ -61,6 +92,7 @@ async function bootstrap() {
       'Accept-Language',
       'Accept-Encoding',
       'x-csrf-token',
+      'x-idempotency-key',
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
@@ -137,8 +169,15 @@ function validateProductionConfig(): void {
 
 function normalizeOrigin(origin: string): string | null {
   if (!origin) return null;
+  const trimmed = origin.trim();
+  if (
+    trimmed.toLowerCase().startsWith('chrome-extension://') ||
+    trimmed.toLowerCase().startsWith('moz-extension://')
+  ) {
+    return trimmed.replace(/\/+$/, '').toLowerCase();
+  }
   try {
-    const parsed = new URL(origin);
+    const parsed = new URL(trimmed);
     return parsed.origin;
   } catch {
     return null;

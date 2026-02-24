@@ -9,9 +9,16 @@ import { MangaSearchService } from './manga-search.service';
 import { MangaListService } from './manga-list.service';
 import { MangaChaptersService } from './manga-chapters.service';
 import { ExternalApiHttpModule } from '../common/http/external-api-http.module';
+import { MangaUpdatesModule } from '../mangaupdates/mangaupdates.module';
 
 @Module({
-  imports: [PrismaModule, MangaDexModule, AuthModule, ExternalApiHttpModule],
+  imports: [
+    PrismaModule,
+    MangaDexModule,
+    MangaUpdatesModule,
+    AuthModule,
+    ExternalApiHttpModule,
+  ],
   controllers: [MangaController],
   providers: [
     MangaService,

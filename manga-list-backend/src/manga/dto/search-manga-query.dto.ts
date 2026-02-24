@@ -14,6 +14,11 @@ export enum MangaGenresMode {
   OR = 'OR',
 }
 
+export enum MangaSearchProvider {
+  JIKAN = 'jikan',
+  ANILIST = 'anilist',
+}
+
 function parseBooleanQuery(value: unknown): unknown {
   if (typeof value === 'boolean') return value;
   if (typeof value !== 'string') return value;
@@ -69,4 +74,13 @@ export class SearchMangaQueryDto {
   @Transform(({ value }) => parseBooleanQuery(value))
   @IsBoolean({ message: 'allowNsfw must be a boolean' })
   allowNsfw = false;
+
+  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
+  @IsEnum(MangaSearchProvider, {
+    message: 'provider must be jikan or anilist',
+  })
+  provider: MangaSearchProvider = MangaSearchProvider.JIKAN;
 }

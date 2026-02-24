@@ -19,10 +19,32 @@ type JikanMangaDetails = {
   genres?: Array<{ name: string }>;
 };
 
+type AniListMangaDetails = {
+  id: number;
+  idMal: number | null;
+  title?: {
+    romaji?: string | null;
+    english?: string | null;
+    native?: string | null;
+  } | null;
+  coverImage?: {
+    large?: string | null;
+    medium?: string | null;
+  } | null;
+  genres?: string[] | null;
+  chapters?: number | null;
+  description?: string | null;
+  status?: string | null;
+  staff?: {
+    nodes?: Array<{ name?: { full?: string | null } | null }> | null;
+  } | null;
+};
+
 @Injectable()
 export class MangaListService {
   private readonly logger = new Logger(MangaListService.name);
   private readonly JIKAN_BASE_URL = 'https://api.jikan.moe/v4';
+  private readonly ANILIST_GRAPHQL_URL = 'https://graphql.anilist.co';
 
   constructor(
     private readonly prisma: PrismaService,
@@ -142,9 +164,30 @@ export class MangaListService {
   }
 
   async addMangaToList(userId: string, addMangaDto: AddMangaToListDto) {
-    const { malId, status, rating, currentChapter, notes, isFavorite } =
+    const {
+      malId,
+      anilistId,
+      status,
+      rating,
+      currentChapter,
+      notes,
+      isFavorite,
+    } =
       addMangaDto;
-    const manga = await this.getMangaDetails(malId);
+    if (malId === undefined && anilistId === undefined) {
+      throw new HttpException(
+        'malId or anilistId is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    let manga = null;
+
+    if (typeof malId === 'number' && malId > 0) {
+      manga = await this.getMangaDetails(malId);
+    } else if (typeof anilistId === 'number' && anilistId > 0) {
+      manga = await this.getOrCreateMangaFromAniList(anilistId, malId);
+    }
 
     if (!manga) {
       throw new HttpException(
@@ -293,5 +336,164 @@ export class MangaListService {
 
   private async fetchWithRetry(url: string): Promise<Response> {
     return this.externalApiClient.fetchWithRetry(url, 'jikan');
+  }
+
+  private async getOrCreateMangaFromAniList(
+    anilistId: number,
+    fallbackMalId?: number,
+  ) {
+    const existingByAniListId = await this.prisma.manga.findUnique({
+      where: { anilistId },
+    });
+    if (existingByAniListId) {
+      return existingByAniListId;
+    }
+
+    const anilistData = await this.fetchAniListMangaById(anilistId);
+    if (!anilistData) {
+      return null;
+    }
+
+    const title =
+      anilistData.title?.english?.trim() ||
+      anilistData.title?.romaji?.trim() ||
+      anilistData.title?.native?.trim() ||
+      null;
+    if (!title) {
+      return null;
+    }
+
+    const resolvedMalId = await this.resolveUniqueMalId(
+      anilistData.idMal,
+      fallbackMalId,
+    );
+
+    const existingByMalId = await this.prisma.manga.findUnique({
+      where: { malId: resolvedMalId },
+    });
+    if (existingByMalId) {
+      if (!existingByMalId.anilistId) {
+        return this.prisma.manga.update({
+          where: { id: existingByMalId.id },
+          data: { anilistId },
+        });
+      }
+      return existingByMalId;
+    }
+
+    return this.prisma.manga.create({
+      data: {
+        malId: resolvedMalId,
+        anilistId,
+        title,
+        coverImage:
+          anilistData.coverImage?.large ||
+          anilistData.coverImage?.medium ||
+          null,
+        author: anilistData.staff?.nodes?.[0]?.name?.full || null,
+        genres: anilistData.genres ?? [],
+        totalChapters: anilistData.chapters ?? null,
+        description: anilistData.description ?? null,
+        publicationStatus: this.mapAniListStatus(anilistData.status),
+      },
+    });
+  }
+
+  private async fetchAniListMangaById(
+    anilistId: number,
+  ): Promise<AniListMangaDetails | null> {
+    const query = `
+      query ($id: Int!) {
+        Media(id: $id, type: MANGA) {
+          id
+          idMal
+          title {
+            romaji
+            english
+            native
+          }
+          coverImage {
+            large
+            medium
+          }
+          genres
+          chapters
+          description(asHtml: false)
+          status
+          staff {
+            nodes {
+              name {
+                full
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch(this.ANILIST_GRAPHQL_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        query,
+        variables: { id: anilistId },
+      }),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json()) as {
+      data?: { Media?: AniListMangaDetails | null };
+    };
+    return payload.data?.Media ?? null;
+  }
+
+  private async resolveUniqueMalId(
+    anilistMalId: number | null,
+    fallbackMalId: number | undefined,
+  ): Promise<number> {
+    const preferred = [
+      anilistMalId ?? undefined,
+      typeof fallbackMalId === 'number' ? fallbackMalId : undefined,
+    ].filter((value): value is number => value !== undefined);
+
+    for (const candidate of preferred) {
+      const existing = await this.prisma.manga.findUnique({
+        where: { malId: candidate },
+      });
+      if (!existing) {
+        return candidate;
+      }
+    }
+
+    const base = -(Math.abs(anilistMalId ?? fallbackMalId ?? 1));
+    for (let attempt = 0; attempt < 1000; attempt++) {
+      const candidate = base - attempt;
+      const existing = await this.prisma.manga.findUnique({
+        where: { malId: candidate },
+      });
+      if (!existing) {
+        return candidate;
+      }
+    }
+
+    throw new HttpException(
+      'Could not allocate unique synthetic manga id',
+      HttpStatus.CONFLICT,
+    );
+  }
+
+  private mapAniListStatus(status: string | null | undefined): string | null {
+    if (!status) return null;
+    if (status === 'RELEASING') return 'Publishing';
+    if (status === 'FINISHED') return 'Finished';
+    if (status === 'HIATUS') return 'On Hiatus';
+    if (status === 'CANCELLED') return 'Discontinued';
+    return null;
   }
 }

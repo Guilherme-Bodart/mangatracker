@@ -3,6 +3,7 @@ import { Cache } from 'cache-manager';
 import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MangaDexService } from '../mangadex/mangadex.service';
+import { MangaUpdatesService } from '../mangaupdates/mangaupdates.service';
 
 export type LatestChapterDto = {
   chapter: string;
@@ -21,6 +22,7 @@ export class MangaChaptersService {
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly mangaDexService: MangaDexService,
+    private readonly mangaUpdatesService: MangaUpdatesService,
   ) {}
 
   async getLatestChaptersForUserList(
@@ -69,15 +71,17 @@ export class MangaChaptersService {
     if (cached) return cached;
 
     const dexManga = await this.mangaDexService.searchMangaByTitle(title);
-    if (!dexManga) {
-      await this.cacheManager.set(cacheKey, [], 60 * 60 * 1000);
-      return [];
+    let latestChapters: LatestChapterDto[] = [];
+
+    if (dexManga) {
+      latestChapters = await this.mangaDexService.getLatestChapters(dexManga.id, 2);
     }
 
-    const latestChapters = await this.mangaDexService.getLatestChapters(
-      dexManga.id,
-      2,
-    );
+    if (latestChapters.length === 0) {
+      latestChapters = await this.mangaUpdatesService.getLatestChaptersByTitle(
+        title,
+      );
+    }
 
     await this.cacheManager.set(cacheKey, latestChapters, 60 * 60 * 1000);
     return latestChapters;

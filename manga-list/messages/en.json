@@ -105,6 +105,11 @@
   },
   "Browse": {
     "title": "Browse Manga",
+    "provider": "Provider",
+    "providers": {
+      "jikan": "MyAnimeList (Jikan)",
+      "anilist": "AniList"
+    },
     "search": "Search manga...",
     "searchPlaceholder": "Type manga name",
     "filters": "Filters",
@@ -123,6 +128,7 @@
     },
     "filterMode": "Filter Mode",
     "addToList": "Add to List",
+    "alreadyInList": "Already in list",
     "previous": "Previous",
     "next": "Next",
     "page": "Page",
@@ -197,7 +203,9 @@
     "actions": {
       "cancel": "Cancel",
       "save": "Save Changes",
-      "saving": "Saving..."
+      "saving": "Saving...",
+      "integrations": "Integrations",
+      "integrationsAdmin": "Integrations Admin"
     },
     "messages": {
       "noChanges": "No changes to save",
@@ -206,8 +214,93 @@
       "error": "Failed to update profile"
     }
   },
+  "ProfileIntegrations": {
+    "title": "Integrations",
+    "subtitle": "Connect your account with external partners. The partner uses the code below to finish linking and receive a write token.",
+    "connectCard": {
+      "title": "Generate connect code",
+      "partnerLabel": "Partner",
+      "partnerPlaceholder": "Select a partner",
+      "sourceDomainLabel": "Source domain (optional)",
+      "sourceDomainPlaceholder": "partner-site.com",
+      "allowedDomainsPrefix": "Allowed domains:",
+      "generating": "Generating...",
+      "generateButton": "Generate code"
+    },
+    "codeCard": {
+      "title": "Generated code",
+      "expiresInfo": "Expires in {minutes} minutes. Share this code with the partner to finish linking.",
+      "copyButton": "Copy code"
+    },
+    "messages": {
+      "loadPartnersError": "Failed to load partners",
+      "selectPartnerError": "Select a partner",
+      "codeGeneratedSuccess": "Code generated successfully",
+      "generateCodeError": "Failed to generate code",
+      "codeCopiedSuccess": "Code copied",
+      "codeCopyError": "Could not copy the code"
+    }
+  },
+  "ProfileIntegrationsAdmin": {
+    "title": "Integrations Admin",
+    "subtitle": "Manage partner allowlist, secret rotation, and active connections.",
+    "createCard": {
+      "title": "Create partner",
+      "slugLabel": "Slug",
+      "slugPlaceholder": "site-a",
+      "nameLabel": "Name",
+      "namePlaceholder": "Site A",
+      "allowedDomainsLabel": "Allowed domains (CSV)",
+      "allowedDomainsPlaceholder": "site-a.com,app.site-a.com",
+      "activeLabel": "Partner enabled",
+      "submitButton": "Create partner"
+    },
+    "secretCard": {
+      "title": "Generated client secret",
+      "description": "Store this securely. This value is not retrievable later."
+    },
+    "partners": {
+      "title": "Partners",
+      "domainsLabel": "Domains:",
+      "noDomainRestriction": "no restriction",
+      "statusLabel": "Status:",
+      "statusActive": "active",
+      "statusInactive": "inactive",
+      "activateButton": "Enable",
+      "deactivateButton": "Disable",
+      "rotateSecretButton": "Rotate secret",
+      "empty": "No partners registered."
+    },
+    "connections": {
+      "title": "Connections",
+      "allPartners": "All",
+      "filterPlaceholder": "Filter by slug",
+      "filterButton": "Filter",
+      "partnerLabel": "Partner:",
+      "scopesLabel": "Scopes:",
+      "noScope": "no scope",
+      "statusLabel": "Status:",
+      "statusActive": "active",
+      "statusRevoked": "revoked",
+      "revokeButton": "Revoke",
+      "empty": "No connections found."
+    },
+    "messages": {
+      "loadDataError": "Failed to load integrations admin data",
+      "partnerCreatedSuccess": "Partner created successfully",
+      "createPartnerError": "Failed to create partner",
+      "partnerStatusUpdatedSuccess": "Partner status updated",
+      "updatePartnerError": "Failed to update partner",
+      "secretRotatedSuccess": "Secret rotated for {slug}",
+      "rotateSecretError": "Failed to rotate secret",
+      "connectionRevokedSuccess": "Connection revoked",
+      "revokeConnectionError": "Failed to revoke connection"
+    }
+  },
   "MyTrack": {
     "title": "Add Manga",
+    "heading": "My Manga",
+    "syncDisclaimer": "Chapters may not reflect the real state with 100% accuracy for all titles.",
     "empty": "Your list is empty",
     "addFirst": "Add your first manga!",
     "browseManga": "Browse Manga",

@@ -276,14 +276,19 @@ export default function MyTrackPage() {
 
       {/* Manga List */}
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-semibold">{t("title")}</h2>
-          <Button asChild>
-            <Link href="/manga">
-              <Plus className="mr-2 h-4 w-4" />
-              {t("browseManga")}
-            </Link>
-          </Button>
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold">{t("heading")}</h2>
+            <Button asChild>
+              <Link href="/manga">
+                <Plus className="mr-2 h-4 w-4" />
+                {t("browseManga")}
+              </Link>
+            </Button>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {t("syncDisclaimer")}
+          </p>
         </div>
 
         {isLoading ? (

@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter, Plus, Loader2 } from "lucide-react";
+import { Search, Filter, Plus, Loader2, Check } from "lucide-react";
 import { AddMangaModal } from "@/components/manga/add-manga-modal";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -40,6 +40,8 @@ const GENRES = [
 
 interface Manga {
   mal_id: number;
+  anilist_id?: number;
+  provider?: "jikan" | "anilist";
   title: string;
   title_english?: string;
   images: {
@@ -58,6 +60,12 @@ type MangaSearchResponse = {
   data?: Manga[];
   pagination?: {
     has_next_page?: boolean;
+  };
+};
+
+type UserMangaEntry = {
+  manga: {
+    malId: number;
   };
 };
 
@@ -81,6 +89,7 @@ export default function BrowsePage() {
   const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
   const [genreMode, setGenreMode] = useState<"OR" | "AND">("OR");
   const [selectedType, setSelectedType] = useState<string>("all");
+  const [provider, setProvider] = useState<"jikan" | "anilist">("jikan");
   const [page, setPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [mangas, setMangas] = useState<Manga[]>([]);
@@ -88,11 +97,32 @@ export default function BrowsePage() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedManga, setSelectedManga] = useState<Manga | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [userMangaMalIds, setUserMangaMalIds] = useState<Set<number>>(
+    () => new Set(),
+  );
+
+  useEffect(() => {
+    const loadUserMangaMalIds = async () => {
+      if (!user) {
+        setUserMangaMalIds(new Set());
+        return;
+      }
+
+      try {
+        const data = await apiRequest<UserMangaEntry[]>("/manga/list");
+        setUserMangaMalIds(new Set(data.map((entry) => entry.manga.malId)));
+      } catch {
+        // Keep browse usable even if list fetch fails.
+      }
+    };
+
+    void loadUserMangaMalIds();
+  }, [user]);
 
   useEffect(() => {
     // Reset page when filters change
     setPage(1);
-  }, [debouncedSearch, selectedGenres, genreMode, selectedType]);
+  }, [debouncedSearch, selectedGenres, genreMode, selectedType, provider]);
 
   useEffect(() => {
     const fetchMangas = async () => {
@@ -103,6 +133,7 @@ export default function BrowsePage() {
         genreMode,
         selectedType,
         page,
+        provider,
       });
       if (!endpoint) return;
 
@@ -123,7 +154,7 @@ export default function BrowsePage() {
     };
 
     fetchMangas();
-  }, [allowNsfw, debouncedSearch, selectedGenres, genreMode, selectedType, page]);
+  }, [allowNsfw, debouncedSearch, selectedGenres, genreMode, selectedType, page, provider]);
 
   const toggleGenre = (genreId: number) => {
     setSelectedGenres((prev) =>
@@ -179,6 +210,22 @@ export default function BrowsePage() {
           <Filter className="size-4 mr-2" />
           {t("filters")}
         </Button>
+      </div>
+
+      <div className="mb-4 max-w-[260px]">
+        <Label className="text-sm mb-2 block">{t("provider")}</Label>
+        <Select
+          value={provider}
+          onValueChange={(value) => setProvider(value as "jikan" | "anilist")}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="jikan">{t("providers.jikan")}</SelectItem>
+            <SelectItem value="anilist">{t("providers.anilist")}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Genre Filters */}
@@ -272,7 +319,9 @@ export default function BrowsePage() {
           </div>
         ) : mangas.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {mangas.map((manga, index) => (
+            {mangas.map((manga, index) => {
+              const isInList = userMangaMalIds.has(manga.mal_id);
+              return (
               <Card
                 key={`${manga.mal_id}-${page}-${index}`}
                 className="overflow-hidden group hover:shadow-lg transition-shadow"
@@ -284,14 +333,21 @@ export default function BrowsePage() {
                     className="object-cover w-full h-full group-hover:scale-105 transition-transform"
                   />
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Button
-                      size="sm"
-                      onClick={() => handleAddToList(manga)}
-                      className="gap-1 cursor-pointer"
-                    >
-                      <Plus className="size-4" />
-                      {t("addToList")}
-                    </Button>
+                    {isInList ? (
+                      <Button size="sm" variant="secondary" disabled className="gap-1">
+                        <Check className="size-4" />
+                        {t("alreadyInList")}
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => handleAddToList(manga)}
+                        className="gap-1 cursor-pointer"
+                      >
+                        <Plus className="size-4" />
+                        {t("addToList")}
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <CardContent className="p-3">
@@ -345,7 +401,8 @@ export default function BrowsePage() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-12">
@@ -395,6 +452,13 @@ export default function BrowsePage() {
           manga={selectedManga}
           open={isModalOpen}
           onOpenChange={setIsModalOpen}
+          onSuccess={() => {
+            setUserMangaMalIds((prev) => {
+              const next = new Set(prev);
+              next.add(selectedManga.mal_id);
+              return next;
+            });
+          }}
         />
       )}
     </div>

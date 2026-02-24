@@ -4,6 +4,7 @@ import {
   JikanSearchResponse,
   UpdateMangaListDto,
 } from './dto/manga.dto';
+import { MangaSearchProvider } from './dto/search-manga-query.dto';
 import { MangaSearchService } from './manga-search.service';
 import { MangaListService } from './manga-list.service';
 import { MangaProfileService } from './manga-profile.service';
@@ -43,6 +44,7 @@ export class MangaService {
     genresMode: 'AND' | 'OR' = 'OR',
     type?: string,
     allowNsfw: boolean = false,
+    provider: MangaSearchProvider = MangaSearchProvider.JIKAN,
   ): Promise<JikanSearchResponse> {
     return this.mangaSearchService.searchManga(
       query,
@@ -51,6 +53,7 @@ export class MangaService {
       genresMode,
       type,
       allowNsfw,
+      provider,
     );
   }
 

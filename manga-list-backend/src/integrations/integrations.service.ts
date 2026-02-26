@@ -287,12 +287,21 @@ export class IntegrationsService {
 
     this.assertAllowedDomain(partner.allowedDomains, dto.sourceDomain);
 
-    const isSecretValid = await bcrypt.compare(
-      dto.clientSecret,
-      partner.clientSecretHash,
-    );
-    if (!isSecretValid) {
-      throw new UnauthorizedException('Invalid partner credentials');
+    const publicPartnerSlugs = this.getPublicPartnerSlugs();
+    const isPublicPartner = publicPartnerSlugs.has(partner.slug.toLowerCase());
+
+    if (!isPublicPartner) {
+      if (!dto.clientSecret?.trim()) {
+        throw new UnauthorizedException('Missing partner credentials');
+      }
+
+      const isSecretValid = await bcrypt.compare(
+        dto.clientSecret,
+        partner.clientSecretHash,
+      );
+      if (!isSecretValid) {
+        throw new UnauthorizedException('Invalid partner credentials');
+      }
     }
 
     const cacheKey = this.buildConnectCodeCacheKey(dto.code.trim());
@@ -663,6 +672,18 @@ export class IntegrationsService {
 
   private generatePartnerSecret(): string {
     return randomBytes(32).toString('hex');
+  }
+
+  private getPublicPartnerSlugs(): Set<string> {
+    const raw =
+      this.configService.get<string>('INTEGRATION_PUBLIC_PARTNERS') ??
+      'mangalivre';
+    return new Set(
+      raw
+        .split(',')
+        .map((value) => value.trim().toLowerCase())
+        .filter((value) => value.length > 0),
+    );
   }
 
   private async getOrCreateExternalManga(

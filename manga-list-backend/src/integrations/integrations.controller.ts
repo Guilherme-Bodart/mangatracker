@@ -96,6 +96,11 @@ export class IntegrationsController {
     return this.integrationsService.listConnectablePartners();
   }
 
+  @Get('partners/public')
+  async listPublicPartners() {
+    return this.integrationsService.listConnectablePartners();
+  }
+
   @UseGuards(JwtAuthGuard, IntegrationAdminGuard)
   @Get('admin/partners')
   async listPartners() {

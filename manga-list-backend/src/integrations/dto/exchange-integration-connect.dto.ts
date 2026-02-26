@@ -6,10 +6,11 @@ export class ExchangeIntegrationConnectDto {
   @MaxLength(100)
   partnerSlug!: string;
 
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
   @MaxLength(500)
-  clientSecret!: string;
+  clientSecret?: string;
 
   @IsString()
   @IsNotEmpty()

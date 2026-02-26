@@ -42,6 +42,7 @@ describe('IntegrationsService', () => {
   const configService = {
     get: jest.fn((key: string) => {
       if (key === 'JWT_SECRET') return 'jwt-secret';
+      if (key === 'INTEGRATION_PUBLIC_PARTNERS') return 'mangalivre';
       return undefined;
     }),
   };
@@ -199,6 +200,33 @@ describe('IntegrationsService', () => {
     expect(jwtService.sign).toHaveBeenCalled();
     expect(result.accessToken).toBe('integration-token');
     expect(cacheManager.del).toHaveBeenCalledWith('integrations:connect:code-1');
+  });
+
+  it('exchanges connect code without clientSecret for public partner', async () => {
+    prisma.integrationPartner.findFirst.mockResolvedValue({
+      id: 'partner-1',
+      slug: 'mangalivre',
+      allowedDomains: ['mangalivre.tv'],
+      clientSecretHash: await bcrypt.hash('unused-secret', 4),
+      isActive: true,
+    });
+
+    await cacheManager.set('integrations:connect:code-public', {
+      userId: 'user-1',
+      partnerId: 'partner-1',
+      partnerSlug: 'mangalivre',
+      scopes: ['manga:write'],
+      sourceDomain: 'mangalivre.tv',
+    });
+
+    const result = await service.exchangeConnectionCode({
+      partnerSlug: 'mangalivre',
+      code: 'code-public',
+      sourceDomain: 'mangalivre.tv',
+    });
+
+    expect(prisma.userPartnerConnection.upsert).toHaveBeenCalled();
+    expect(result.accessToken).toBe('integration-token');
   });
 
   it('returns cached sync result when idempotency key is reused', async () => {

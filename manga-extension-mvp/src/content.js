@@ -8,14 +8,49 @@ function shouldRunOnDomain(allowedDomains, hostname) {
   );
 }
 
+function resolvePartnerForHost(partnerDomainsMap, enabledPartnerSlugs, hostname) {
+  const normalizedHost = hostname.trim().toLowerCase();
+  if (!partnerDomainsMap || typeof partnerDomainsMap !== "object") {
+    return null;
+  }
+
+  for (const slug of enabledPartnerSlugs) {
+    const domains = partnerDomainsMap[slug];
+    if (!Array.isArray(domains) || domains.length === 0) {
+      continue;
+    }
+    if (shouldRunOnDomain(domains, normalizedHost)) {
+      return slug;
+    }
+  }
+
+  return null;
+}
+
 async function run() {
   const config = await chrome.storage.sync.get([
     "enabled",
     "allowedDomains",
     "partnerSlug",
+    "enabledPartnerSlugs",
+    "partnerDomainsMap",
   ]);
   if (!config.enabled) return;
-  if (!shouldRunOnDomain(config.allowedDomains, window.location.hostname)) {
+
+  const enabledPartnerSlugs = Array.isArray(config.enabledPartnerSlugs)
+    ? config.enabledPartnerSlugs
+    : [];
+  const partnerSlug =
+    resolvePartnerForHost(
+      config.partnerDomainsMap,
+      enabledPartnerSlugs,
+      window.location.hostname,
+    ) ||
+    (shouldRunOnDomain(config.allowedDomains, window.location.hostname)
+      ? config.partnerSlug
+      : null);
+
+  if (!partnerSlug) {
     return;
   }
 
@@ -32,7 +67,7 @@ async function run() {
     type: "MANGA_PROGRESS_DETECTED",
     payload: {
       ...payload,
-      partnerSlug: config.partnerSlug,
+      partnerSlug,
     },
   });
 }

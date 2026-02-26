@@ -5,6 +5,7 @@ async function getConfig() {
     "apiBaseUrl",
     "partnerSlug",
     "accessToken",
+    "partnerTokens",
     "enabled",
   ]);
 }
@@ -18,10 +19,17 @@ async function sendSync(payload) {
   const config = await getConfig();
   const apiBaseUrl = (config.apiBaseUrl || DEFAULT_API_BASE_URL).replace(/\/+$/, "");
   if (!config.enabled) return;
-  if (!config.partnerSlug || !config.accessToken) return;
+  const partnerSlug = payload.partnerSlug || config.partnerSlug;
+  const partnerTokens =
+    config.partnerTokens && typeof config.partnerTokens === "object"
+      ? config.partnerTokens
+      : {};
+  const accessToken =
+    (partnerSlug && partnerTokens[partnerSlug]) || config.accessToken;
+  if (!partnerSlug || !accessToken) return;
 
   const body = {
-    partnerSlug: config.partnerSlug,
+    partnerSlug,
     externalMangaId: payload.externalMangaId,
     title: payload.title,
     chapter: payload.chapter,
@@ -32,7 +40,7 @@ async function sendSync(payload) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${config.accessToken}`,
+      Authorization: `Bearer ${accessToken}`,
       "x-idempotency-key": buildIdempotencyKey(payload),
     },
     body: JSON.stringify(body),

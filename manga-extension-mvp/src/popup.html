@@ -1,0 +1,240 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Manga Tracker Sync</title>
+    <style>
+      :root {
+        --bg: #070b24;
+        --card: #0d1636;
+        --card-2: #101d46;
+        --text: #e8ecff;
+        --muted: #9da8d6;
+        --primary: #ff6f2d;
+        --ok: #3ad07a;
+        --danger: #ff627c;
+        --border: #21346f;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        width: 370px;
+        margin: 0;
+        padding: 12px;
+        font-family: "Segoe UI", Tahoma, sans-serif;
+        background: radial-gradient(140% 120% at 0% 0%, #15285f 0%, var(--bg) 60%);
+        color: var(--text);
+      }
+
+      .panel {
+        background: linear-gradient(180deg, #121f4a 0%, #0c1535 100%);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 12px;
+        box-shadow: 0 12px 28px rgba(4, 8, 27, 0.45);
+      }
+
+      .header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .brand { display: block; width: 150px; height: auto; margin-bottom: 8px; }
+
+      .lang-switch {
+        display: inline-flex;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+
+      .lang-btn {
+        background: transparent;
+        color: #cfd8ff;
+        border: 0;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .lang-btn.active {
+        background: #22386f;
+        color: #fff;
+      }
+
+      .subtitle {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .top-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 8px 10px;
+        background: rgba(23, 38, 84, 0.7);
+      }
+
+      .top-row .label {
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .partners { margin-top: 8px; display: grid; gap: 8px; }
+
+      .partner-item {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 8px 10px;
+        background: rgba(17, 30, 68, 0.85);
+      }
+
+      .partner-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .partner-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+        font-size: 14px;
+      }
+
+      .status-chip {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: rgba(58, 208, 122, 0.18);
+        color: var(--ok);
+      }
+
+      .status-chip.off {
+        background: rgba(157, 168, 214, 0.15);
+        color: var(--muted);
+      }
+
+      .hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+      label {
+        display: block;
+        font-weight: 700;
+        margin: 10px 0 6px;
+        font-size: 12px;
+      }
+
+      input, select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        font-size: 13px;
+        color: var(--text);
+        background: var(--card-2);
+      }
+
+      input::placeholder { color: #8b97c8; }
+
+      .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      button {
+        border: 0;
+        border-radius: 9px;
+        padding: 10px;
+        cursor: pointer;
+        font-weight: 800;
+        font-size: 13px;
+      }
+
+      #connectBtn {
+        background: linear-gradient(90deg, var(--primary) 0%, #ff8a49 100%);
+        color: #fff;
+      }
+
+      #disconnectBtn {
+        background: #22386f;
+        color: #d8e0ff;
+      }
+
+      .links {
+        margin-top: 10px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+      }
+
+      .links a { color: #b9c5ff; text-decoration: none; }
+
+      #status {
+        margin-top: 10px;
+        font-size: 12px;
+        color: var(--muted);
+        min-height: 18px;
+      }
+
+      .status-ok { color: var(--ok); }
+      .status-err { color: var(--danger); }
+
+      .hidden { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <div class="panel">
+      <div class="header">
+        <img class="brand" src="../assets/logo-full-dark.svg" alt="Manga Tracker" />
+        <div class="lang-switch" role="group" aria-label="Language">
+          <button class="lang-btn" id="langPt" type="button">PT</button>
+          <button class="lang-btn" id="langEn" type="button">EN</button>
+        </div>
+      </div>
+
+      <p class="subtitle" data-i18n="subtitle"></p>
+
+      <div class="top-row">
+        <span class="label" data-i18n="extensionActive"></span>
+        <input id="enabled" type="checkbox" />
+      </div>
+
+      <div class="partners" id="partnersList"></div>
+
+      <div id="connectPartnerRow" class="hidden">
+        <label for="connectPartnerSlug" data-i18n="partnerToConnect"></label>
+        <select id="connectPartnerSlug"></select>
+      </div>
+
+      <label for="connectCode" data-i18n="connectCode"></label>
+      <input id="connectCode" autocomplete="off" />
+
+      <div class="actions">
+        <button id="connectBtn" type="button" data-i18n="connectAccount"></button>
+        <button id="disconnectBtn" type="button" data-i18n="disconnect"></button>
+      </div>
+
+      <div class="links">
+        <a id="openIntegrations" href="#" target="_blank" rel="noreferrer" data-i18n="openIntegrations"></a>
+        <a id="openSite" href="#" target="_blank" rel="noreferrer" data-i18n="openSite"></a>
+      </div>
+
+      <div id="status"></div>
+    </div>
+
+    <script type="module" src="./popup.js"></script>
+  </body>
+</html>

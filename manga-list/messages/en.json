@@ -9,7 +9,7 @@
       },
       "passwordParams": {
         "label": "Password",
-        "placeholder": "••••••••",
+        "placeholder": "â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢",
         "forgot": "Forgot password?"
       },
       "rememberMe": "Remember me for 30 days",
@@ -38,11 +38,11 @@
       },
       "passwordParams": {
         "label": "Password",
-        "placeholder": "••••••••"
+        "placeholder": "â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
       },
       "confirmPasswordParams": {
         "label": "Confirm Password",
-        "placeholder": "••••••••"
+        "placeholder": "â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
       },
       "submit": "Create Account",
       "divider": "Or sign up with",
@@ -198,7 +198,7 @@
       "current": "Current Password",
       "new": "New Password",
       "confirm": "Confirm New Password",
-      "placeholder": "••••••••"
+      "placeholder": "â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
     },
     "actions": {
       "cancel": "Cancel",
@@ -241,9 +241,9 @@
       "codeCopyError": "Could not copy the code"
     }
   },
-  "ProfileIntegrationsAdmin": {
+    "ProfileIntegrationsAdmin": {
     "title": "Integrations Admin",
-    "subtitle": "Manage partner allowlist, secret rotation, and active connections.",
+    "subtitle": "Manage partner allowlist, secret rotation, waitlist applications, and active connections.",
     "createCard": {
       "title": "Create partner",
       "slugLabel": "Slug",
@@ -271,6 +271,26 @@
       "rotateSecretButton": "Rotate secret",
       "empty": "No partners registered."
     },
+    "applications": {
+      "title": "Application waitlist",
+      "filters": {
+        "all": "All",
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "contactLabel": "Contact:",
+      "siteLabel": "Site:",
+      "domainsLabel": "Domains:",
+      "noDomainRestriction": "no restriction",
+      "useCaseLabel": "Use case:",
+      "statusLabel": "Status:",
+      "reviewReasonLabel": "Reason:",
+      "approveButton": "Approve",
+      "rejectButton": "Reject",
+      "rejectPrompt": "Rejection reason (optional)",
+      "empty": "No applications found."
+    },
     "connections": {
       "title": "Connections",
       "allPartners": "All",
@@ -293,8 +313,103 @@
       "updatePartnerError": "Failed to update partner",
       "secretRotatedSuccess": "Secret rotated for {slug}",
       "rotateSecretError": "Failed to rotate secret",
+      "applicationApprovedSuccess": "Application approved for {slug}",
+      "approveApplicationError": "Failed to approve application",
+      "applicationRejectedSuccess": "Application rejected for {slug}",
+      "rejectApplicationError": "Failed to reject application",
       "connectionRevokedSuccess": "Connection revoked",
       "revokeConnectionError": "Failed to revoke connection"
+    }
+  },
+  "HowToUseApi": {
+    "title": "How to use API",
+    "updatedAt": "Last updated: March 11, 2026",
+    "intro": "Use this guide to integrate your partner site with Manga Tracker without extension. This page only shows partner-facing steps.",
+    "baseUrlLabel": "Current API base URL in this frontend",
+    "baseUrlNote": "Use your production API URL in real integrations. Endpoints below are relative to this base.",
+    "rolesTitle": "Who is involved",
+    "flowTitle": "Partner flow",
+    "roles": {
+      "partner": {
+        "title": "Partner site (CLIENT)",
+        "body": "Submits application, exchanges connect codes for tokens, and syncs chapter updates from its own backend."
+      },
+      "user": {
+        "title": "End user",
+        "body": "Generates a short-lived connect code in Manga Tracker and shares it with the partner site."
+      },
+      "platform": {
+        "title": "Manga Tracker (automatic)",
+        "body": "After approval, credentials are issued and sync requests are validated automatically."
+      }
+    },
+    "steps": {
+      "application": {
+        "title": "1) Submit public application",
+        "body": "Register your partner site in the public waitlist.",
+        "endpoint": "POST /integrations/public/apply",
+        "request": "{\n  \"requestedSlug\": \"site-a\",\n  \"name\": \"Site A\",\n  \"contactEmail\": \"tech@site-a.com\",\n  \"siteUrl\": \"https://site-a.com\",\n  \"allowedDomains\": [\"site-a.com\"],\n  \"useCase\": \"Sync chapter progress from Site A\"\n}",
+        "response": "{\n  \"id\": \"...\",\n  \"requestedSlug\": \"site-a\",\n  \"status\": \"PENDING\",\n  \"createdAt\": \"...\"\n}",
+        "notes": {
+          "1": "This endpoint is public and rate-limited.",
+          "2": "Submitting does not activate integration immediately."
+        }
+      },
+      "approval": {
+        "title": "2) Wait for application approval",
+        "body": "When approved, you receive an email with partnerSlug, clientSecret and the next steps.",
+        "notes": {
+          "1": "No partner API call is required in this step."
+        }
+      },
+      "userConnectCode": {
+        "title": "3) Ask the user for the connect code",
+        "body": "The user generates the code inside Manga Tracker and shares it with your site.",
+        "notes": {
+          "1": "Connect code expires in 5 minutes and is single-use."
+        }
+      },
+      "exchange": {
+        "title": "4) Exchange code for access token",
+        "body": "Your backend exchanges the user code for a partner access token.",
+        "endpoint": "POST /integrations/connect/exchange",
+        "request": "{\n  \"partnerSlug\": \"site-a\",\n  \"clientSecret\": \"show-once-secret\",\n  \"code\": \"short-lived-connect-code\",\n  \"sourceDomain\": \"site-a.com\"\n}",
+        "response": "{\n  \"accessToken\": \"integration-jwt\",\n  \"tokenType\": \"Bearer\",\n  \"expiresInSeconds\": 2592000,\n  \"scopes\": [\"manga:write\"]\n}",
+        "notes": {
+          "1": "Keep clientSecret only on backend.",
+          "2": "Rate limit: 20 requests per minute."
+        }
+      },
+      "sync": {
+        "title": "5) Sync read chapters",
+        "body": "Send chapter progress updates from your backend.",
+        "endpoint": "POST /integrations/sync",
+        "request": "Headers:\n  Authorization: Bearer <accessToken>\n  x-idempotency-key: <unique-event-id>\n\nBody:\n{\n  \"partnerSlug\": \"site-a\",\n  \"externalMangaId\": \"one-piece-123\",\n  \"title\": \"One Piece\",\n  \"chapter\": 1123,\n  \"sourceDomain\": \"site-a.com\"\n}",
+        "response": "{\n  \"outcome\": \"created | updated | noop\",\n  \"userMangaId\": \"...\",\n  \"currentChapter\": 1123\n}",
+        "notes": {
+          "1": "Rate limit: 120 requests per minute.",
+          "2": "Reuse the same idempotency key on retries."
+        }
+      }
+    },
+    "security": {
+      "title": "Security checklist",
+      "items": {
+        "1": "Store clientSecret only on backend (never in frontend code).",
+        "2": "Always send sourceDomain and keep your allowedDomains list updated.",
+        "3": "Use x-idempotency-key for retry safety.",
+        "4": "Use HTTPS in production for all partner traffic.",
+        "5": "Rotate clientSecret periodically."
+      }
+    },
+    "limits": {
+      "title": "Sync behavior",
+      "items": {
+        "1": "Only manga:write scope is accepted in this MVP.",
+        "2": "If incoming chapter <= current chapter, outcome is noop.",
+        "3": "Access token expires in 30 days (2592000 seconds).",
+        "4": "Created/updated/noop outcomes indicate sync result per request."
+      }
     }
   },
   "MyTrack": {
@@ -386,8 +501,12 @@
     "terms": "Terms",
     "privacy": "Privacy",
     "contact": "Contact",
+    "howToUseApi": "How to use API",
     "language": "Language"
   }
 }
+
+
+
 
 

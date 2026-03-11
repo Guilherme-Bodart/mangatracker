@@ -25,6 +25,7 @@ export function LoginForm() {
   const router = useRouter();
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -145,11 +146,18 @@ export function LoginForm() {
       <Button
         variant="outline"
         type="button"
-        disabled={isLoading}
-        onClick={() => (window.location.href = getApiUrl("/auth/google/start"))}
+        disabled={isLoading || isGoogleLoading}
+        onClick={() => {
+          setIsGoogleLoading(true);
+          window.location.href = getApiUrl("/auth/google/start");
+        }}
         className="w-full h-11 bg-background/50 border-input/50 hover:bg-accent hover:text-accent-foreground transition-all duration-300 hover:-translate-y-0.5"
       >
-        <Chrome className="mr-2 h-4 w-4" />
+        {isGoogleLoading ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Chrome className="mr-2 h-4 w-4" />
+        )}
         {t("google")}
       </Button>
 

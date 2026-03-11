@@ -57,6 +57,10 @@ describe('IntegrationsService', () => {
     }),
   };
 
+  const mailService = {
+    sendIntegrationApprovedEmail: jest.fn(),
+  };
+
   let service: IntegrationsService;
 
   beforeEach(() => {
@@ -70,6 +74,7 @@ describe('IntegrationsService', () => {
       jwtService as never,
       configService as never,
       cacheManager as never,
+      mailService as never,
     );
   });
 

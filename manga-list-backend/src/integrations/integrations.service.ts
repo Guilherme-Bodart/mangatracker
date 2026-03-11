@@ -4,19 +4,29 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Manga, MangaStatus, Prisma } from '@prisma/client';
+import {
+  IntegrationPartnerApplicationStatus,
+  Manga,
+  MangaStatus,
+  Prisma,
+} from '@prisma/client';
 import { Cache } from 'cache-manager';
 import * as bcrypt from 'bcryptjs';
 import { createHash, randomBytes } from 'crypto';
 import { CACHE_TTL_MS } from '../cache/cache-ttl.constants';
+import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ApproveIntegrationApplicationDto } from './dto/approve-integration-application.dto';
+import { CreateIntegrationApplicationDto } from './dto/create-integration-application.dto';
 import { CreateIntegrationPartnerDto } from './dto/create-integration-partner.dto';
 import { ExchangeIntegrationConnectDto } from './dto/exchange-integration-connect.dto';
+import { RejectIntegrationApplicationDto } from './dto/reject-integration-application.dto';
 import { RotateIntegrationPartnerSecretDto } from './dto/rotate-integration-partner-secret.dto';
 import { StartIntegrationConnectDto } from './dto/start-integration-connect.dto';
 import { SyncIntegrationDto } from './dto/sync-integration.dto';
@@ -47,11 +57,14 @@ type IntegrationConnectPayload = {
 
 @Injectable()
 export class IntegrationsService {
+  private readonly logger = new Logger(IntegrationsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly mailService: MailService,
   ) {}
 
   async listPartners() {
@@ -78,6 +91,231 @@ export class IntegrationsService {
         slug: true,
         name: true,
         allowedDomains: true,
+      },
+    });
+  }
+
+  async createPartnerApplication(dto: CreateIntegrationApplicationDto) {
+    const requestedSlug = dto.requestedSlug.trim().toLowerCase();
+    const name = dto.name.trim();
+    const contactEmail = dto.contactEmail.trim().toLowerCase();
+    const siteUrl = this.normalizeSiteUrl(dto.siteUrl);
+    const normalizedDomains = this.normalizeDomains(dto.allowedDomains);
+    const inferredDomain = this.readHostnameFromUrl(siteUrl);
+    const allowedDomains =
+      normalizedDomains.length > 0
+        ? normalizedDomains
+        : inferredDomain
+          ? [inferredDomain]
+          : [];
+    const useCase = dto.useCase?.trim() || null;
+
+    const existingPartner = await this.prisma.integrationPartner.findUnique({
+      where: { slug: requestedSlug },
+      select: { id: true },
+    });
+    if (existingPartner) {
+      throw new ConflictException('Requested slug is already in use');
+    }
+
+    const existingSameSlug = await this.prisma.integrationPartnerApplication.findFirst({
+      where: {
+        requestedSlug,
+        status: {
+          in: [
+            IntegrationPartnerApplicationStatus.PENDING,
+            IntegrationPartnerApplicationStatus.APPROVED,
+          ],
+        },
+      },
+      select: { id: true },
+    });
+    if (existingSameSlug) {
+      throw new ConflictException(
+        'An application with this slug is already pending or approved',
+      );
+    }
+
+    const existingSameSitePending =
+      await this.prisma.integrationPartnerApplication.findFirst({
+        where: {
+          contactEmail,
+          siteUrl,
+          status: IntegrationPartnerApplicationStatus.PENDING,
+        },
+        select: { id: true },
+      });
+    if (existingSameSitePending) {
+      throw new ConflictException('An application for this site is already pending review');
+    }
+
+    return this.prisma.integrationPartnerApplication.create({
+      data: {
+        requestedSlug,
+        name,
+        contactEmail,
+        siteUrl,
+        allowedDomains,
+        useCase,
+        status: IntegrationPartnerApplicationStatus.PENDING,
+      },
+      select: {
+        id: true,
+        requestedSlug: true,
+        name: true,
+        contactEmail: true,
+        siteUrl: true,
+        allowedDomains: true,
+        useCase: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  async listPartnerApplications(
+    status?: 'PENDING' | 'APPROVED' | 'REJECTED',
+  ) {
+    const normalizedStatus = status as IntegrationPartnerApplicationStatus | undefined;
+    return this.prisma.integrationPartnerApplication.findMany({
+      where: normalizedStatus ? { status: normalizedStatus } : {},
+      orderBy: [{ createdAt: 'desc' }],
+      select: {
+        id: true,
+        requestedSlug: true,
+        name: true,
+        contactEmail: true,
+        siteUrl: true,
+        allowedDomains: true,
+        useCase: true,
+        status: true,
+        reviewReason: true,
+        approvedPartnerId: true,
+        reviewedByEmail: true,
+        reviewedAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  async approvePartnerApplication(
+    id: string,
+    reviewedByEmail: string,
+    dto: ApproveIntegrationApplicationDto,
+  ) {
+    const application = await this.prisma.integrationPartnerApplication.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        requestedSlug: true,
+        name: true,
+        contactEmail: true,
+        allowedDomains: true,
+        status: true,
+      },
+    });
+    if (!application) {
+      throw new BadRequestException('Partner application not found');
+    }
+    if (application.status !== IntegrationPartnerApplicationStatus.PENDING) {
+      throw new ConflictException('Only pending applications can be approved');
+    }
+
+    const slug = (dto.slug?.trim().toLowerCase() || application.requestedSlug).trim();
+    const name = (dto.name?.trim() || application.name).trim();
+    const allowedDomains = this.normalizeDomains(
+      dto.allowedDomains ?? application.allowedDomains,
+    );
+
+    const createdPartner = await this.createPartner({
+      slug,
+      name,
+      allowedDomains,
+      isActive: true,
+      ...(dto.clientSecret ? { clientSecret: dto.clientSecret } : {}),
+    });
+
+    const updatedApplication =
+      await this.prisma.integrationPartnerApplication.update({
+        where: { id: application.id },
+        data: {
+          requestedSlug: slug,
+          name,
+          allowedDomains,
+          status: IntegrationPartnerApplicationStatus.APPROVED,
+          approvedPartnerId: createdPartner.id,
+          reviewReason: null,
+          reviewedByEmail,
+          reviewedAt: new Date(),
+        },
+        select: {
+          id: true,
+          requestedSlug: true,
+          name: true,
+          contactEmail: true,
+          allowedDomains: true,
+          status: true,
+          approvedPartnerId: true,
+          reviewedByEmail: true,
+          reviewedAt: true,
+          updatedAt: true,
+        },
+      });
+
+    try {
+      await this.mailService.sendIntegrationApprovedEmail(application.contactEmail, {
+        partnerName: createdPartner.name,
+        partnerSlug: createdPartner.slug,
+        clientSecret: createdPartner.clientSecret,
+        docsUrl: this.getIntegrationOnboardingUrl(),
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to send integration approval email to ${application.contactEmail}: ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
+    }
+
+    return {
+      application: updatedApplication,
+      partner: createdPartner,
+    };
+  }
+
+  async rejectPartnerApplication(
+    id: string,
+    reviewedByEmail: string,
+    dto: RejectIntegrationApplicationDto,
+  ) {
+    const application = await this.prisma.integrationPartnerApplication.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+    if (!application) {
+      throw new BadRequestException('Partner application not found');
+    }
+    if (application.status !== IntegrationPartnerApplicationStatus.PENDING) {
+      throw new ConflictException('Only pending applications can be rejected');
+    }
+
+    return this.prisma.integrationPartnerApplication.update({
+      where: { id },
+      data: {
+        status: IntegrationPartnerApplicationStatus.REJECTED,
+        reviewReason: dto.reason?.trim() || null,
+        reviewedByEmail,
+        reviewedAt: new Date(),
+      },
+      select: {
+        id: true,
+        status: true,
+        reviewReason: true,
+        reviewedByEmail: true,
+        reviewedAt: true,
+        updatedAt: true,
       },
     });
   }
@@ -642,6 +880,34 @@ export class IntegrationsService {
     );
   }
 
+  private normalizeSiteUrl(value: string): string {
+    const trimmed = value.trim();
+    let parsed: URL;
+    try {
+      parsed = new URL(trimmed);
+    } catch {
+      throw new BadRequestException('Invalid site URL');
+    }
+
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      throw new BadRequestException('Site URL must use http or https');
+    }
+
+    parsed.hash = '';
+    parsed.search = '';
+    return parsed.toString();
+  }
+
+  private readHostnameFromUrl(value: string): string | null {
+    try {
+      const parsed = new URL(value);
+      const host = parsed.hostname.trim().toLowerCase();
+      return host || null;
+    } catch {
+      return null;
+    }
+  }
+
   private getIntegrationJwtSecret(): string {
     const secret =
       this.configService.get<string>('INTEGRATION_JWT_SECRET') ??
@@ -684,6 +950,20 @@ export class IntegrationsService {
         .map((value) => value.trim().toLowerCase())
         .filter((value) => value.length > 0),
     );
+  }
+
+  private getIntegrationOnboardingUrl(): string {
+    const configured = this.configService.get<string>('INTEGRATION_ONBOARDING_URL');
+    if (configured?.trim()) {
+      return configured.trim();
+    }
+
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+    if (frontendUrl?.trim()) {
+      return `${frontendUrl.trim().replace(/\/+$/, '')}/pt/how-to-use-api`;
+    }
+
+    return 'https://your-frontend-domain.com/pt/how-to-use-api';
   }
 
   private async getOrCreateExternalManga(

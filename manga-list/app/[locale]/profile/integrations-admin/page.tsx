@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "@/i18n/routing";
 import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
@@ -12,13 +12,18 @@ import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/api-client";
 import { useTranslations } from "next-intl";
 import {
+  approveAdminApplication,
   createAdminPartner,
+  listAdminApplications,
   listAdminConnections,
   listAdminPartners,
+  rejectAdminApplication,
   revokeAdminConnection,
   rotateAdminPartnerSecret,
   updateAdminPartner,
   type AdminPartner,
+  type IntegrationApplication,
+  type IntegrationApplicationStatus,
   type IntegrationConnection,
 } from "@/lib/integrations-api";
 
@@ -29,6 +34,7 @@ export default function IntegrationsAdminPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [partners, setPartners] = useState<AdminPartner[]>([]);
   const [connections, setConnections] = useState<IntegrationConnection[]>([]);
+  const [applications, setApplications] = useState<IntegrationApplication[]>([]);
   const [newSecret, setNewSecret] = useState<string | null>(null);
   const [createForm, setCreateForm] = useState({
     slug: "",
@@ -37,6 +43,9 @@ export default function IntegrationsAdminPage() {
     isActive: true,
   });
   const [connectionFilter, setConnectionFilter] = useState("");
+  const [applicationStatusFilter, setApplicationStatusFilter] = useState<
+    "" | IntegrationApplicationStatus
+  >("PENDING");
 
   useEffect(() => {
     if (!isAuthLoading && !user) {
@@ -44,31 +53,39 @@ export default function IntegrationsAdminPage() {
     }
   }, [isAuthLoading, user, router]);
 
-  const loadData = async (partnerSlug?: string) => {
-    setIsLoading(true);
-    try {
-      const [partnersData, connectionsData] = await Promise.all([
-        listAdminPartners(),
-        listAdminConnections(partnerSlug),
-      ]);
-      setPartners(partnersData);
-      setConnections(connectionsData);
-    } catch (error: unknown) {
-      toast.error(
-        getApiErrorMessage(
-          error,
-          t("messages.loadDataError"),
-        ),
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const loadData = useCallback(
+    async (
+      partnerSlug?: string,
+      applicationStatus?: "" | IntegrationApplicationStatus,
+    ) => {
+      setIsLoading(true);
+      try {
+        const [partnersData, connectionsData, applicationsData] = await Promise.all([
+          listAdminPartners(),
+          listAdminConnections(partnerSlug),
+          listAdminApplications(applicationStatus || undefined),
+        ]);
+        setPartners(partnersData);
+        setConnections(connectionsData);
+        setApplications(applicationsData);
+      } catch (error: unknown) {
+        toast.error(
+          getApiErrorMessage(
+            error,
+            t("messages.loadDataError"),
+          ),
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     if (!user) return;
-    void loadData();
-  }, [user]);
+    void loadData(undefined, applicationStatusFilter || undefined);
+  }, [applicationStatusFilter, loadData, user]);
 
   const partnerOptions = useMemo(
     () => [{ slug: "", label: t("connections.allPartners") }].concat(
@@ -99,7 +116,10 @@ export default function IntegrationsAdminPage() {
       setNewSecret(created.clientSecret);
       toast.success(t("messages.partnerCreatedSuccess"));
       setCreateForm({ slug: "", name: "", allowedDomains: "", isActive: true });
-      await loadData(connectionFilter || undefined);
+      await loadData(
+        connectionFilter || undefined,
+        applicationStatusFilter || undefined,
+      );
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, t("messages.createPartnerError")));
     }
@@ -109,7 +129,10 @@ export default function IntegrationsAdminPage() {
     try {
       await updateAdminPartner(partner.id, { isActive: !partner.isActive });
       toast.success(t("messages.partnerStatusUpdatedSuccess"));
-      await loadData(connectionFilter || undefined);
+      await loadData(
+        connectionFilter || undefined,
+        applicationStatusFilter || undefined,
+      );
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, t("messages.updatePartnerError")));
     }
@@ -129,10 +152,57 @@ export default function IntegrationsAdminPage() {
     try {
       await revokeAdminConnection(connectionId);
       toast.success(t("messages.connectionRevokedSuccess"));
-      await loadData(connectionFilter || undefined);
+      await loadData(
+        connectionFilter || undefined,
+        applicationStatusFilter || undefined,
+      );
     } catch (error: unknown) {
       toast.error(
         getApiErrorMessage(error, t("messages.revokeConnectionError")),
+      );
+    }
+  };
+
+  const handleApproveApplication = async (application: IntegrationApplication) => {
+    try {
+      const approved = await approveAdminApplication(application.id, {
+        slug: application.requestedSlug,
+        name: application.name,
+        allowedDomains: application.allowedDomains,
+      });
+      setNewSecret(approved.partner.clientSecret);
+      toast.success(
+        t("messages.applicationApprovedSuccess", { slug: application.requestedSlug }),
+      );
+      await loadData(
+        connectionFilter || undefined,
+        applicationStatusFilter || undefined,
+      );
+    } catch (error: unknown) {
+      toast.error(
+        getApiErrorMessage(error, t("messages.approveApplicationError")),
+      );
+    }
+  };
+
+  const handleRejectApplication = async (application: IntegrationApplication) => {
+    try {
+      const reason =
+        window.prompt(t("applications.rejectPrompt"), application.reviewReason ?? "") ??
+        "";
+      await rejectAdminApplication(application.id, {
+        reason: reason.trim() || undefined,
+      });
+      toast.success(
+        t("messages.applicationRejectedSuccess", { slug: application.requestedSlug }),
+      );
+      await loadData(
+        connectionFilter || undefined,
+        applicationStatusFilter || undefined,
+      );
+    } catch (error: unknown) {
+      toast.error(
+        getApiErrorMessage(error, t("messages.rejectApplicationError")),
       );
     }
   };
@@ -266,6 +336,92 @@ export default function IntegrationsAdminPage() {
           {!partners.length && !isLoading ? (
             <p className="text-sm text-muted-foreground">
               {t("partners.empty")}
+            </p>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("applications.title")}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {[
+              { value: "", label: t("applications.filters.all") },
+              { value: "PENDING", label: t("applications.filters.pending") },
+              { value: "APPROVED", label: t("applications.filters.approved") },
+              { value: "REJECTED", label: t("applications.filters.rejected") },
+            ].map((option) => (
+              <Button
+                key={option.value || "all"}
+                variant={applicationStatusFilter === option.value ? "default" : "outline"}
+                onClick={() => {
+                  const nextValue = option.value as "" | IntegrationApplicationStatus;
+                  setApplicationStatusFilter(nextValue);
+                  void loadData(connectionFilter || undefined, nextValue || undefined);
+                }}
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
+
+          {applications.map((application) => (
+            <div
+              key={application.id}
+              className="rounded-md border p-3 flex flex-col gap-3"
+            >
+              <div>
+                <p className="font-medium">
+                  {application.name} ({application.requestedSlug})
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {t("applications.contactLabel")} {application.contactEmail}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {t("applications.siteLabel")} {application.siteUrl}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {t("applications.domainsLabel")}{" "}
+                  {application.allowedDomains.length
+                    ? application.allowedDomains.join(", ")
+                    : t("applications.noDomainRestriction")}
+                </p>
+                {application.useCase ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t("applications.useCaseLabel")} {application.useCase}
+                  </p>
+                ) : null}
+                <p className="text-sm text-muted-foreground">
+                  {t("applications.statusLabel")} {application.status}
+                </p>
+                {application.reviewReason ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t("applications.reviewReasonLabel")} {application.reviewReason}
+                  </p>
+                ) : null}
+              </div>
+              {application.status === "PENDING" ? (
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => void handleApproveApplication(application)}
+                  >
+                    {t("applications.approveButton")}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => void handleRejectApplication(application)}
+                  >
+                    {t("applications.rejectButton")}
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          ))}
+          {!applications.length && !isLoading ? (
+            <p className="text-sm text-muted-foreground">
+              {t("applications.empty")}
             </p>
           ) : null}
         </CardContent>

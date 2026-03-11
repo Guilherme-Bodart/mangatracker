@@ -17,6 +17,12 @@ enum MangaStatus {
   DROPPED
 }
 
+enum IntegrationPartnerApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id            String        @id @default(uuid())
   username      String        @unique
@@ -151,4 +157,25 @@ model SyncEventLog {
   @@index([partnerId, createdAt])
   @@index([userId, createdAt])
   @@index([userId, partnerId, externalMangaId])
+}
+
+model IntegrationPartnerApplication {
+  id               String                            @id @default(uuid())
+  name             String
+  requestedSlug    String
+  contactEmail     String
+  siteUrl          String
+  allowedDomains   String[]                          @default([])
+  useCase          String?                           @db.Text
+  status           IntegrationPartnerApplicationStatus @default(PENDING)
+  reviewReason     String?                           @db.Text
+  approvedPartnerId String?
+  reviewedByEmail  String?
+  reviewedAt       DateTime?
+  createdAt        DateTime                          @default(now())
+  updatedAt        DateTime                          @updatedAt
+
+  @@index([status, createdAt])
+  @@index([requestedSlug])
+  @@index([contactEmail, createdAt])
 }

@@ -1,4 +1,4 @@
-﻿{
+{
   "manifest_version": 3,
   "name": "Manga Tracker Sync",
   "version": "1.0.2",
@@ -11,8 +11,17 @@
     "128": "assets/icons/icon-128.png"
   },
   "background": {
+    "scripts": ["src/background.js"],
     "service_worker": "src/background.js",
     "type": "module"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "manga-tracker-sync@mangalist.app",
+      "data_collection_permissions": {
+        "required": ["authenticationInfo", "websiteActivity"]
+      }
+    }
   },
   "action": {
     "default_title": "Manga Tracker Sync",

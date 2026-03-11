@@ -58,6 +58,12 @@ export function Footer() {
             >
               {t("contact")}
             </Link>
+            <Link
+              href="/how-to-use-api"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {t("howToUseApi")}
+            </Link>
           </div>
 
           {/* Language Switcher */}

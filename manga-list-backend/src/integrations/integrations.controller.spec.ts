@@ -5,8 +5,12 @@ describe('IntegrationsController', () => {
   const integrationsService = {
     startConnection: jest.fn(),
     exchangeConnectionCode: jest.fn(),
+    createPartnerApplication: jest.fn(),
     syncWithIntegrationToken: jest.fn(),
     listPartners: jest.fn(),
+    listPartnerApplications: jest.fn(),
+    approvePartnerApplication: jest.fn(),
+    rejectPartnerApplication: jest.fn(),
     createPartner: jest.fn(),
     updatePartner: jest.fn(),
     rotatePartnerSecret: jest.fn(),

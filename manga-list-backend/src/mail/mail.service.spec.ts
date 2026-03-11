@@ -79,4 +79,22 @@ describe('MailService', () => {
       expect.stringContaining('secret-token'),
     );
   });
+
+  it('redacts secret on integration approval email fallback logs', async () => {
+    configValues.set('MAIL_PROVIDER', 'log');
+
+    await service.sendIntegrationApprovedEmail('partner@example.com', {
+      partnerName: 'Site A',
+      partnerSlug: 'site-a',
+      clientSecret: 'super-secret-value',
+      docsUrl: 'https://example.com/how-to-use-api',
+    });
+
+    expect(logSpy).toHaveBeenCalledWith(
+      'MAIL_PROVIDER=log - integration approved email queued for partner@example.com (secret redacted)',
+    );
+    expect(logSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining('super-secret-value'),
+    );
+  });
 });

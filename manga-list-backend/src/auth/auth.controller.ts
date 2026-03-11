@@ -362,7 +362,8 @@ export class AuthController {
   @Get('google/start')
   @UseGuards(AuthRateLimitGuard)
   async googleAuthStart(@Req() req: ExpressRequest, @Res() res: Response) {
-    const sessionId = randomBytes(24).toString('hex');
+    const existingSessionId = this.readCookie(req.headers?.cookie, 'oauth_session');
+    const sessionId = existingSessionId || randomBytes(24).toString('hex');
     const userAgent = req.headers['user-agent'];
     const contextHash = this.authService.buildOAuthContextHash(
       sessionId,
@@ -370,6 +371,8 @@ export class AuthController {
     );
     const state = await this.authService.createOAuthState(contextHash);
 
+    // Reuse current oauth_session when available so repeated clicks/tabs
+    // do not invalidate previous state context for the same browser.
     this.setOAuthSessionCookie(res, sessionId);
     res.redirect(`/auth/google?state=${encodeURIComponent(state)}`);
   }

@@ -13,8 +13,12 @@ import {
 import { Request as ExpressRequest } from 'express';
 import { CsrfGuard } from '../auth/guards/csrf.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApproveIntegrationApplicationDto } from './dto/approve-integration-application.dto';
+import { CreateIntegrationApplicationDto } from './dto/create-integration-application.dto';
 import { CreateIntegrationPartnerDto } from './dto/create-integration-partner.dto';
 import { ExchangeIntegrationConnectDto } from './dto/exchange-integration-connect.dto';
+import { ListIntegrationApplicationsQueryDto } from './dto/list-integration-applications-query.dto';
+import { RejectIntegrationApplicationDto } from './dto/reject-integration-application.dto';
 import { RotateIntegrationPartnerSecretDto } from './dto/rotate-integration-partner-secret.dto';
 import { StartIntegrationConnectDto } from './dto/start-integration-connect.dto';
 import { SyncIntegrationDto } from './dto/sync-integration.dto';
@@ -27,6 +31,7 @@ import { IntegrationsService } from './integrations.service';
 type AuthenticatedRequest = ExpressRequest & {
   user?: {
     id: string;
+    email?: string;
   };
 };
 
@@ -48,6 +53,14 @@ export class IntegrationsController {
       throw new UnauthorizedException('Authenticated user not found');
     }
     return req.user.id;
+  }
+
+  private requireUserEmail(req: AuthenticatedRequest): string {
+    const email = req.user?.email?.trim().toLowerCase();
+    if (!email) {
+      throw new UnauthorizedException('Authenticated admin email not found');
+    }
+    return email;
   }
 
   private requireIntegrationAuth(req: IntegrationRequest) {
@@ -78,6 +91,12 @@ export class IntegrationsController {
   @Post('connect/exchange')
   async exchangeConnectionCode(@Body() dto: ExchangeIntegrationConnectDto) {
     return this.integrationsService.exchangeConnectionCode(dto);
+  }
+
+  @UseGuards(IntegrationRateLimitGuard)
+  @Post('public/apply')
+  async createPartnerApplication(@Body() dto: CreateIntegrationApplicationDto) {
+    return this.integrationsService.createPartnerApplication(dto);
   }
 
   @UseGuards(IntegrationTokenGuard, IntegrationRateLimitGuard)
@@ -135,6 +154,40 @@ export class IntegrationsController {
   @Get('admin/connections')
   async listConnections(@Query('partnerSlug') partnerSlug?: string) {
     return this.integrationsService.listConnections(partnerSlug);
+  }
+
+  @UseGuards(JwtAuthGuard, IntegrationAdminGuard)
+  @Get('admin/applications')
+  async listApplications(@Query() query: ListIntegrationApplicationsQueryDto) {
+    return this.integrationsService.listPartnerApplications(query.status);
+  }
+
+  @UseGuards(JwtAuthGuard, CsrfGuard, IntegrationAdminGuard)
+  @Post('admin/applications/:id/approve')
+  async approveApplication(
+    @Request() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: ApproveIntegrationApplicationDto,
+  ) {
+    return this.integrationsService.approvePartnerApplication(
+      id,
+      this.requireUserEmail(req),
+      dto,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, CsrfGuard, IntegrationAdminGuard)
+  @Post('admin/applications/:id/reject')
+  async rejectApplication(
+    @Request() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: RejectIntegrationApplicationDto,
+  ) {
+    return this.integrationsService.rejectPartnerApplication(
+      id,
+      this.requireUserEmail(req),
+      dto,
+    );
   }
 
   @UseGuards(JwtAuthGuard, CsrfGuard, IntegrationAdminGuard)

@@ -90,6 +90,15 @@ export class IntegrationRateLimitGuard implements CanActivate {
       routeKey === 'POST:connect/exchange' ||
       routeKey === 'POST:/connect/exchange';
     const isSync = routeKey === 'POST:sync' || routeKey === 'POST:/sync';
+    const isPublicApply =
+      routeKey === 'POST:public/apply' || routeKey === 'POST:/public/apply';
+
+    if (isPublicApply) {
+      return {
+        maxAttempts: 5,
+        windowMs: CACHE_TTL_MS.AUTH_RATE_LIMIT_WINDOW,
+      };
+    }
 
     if (isExchange) {
       return {

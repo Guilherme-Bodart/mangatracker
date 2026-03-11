@@ -12,6 +12,10 @@ const content = {
         body: "For account, login, or platform usage questions, email us and include as much context as possible.",
       },
       {
+        title: "Manga site suggestions",
+        body: "Want a new source in the extension? Send us an email with the URL of manga sites you read so we can evaluate and add support.",
+      },
+      {
         title: "Security reports",
         body: "If you found a potential security issue, report it privately with reproduction steps so we can investigate quickly.",
       },
@@ -32,6 +36,10 @@ const content = {
       {
         title: "Suporte geral",
         body: "Para d\u00favidas sobre conta, login ou uso da plataforma, envie e-mail com o m\u00e1ximo de contexto poss\u00edvel.",
+      },
+      {
+        title: "Sugest\u00f5es de sites de mang\u00e1",
+        body: "Quer uma nova fonte na extens\u00e3o? Envie um e-mail com a URL dos sites de mang\u00e1 que voc\u00ea l\u00ea para avaliarmos e adicionarmos suporte.",
       },
       {
         title: "Relatos de seguran\u00e7a",

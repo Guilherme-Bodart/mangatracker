@@ -6,7 +6,9 @@ describe('IntegrationsController', () => {
     startConnection: jest.fn(),
     exchangeConnectionCode: jest.fn(),
     createPartnerApplication: jest.fn(),
+    getPublicApplicationStatus: jest.fn(),
     syncWithIntegrationToken: jest.fn(),
+    getConnectionStatus: jest.fn(),
     listPartners: jest.fn(),
     listPartnerApplications: jest.fn(),
     approvePartnerApplication: jest.fn(),
@@ -51,6 +53,37 @@ describe('IntegrationsController', () => {
         partnerSlug: 'site-a',
       }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('should call createPartnerApplication with requester ip', async () => {
+    integrationsService.createPartnerApplication.mockResolvedValue({
+      id: 'app-1',
+      status: 'PENDING',
+    });
+
+    const result = await controller.createPartnerApplication(
+      { ip: '127.0.0.1' } as never,
+      {
+        requestedSlug: 'site-a',
+        name: 'Site A',
+        contactEmail: 'tech@site-a.com',
+        siteUrl: 'https://site-a.com',
+      },
+    );
+
+    expect(integrationsService.createPartnerApplication).toHaveBeenCalledWith(
+      {
+        requestedSlug: 'site-a',
+        name: 'Site A',
+        contactEmail: 'tech@site-a.com',
+        siteUrl: 'https://site-a.com',
+      },
+      '127.0.0.1',
+    );
+    expect(result).toEqual({
+      id: 'app-1',
+      status: 'PENDING',
+    });
   });
 
   it('should pass idempotency key to sync service', async () => {
@@ -148,5 +181,49 @@ describe('IntegrationsController', () => {
         },
       ),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('should call getConnectionStatus with integration auth', async () => {
+    integrationsService.getConnectionStatus.mockResolvedValue({
+      connected: true,
+    });
+
+    const result = await controller.getConnectionStatus({
+      integrationAuth: {
+        userId: 'user-1',
+        partnerId: 'partner-1',
+        partnerSlug: 'site-a',
+        scopes: ['manga:write'],
+        tokenExpiresAt: '2030-01-01T00:00:00.000Z',
+      },
+    } as never);
+
+    expect(integrationsService.getConnectionStatus).toHaveBeenCalledWith({
+      userId: 'user-1',
+      partnerId: 'partner-1',
+      partnerSlug: 'site-a',
+      scopes: ['manga:write'],
+      tokenExpiresAt: '2030-01-01T00:00:00.000Z',
+    });
+    expect(result).toEqual({ connected: true });
+  });
+
+  it('should call getPublicApplicationStatus with route id', async () => {
+    integrationsService.getPublicApplicationStatus.mockResolvedValue({
+      id: 'app-1',
+      status: 'PENDING',
+      nextAction: 'WAIT_APPROVAL',
+    });
+
+    const result = await controller.getPublicApplicationStatus('app-1');
+
+    expect(integrationsService.getPublicApplicationStatus).toHaveBeenCalledWith(
+      'app-1',
+    );
+    expect(result).toEqual({
+      id: 'app-1',
+      status: 'PENDING',
+      nextAction: 'WAIT_APPROVAL',
+    });
   });
 });

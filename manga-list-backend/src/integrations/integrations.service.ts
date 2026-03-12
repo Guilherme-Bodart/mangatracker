@@ -2,6 +2,8 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
   Inject,
   Injectable,
   Logger,
@@ -45,6 +47,7 @@ type IntegrationAuthContext = {
   partnerId: string;
   partnerSlug: string;
   scopes: string[];
+  tokenExpiresAt?: string;
 };
 
 type IntegrationConnectPayload = {
@@ -95,13 +98,25 @@ export class IntegrationsService {
     });
   }
 
-  async createPartnerApplication(dto: CreateIntegrationApplicationDto) {
+  async createPartnerApplication(
+    dto: CreateIntegrationApplicationDto,
+    requesterIp?: string,
+  ) {
+    if (dto.website?.trim()) {
+      throw new BadRequestException('Invalid submission');
+    }
+
+    await this.validatePublicApplyCaptcha(dto.captchaToken, requesterIp);
+
     const requestedSlug = dto.requestedSlug.trim().toLowerCase();
     const name = dto.name.trim();
     const contactEmail = dto.contactEmail.trim().toLowerCase();
     const siteUrl = this.normalizeSiteUrl(dto.siteUrl);
     const normalizedDomains = this.normalizeDomains(dto.allowedDomains);
     const inferredDomain = this.readHostnameFromUrl(siteUrl);
+    if (inferredDomain) {
+      await this.assertPublicApplyDomainCooldown(inferredDomain);
+    }
     const allowedDomains =
       normalizedDomains.length > 0
         ? normalizedDomains
@@ -149,7 +164,7 @@ export class IntegrationsService {
       throw new ConflictException('An application for this site is already pending review');
     }
 
-    return this.prisma.integrationPartnerApplication.create({
+    const created = await this.prisma.integrationPartnerApplication.create({
       data: {
         requestedSlug,
         name,
@@ -171,6 +186,16 @@ export class IntegrationsService {
         createdAt: true,
       },
     });
+
+    if (inferredDomain) {
+      await this.cacheManager.set(
+        this.buildPublicApplyDomainCooldownKey(inferredDomain),
+        created.id,
+        this.getPublicApplyDomainCooldownMs(),
+      );
+    }
+
+    return created;
   }
 
   async listPartnerApplications(
@@ -197,6 +222,37 @@ export class IntegrationsService {
         updatedAt: true,
       },
     });
+  }
+
+  async getPublicApplicationStatus(id: string) {
+    const application = await this.prisma.integrationPartnerApplication.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        requestedSlug: true,
+        status: true,
+        reviewReason: true,
+        createdAt: true,
+        reviewedAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!application) {
+      throw new BadRequestException('Partner application not found');
+    }
+
+    const nextAction =
+      application.status === IntegrationPartnerApplicationStatus.PENDING
+        ? 'WAIT_APPROVAL'
+        : application.status === IntegrationPartnerApplicationStatus.APPROVED
+          ? 'CHECK_EMAIL_FOR_CREDENTIALS'
+          : 'CHECK_REVIEW_REASON_OR_CONTACT_SUPPORT';
+
+    return {
+      ...application,
+      nextAction,
+    };
   }
 
   async approvePartnerApplication(
@@ -443,6 +499,71 @@ export class IntegrationsService {
         },
       },
     });
+  }
+
+  async getConnectionStatus(auth: IntegrationAuthContext) {
+    const partner = await this.prisma.integrationPartner.findFirst({
+      where: {
+        id: auth.partnerId,
+        slug: auth.partnerSlug,
+      },
+      select: {
+        id: true,
+        slug: true,
+        isActive: true,
+      },
+    });
+
+    const connection = await this.prisma.userPartnerConnection.findFirst({
+      where: {
+        userId: auth.userId,
+        partnerId: auth.partnerId,
+      },
+      select: {
+        id: true,
+        isActive: true,
+        scopes: true,
+        updatedAt: true,
+      },
+    });
+
+    const tokenHasWriteScope =
+      auth.scopes.length === 0 || auth.scopes.includes('manga:write');
+    const connectionHasWriteScope =
+      !!connection &&
+      (connection.scopes.length === 0 ||
+        connection.scopes.includes('manga:write'));
+    const isPartnerActive = !!partner?.isActive;
+    const isConnectionActive = !!connection?.isActive;
+    const connected =
+      isPartnerActive &&
+      isConnectionActive &&
+      tokenHasWriteScope &&
+      connectionHasWriteScope;
+    const effectiveScopes =
+      connection?.scopes && connection.scopes.length > 0
+        ? connection.scopes
+        : auth.scopes;
+
+    return {
+      connected,
+      partner: {
+        id: auth.partnerId,
+        slug: auth.partnerSlug,
+      },
+      checks: {
+        partnerExists: !!partner,
+        partnerActive: isPartnerActive,
+        connectionExists: !!connection,
+        connectionActive: isConnectionActive,
+        tokenHasWriteScope,
+        connectionHasWriteScope,
+      },
+      scopes: effectiveScopes,
+      tokenExpiresAt: auth.tokenExpiresAt ?? null,
+      connectionId: connection?.id ?? null,
+      connectionUpdatedAt: connection?.updatedAt?.toISOString() ?? null,
+    };
   }
 
   async revokeConnection(connectionId: string) {
@@ -964,6 +1085,92 @@ export class IntegrationsService {
     }
 
     return 'https://your-frontend-domain.com/pt/how-to-use-api';
+  }
+
+  private getPublicApplyDomainCooldownMs(): number {
+    const raw = this.configService.get<string>(
+      'INTEGRATION_PUBLIC_APPLY_DOMAIN_COOLDOWN_MS',
+    );
+    if (!raw) {
+      return CACHE_TTL_MS.AUTH_RATE_LIMIT_WINDOW;
+    }
+
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return CACHE_TTL_MS.AUTH_RATE_LIMIT_WINDOW;
+    }
+    return Math.floor(parsed);
+  }
+
+  private buildPublicApplyDomainCooldownKey(domain: string): string {
+    return `integrations:public-apply:domain:${domain}`;
+  }
+
+  private async assertPublicApplyDomainCooldown(domain: string): Promise<void> {
+    const key = this.buildPublicApplyDomainCooldownKey(domain);
+    const existing = await this.cacheManager.get<string>(key);
+    if (existing) {
+      throw new HttpException(
+        'Too many applications for this domain. Please try again later.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+  }
+
+  private async validatePublicApplyCaptcha(
+    captchaToken: string | undefined,
+    requesterIp?: string,
+  ): Promise<void> {
+    const secret = this.configService
+      .get<string>('INTEGRATION_PUBLIC_APPLY_CAPTCHA_SECRET')
+      ?.trim();
+    if (!secret) {
+      return;
+    }
+
+    const token = captchaToken?.trim();
+    if (!token) {
+      throw new BadRequestException('Captcha token is required');
+    }
+
+    const verifyUrl =
+      this.configService
+        .get<string>('INTEGRATION_PUBLIC_APPLY_CAPTCHA_VERIFY_URL')
+        ?.trim() || 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+
+    const payload = new URLSearchParams();
+    payload.set('secret', secret);
+    payload.set('response', token);
+    if (requesterIp?.trim()) {
+      payload.set('remoteip', requesterIp.trim());
+    }
+
+    let response: Awaited<ReturnType<typeof fetch>>;
+    try {
+      response = await fetch(verifyUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: payload.toString(),
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Captcha verification request failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
+      throw new BadRequestException('Captcha validation unavailable');
+    }
+
+    let parsed: { success?: boolean } | null = null;
+    try {
+      parsed = (await response.json()) as { success?: boolean };
+    } catch {
+      parsed = null;
+    }
+
+    if (!response.ok || !parsed?.success) {
+      throw new BadRequestException('Captcha validation failed');
+    }
   }
 
   private async getOrCreateExternalManga(

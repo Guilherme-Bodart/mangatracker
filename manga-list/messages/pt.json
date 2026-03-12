@@ -292,6 +292,35 @@
       "rejectPrompt": "Motivo da rejeicao (opcional)",
       "empty": "Nenhuma inscricao encontrada."
     },
+    "connectionStatus": {
+      "title": "Status do token parceiro",
+      "description": "Cole um bearer token de integracao para validar se a conexao do parceiro esta saudavel agora.",
+      "tokenLabel": "Access token",
+      "tokenPlaceholder": "eyJhbGciOi...",
+      "checkButton": "Verificar status",
+      "checkingButton": "Verificando...",
+      "clearButton": "Limpar",
+      "connected": "Conectado",
+      "disconnected": "Desconectado",
+      "partnerLabel": "Parceiro:",
+      "scopesLabel": "Scopes:",
+      "noScopes": "sem scope",
+      "tokenExpiresAtLabel": "Token expira em:",
+      "connectionIdLabel": "ID da conexao:",
+      "connectionUpdatedAtLabel": "Conexao atualizada em:",
+      "checksTitle": "Validacoes",
+      "checkOk": "ok",
+      "checkFail": "falha",
+      "notAvailable": "n/d",
+      "checks": {
+        "partnerExists": "Parceiro existe",
+        "partnerActive": "Parceiro ativo",
+        "connectionExists": "Conexao existe",
+        "connectionActive": "Conexao ativa",
+        "tokenHasWriteScope": "Token tem manga:write",
+        "connectionHasWriteScope": "Conexao tem manga:write"
+      }
+    },
     "connections": {
       "title": "Conexoes",
       "allPartners": "Todos",
@@ -318,6 +347,9 @@
       "approveApplicationError": "Falha ao aprovar inscricao",
       "applicationRejectedSuccess": "Inscricao rejeitada para {slug}",
       "rejectApplicationError": "Falha ao rejeitar inscricao",
+      "connectionStatusTokenRequired": "Cole um token antes de verificar",
+      "connectionStatusLoadedSuccess": "Status da conexao carregado",
+      "connectionStatusLoadError": "Falha ao carregar status da conexao",
       "connectionRevokedSuccess": "Conexao revogada",
       "revokeConnectionError": "Falha ao revogar conexao"
     }
@@ -349,29 +381,40 @@
         "title": "1) Envie a inscrição pública",
         "body": "Cadastre seu site parceiro na fila de espera pública.",
         "endpoint": "POST /integrations/public/apply",
-        "request": "{\n  \"requestedSlug\": \"site-a\",\n  \"name\": \"Site A\",\n  \"contactEmail\": \"tech@site-a.com\",\n  \"siteUrl\": \"https://site-a.com\",\n  \"allowedDomains\": [\"site-a.com\"],\n  \"useCase\": \"Sincronizar progresso de capítulos do Site A\"\n}",
+        "request": "{\n  \"requestedSlug\": \"site-a\",\n  \"name\": \"Site A\",\n  \"contactEmail\": \"tech@site-a.com\",\n  \"siteUrl\": \"https://site-a.com\",\n  \"allowedDomains\": [\"site-a.com\"],\n  \"useCase\": \"Sincronizar progresso de capítulos do Site A\",\n  \"captchaToken\": \"token-quando-captcha-estiver-ativo\"\n}",
         "response": "{\n  \"id\": \"...\",\n  \"requestedSlug\": \"site-a\",\n  \"status\": \"PENDING\",\n  \"createdAt\": \"...\"\n}",
         "notes": {
           "1": "Esse endpoint é público e possui rate limit.",
-          "2": "A inscrição não ativa a integração imediatamente."
+          "2": "A inscrição não ativa a integração imediatamente.",
+          "3": "Mantenha `website` (campo honeypot) vazio; se captcha estiver ativo, envie `captchaToken`."
+        }
+      },
+      "applicationStatus": {
+        "title": "2) Consulte o status da solicitação (opcional)",
+        "body": "Use o id da inscrição retornado no passo 1 para acompanhar a aprovação pelo backend.",
+        "endpoint": "GET /integrations/public/apply/{applicationId}/status",
+        "response": "{\n  \"id\": \"...\",\n  \"requestedSlug\": \"site-a\",\n  \"status\": \"PENDING | APPROVED | REJECTED\",\n  \"reviewReason\": \"opcional\",\n  \"nextAction\": \"WAIT_APPROVAL | CHECK_EMAIL_FOR_CREDENTIALS | CHECK_REVIEW_REASON_OR_CONTACT_SUPPORT\",\n  \"createdAt\": \"...\",\n  \"reviewedAt\": \"...\",\n  \"updatedAt\": \"...\"\n}",
+        "notes": {
+          "1": "Use essa rota se quiser polling self-service no seu backend.",
+          "2": "O applicationId é retornado no POST /integrations/public/apply."
         }
       },
       "approval": {
-        "title": "2) Espere a aprovação da solicitação",
+        "title": "3) Espere a aprovação da solicitação",
         "body": "Quando aprovarmos, você receberá por e-mail o partnerSlug, o clientSecret e os próximos passos.",
         "notes": {
           "1": "Nesta etapa, não há chamada de API obrigatória do parceiro."
         }
       },
       "userConnectCode": {
-        "title": "3) Peça ao usuário o código de conexão",
+        "title": "4) Peça ao usuário o código de conexão",
         "body": "O usuário gera o código dentro do Manga Tracker e compartilha com o seu site.",
         "notes": {
           "1": "O código expira em 5 minutos e só pode ser usado uma vez."
         }
       },
       "exchange": {
-        "title": "4) Troque o código por access token",
+        "title": "5) Troque o código por access token",
         "body": "Seu backend troca o código do usuário por um token de acesso do parceiro.",
         "endpoint": "POST /integrations/connect/exchange",
         "request": "{\n  \"partnerSlug\": \"site-a\",\n  \"clientSecret\": \"secret-mostrado-uma-vez\",\n  \"code\": \"codigo-temporario\",\n  \"sourceDomain\": \"site-a.com\"\n}",
@@ -382,14 +425,15 @@
         }
       },
       "sync": {
-        "title": "5) Sincronize capítulos lidos",
+        "title": "6) Sincronize capítulos lidos",
         "body": "Envie atualizações de capítulo a partir do seu backend.",
         "endpoint": "POST /integrations/sync",
         "request": "Headers:\n  Authorization: Bearer <accessToken>\n  x-idempotency-key: <id-unico-do-evento>\n\nBody:\n{\n  \"partnerSlug\": \"site-a\",\n  \"externalMangaId\": \"one-piece-123\",\n  \"title\": \"One Piece\",\n  \"chapter\": 1123,\n  \"sourceDomain\": \"site-a.com\"\n}",
         "response": "{\n  \"outcome\": \"created | updated | noop\",\n  \"userMangaId\": \"...\",\n  \"currentChapter\": 1123\n}",
         "notes": {
           "1": "Rate limit: 120 requisições por minuto.",
-          "2": "Reutilize a mesma chave de idempotência em retries."
+          "2": "Reutilize a mesma chave de idempotência em retries.",
+          "3": "Health check opcional: GET /integrations/connection/status usando o mesmo Bearer token."
         }
       }
     },
@@ -496,6 +540,92 @@
     "profile": "Perfil",
     "publicProfile": "Perfil P\u00fablico",
     "logout": "Sair"
+  },
+  "PublicIntegrationsApply": {
+    "title": "Inscri\u00e7\u00e3o para API de parceiros",
+    "subtitle": "Envie seu site para revis\u00e3o e receba credenciais ap\u00f3s aprova\u00e7\u00e3o.",
+    "form": {
+      "title": "Formul\u00e1rio de inscri\u00e7\u00e3o",
+      "requestedSlugLabel": "Slug desejado",
+      "requestedSlugPlaceholder": "site-a",
+      "nameLabel": "Nome do parceiro",
+      "namePlaceholder": "Site A",
+      "contactEmailLabel": "E-mail t\u00e9cnico de contato",
+      "contactEmailPlaceholder": "tech@site-a.com",
+      "siteUrlLabel": "URL do site",
+      "siteUrlPlaceholder": "https://site-a.com",
+      "allowedDomainsLabel": "Dom\u00ednios permitidos (CSV)",
+      "allowedDomainsPlaceholder": "site-a.com, app.site-a.com",
+      "allowedDomainsHint": "Se vazio, inferimos o dom\u00ednio pela URL do site.",
+      "useCaseLabel": "Caso de uso",
+      "useCasePlaceholder": "Sincronizar progresso de cap\u00edtulos do meu site de leitura.",
+      "websiteTrapLabel": "Website",
+      "captchaLabel": "Captcha",
+      "captchaDisabled": "Captcha n\u00e3o configurado neste ambiente.",
+      "submitting": "Enviando...",
+      "submit": "Enviar inscri\u00e7\u00e3o"
+    },
+    "result": {
+      "title": "Inscri\u00e7\u00e3o criada",
+      "body": "Guarde o id da inscri\u00e7\u00e3o para acompanhar status sem contato manual.",
+      "applicationId": "ID da inscri\u00e7\u00e3o",
+      "requestedSlug": "Slug solicitado",
+      "status": "Status",
+      "copyIdButton": "Copiar ID da inscri\u00e7\u00e3o",
+      "checkStatusButton": "Consultar status"
+    },
+    "messages": {
+      "submitSuccess": "Inscri\u00e7\u00e3o enviada com sucesso",
+      "submitError": "Falha ao enviar inscri\u00e7\u00e3o",
+      "copyIdSuccess": "ID da inscri\u00e7\u00e3o copiado",
+      "copyIdError": "N\u00e3o foi poss\u00edvel copiar o ID",
+      "captchaRequired": "Conclua o captcha antes de enviar",
+      "captchaLoadError": "Falha ao carregar o captcha"
+    }
+  },
+  "PublicIntegrationsStatus": {
+    "title": "Status da inscri\u00e7\u00e3o",
+    "subtitle": "Acompanhe o progresso da aprova\u00e7\u00e3o com o id da inscri\u00e7\u00e3o.",
+    "lookup": {
+      "title": "Consultar inscri\u00e7\u00e3o",
+      "applicationIdLabel": "ID da inscri\u00e7\u00e3o",
+      "applicationIdPlaceholder": "Cole o id da inscri\u00e7\u00e3o",
+      "submit": "Consultar status",
+      "loading": "Consultando..."
+    },
+    "status": {
+      "notLoaded": "N\u00e3o carregado",
+      "values": {
+        "PENDING": "Pendente",
+        "APPROVED": "Aprovado",
+        "REJECTED": "Rejeitado"
+      }
+    },
+    "nextAction": {
+      "notLoaded": "N\u00e3o carregado",
+      "values": {
+        "WAIT_APPROVAL": "Aguardar aprova\u00e7\u00e3o",
+        "CHECK_EMAIL_FOR_CREDENTIALS": "Verifique o e-mail para partnerSlug e clientSecret",
+        "CHECK_REVIEW_REASON_OR_CONTACT_SUPPORT": "Revise o motivo da rejei\u00e7\u00e3o ou fale com suporte"
+      }
+    },
+    "result": {
+      "title": "Status atual",
+      "applicationId": "ID da inscri\u00e7\u00e3o",
+      "requestedSlug": "Slug solicitado",
+      "status": "Status",
+      "nextAction": "Pr\u00f3xima a\u00e7\u00e3o",
+      "reviewReason": "Motivo da revis\u00e3o",
+      "createdAt": "Criado em",
+      "reviewedAt": "Revisado em",
+      "updatedAt": "Atualizado em",
+      "notAvailable": "n/d"
+    },
+    "messages": {
+      "applicationIdRequired": "Cole o ID da inscri\u00e7\u00e3o antes de consultar",
+      "statusLoadedSuccess": "Status carregado com sucesso",
+      "statusLoadError": "Falha ao carregar status da inscri\u00e7\u00e3o"
+    }
   },
   "Footer": {
     "copyright": "Todos os direitos reservados.",

@@ -68,10 +68,28 @@ describe('Integrations routes (e2e)', () => {
       expiresInSeconds: 3600,
       scopes: ['manga:write'],
     })),
+    getPublicApplicationStatus: jest.fn(async () => ({
+      id: 'app-1',
+      requestedSlug: 'site-a',
+      status: 'PENDING',
+      nextAction: 'WAIT_APPROVAL',
+    })),
     syncWithIntegrationToken: jest.fn(async () => ({
       outcome: 'created',
       userMangaId: 'um-1',
       currentChapter: 10,
+    })),
+    getConnectionStatus: jest.fn(async () => ({
+      connected: true,
+      checks: {
+        partnerExists: true,
+        partnerActive: true,
+        connectionExists: true,
+        connectionActive: true,
+        tokenHasWriteScope: true,
+        connectionHasWriteScope: true,
+      },
+      scopes: ['manga:write'],
     })),
     listPartners: jest.fn(async () => []),
     createPartner: jest.fn(async () => ({
@@ -201,5 +219,36 @@ describe('Integrations routes (e2e)', () => {
         expect(body.id).toBe('partner-1');
       });
     expect(integrationsService.createPartner).toHaveBeenCalled();
+  });
+
+  it('should expose partner connection status route', async () => {
+    await request(app.getHttpServer())
+      .get('/integrations/connection/status')
+      .set('Authorization', 'Bearer any-token')
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.connected).toBe(true);
+      });
+
+    expect(integrationsService.getConnectionStatus).toHaveBeenCalledWith({
+      userId: 'user-1',
+      partnerId: 'partner-1',
+      partnerSlug: 'site-a',
+      scopes: ['manga:write'],
+    });
+  });
+
+  it('should expose public application status route', async () => {
+    await request(app.getHttpServer())
+      .get('/integrations/public/apply/app-1/status')
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.id).toBe('app-1');
+        expect(body.nextAction).toBe('WAIT_APPROVAL');
+      });
+
+    expect(integrationsService.getPublicApplicationStatus).toHaveBeenCalledWith(
+      'app-1',
+    );
   });
 });

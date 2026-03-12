@@ -1,3 +1,4 @@
+import { BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { IntegrationsService } from './integrations.service';
 
@@ -7,6 +8,12 @@ describe('IntegrationsService', () => {
   const prisma = {
     integrationPartner: {
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
+    },
+    integrationPartnerApplication: {
+      findUnique: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
     },
     userPartnerConnection: {
       findFirst: jest.fn(),
@@ -40,7 +47,7 @@ describe('IntegrationsService', () => {
   };
 
   const configService = {
-    get: jest.fn((key: string) => {
+    get: jest.fn((key: string): string | undefined => {
       if (key === 'JWT_SECRET') return 'jwt-secret';
       if (key === 'INTEGRATION_PUBLIC_PARTNERS') return 'mangalivre';
       return undefined;
@@ -278,5 +285,128 @@ describe('IntegrationsService', () => {
 
     expect(first).toEqual(second);
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns connected=true in connection status when partner and connection are active', async () => {
+    prisma.integrationPartner.findFirst.mockResolvedValue({
+      id: 'partner-1',
+      slug: 'site-a',
+      isActive: true,
+    });
+    prisma.userPartnerConnection.findFirst.mockResolvedValue({
+      id: 'conn-1',
+      isActive: true,
+      scopes: ['manga:write'],
+      updatedAt: new Date('2026-03-11T12:00:00.000Z'),
+    });
+
+    const result = await service.getConnectionStatus({
+      userId: 'user-1',
+      partnerId: 'partner-1',
+      partnerSlug: 'site-a',
+      scopes: ['manga:write'],
+      tokenExpiresAt: '2026-04-10T12:00:00.000Z',
+    });
+
+    expect(result.connected).toBe(true);
+    expect(result.checks.partnerActive).toBe(true);
+    expect(result.checks.connectionActive).toBe(true);
+    expect(result.tokenExpiresAt).toBe('2026-04-10T12:00:00.000Z');
+  });
+
+  it('returns connected=false in connection status when connection is missing', async () => {
+    prisma.integrationPartner.findFirst.mockResolvedValue({
+      id: 'partner-1',
+      slug: 'site-a',
+      isActive: true,
+    });
+    prisma.userPartnerConnection.findFirst.mockResolvedValue(null);
+
+    const result = await service.getConnectionStatus({
+      userId: 'user-1',
+      partnerId: 'partner-1',
+      partnerSlug: 'site-a',
+      scopes: ['manga:write'],
+    });
+
+    expect(result.connected).toBe(false);
+    expect(result.checks.connectionExists).toBe(false);
+  });
+
+  it('returns public application status with nextAction', async () => {
+    prisma.integrationPartnerApplication.findUnique.mockResolvedValue({
+      id: 'app-1',
+      requestedSlug: 'site-a',
+      status: 'PENDING',
+      reviewReason: null,
+      createdAt: new Date('2026-03-11T10:00:00.000Z'),
+      reviewedAt: null,
+      updatedAt: new Date('2026-03-11T10:00:00.000Z'),
+    });
+
+    const result = await service.getPublicApplicationStatus('app-1');
+
+    expect(prisma.integrationPartnerApplication.findUnique).toHaveBeenCalledWith({
+      where: { id: 'app-1' },
+      select: {
+        id: true,
+        requestedSlug: true,
+        status: true,
+        reviewReason: true,
+        createdAt: true,
+        reviewedAt: true,
+        updatedAt: true,
+      },
+    });
+    expect(result.nextAction).toBe('WAIT_APPROVAL');
+  });
+
+  it('rejects public application when honeypot field is filled', async () => {
+    await expect(
+      service.createPartnerApplication({
+        requestedSlug: 'site-a',
+        name: 'Site A',
+        contactEmail: 'tech@site-a.com',
+        siteUrl: 'https://site-a.com',
+        website: 'bot-filled-value',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects public application when domain cooldown is active', async () => {
+    await cacheManager.set('integrations:public-apply:domain:site-a.com', 'app-1');
+
+    try {
+      await service.createPartnerApplication({
+        requestedSlug: 'site-a',
+        name: 'Site A',
+        contactEmail: 'tech@site-a.com',
+        siteUrl: 'https://site-a.com',
+      });
+      fail('Expected domain cooldown to throw');
+    } catch (error) {
+      expect(error).toBeInstanceOf(HttpException);
+      expect((error as HttpException).getStatus()).toBe(
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+  });
+
+  it('requires captcha token when captcha secret is configured', async () => {
+    configService.get.mockImplementation((key: string) => {
+      if (key === 'JWT_SECRET') return 'jwt-secret';
+      if (key === 'INTEGRATION_PUBLIC_PARTNERS') return 'mangalivre';
+      if (key === 'INTEGRATION_PUBLIC_APPLY_CAPTCHA_SECRET') return 'secret';
+      return undefined;
+    });
+
+    await expect(
+      service.createPartnerApplication({
+        requestedSlug: 'site-a',
+        name: 'Site A',
+        contactEmail: 'tech@site-a.com',
+        siteUrl: 'https://site-a.com',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

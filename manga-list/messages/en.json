@@ -291,6 +291,35 @@
       "rejectPrompt": "Rejection reason (optional)",
       "empty": "No applications found."
     },
+    "connectionStatus": {
+      "title": "Partner token status",
+      "description": "Paste an integration bearer token to validate if partner connection is currently healthy.",
+      "tokenLabel": "Access token",
+      "tokenPlaceholder": "eyJhbGciOi...",
+      "checkButton": "Check status",
+      "checkingButton": "Checking...",
+      "clearButton": "Clear",
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "partnerLabel": "Partner:",
+      "scopesLabel": "Scopes:",
+      "noScopes": "no scope",
+      "tokenExpiresAtLabel": "Token expires at:",
+      "connectionIdLabel": "Connection ID:",
+      "connectionUpdatedAtLabel": "Connection updated at:",
+      "checksTitle": "Validation checks",
+      "checkOk": "ok",
+      "checkFail": "fail",
+      "notAvailable": "n/a",
+      "checks": {
+        "partnerExists": "Partner exists",
+        "partnerActive": "Partner active",
+        "connectionExists": "Connection exists",
+        "connectionActive": "Connection active",
+        "tokenHasWriteScope": "Token has manga:write",
+        "connectionHasWriteScope": "Connection has manga:write"
+      }
+    },
     "connections": {
       "title": "Connections",
       "allPartners": "All",
@@ -317,6 +346,9 @@
       "approveApplicationError": "Failed to approve application",
       "applicationRejectedSuccess": "Application rejected for {slug}",
       "rejectApplicationError": "Failed to reject application",
+      "connectionStatusTokenRequired": "Paste a token before checking",
+      "connectionStatusLoadedSuccess": "Connection status loaded",
+      "connectionStatusLoadError": "Failed to load connection status",
       "connectionRevokedSuccess": "Connection revoked",
       "revokeConnectionError": "Failed to revoke connection"
     }
@@ -348,29 +380,40 @@
         "title": "1) Submit public application",
         "body": "Register your partner site in the public waitlist.",
         "endpoint": "POST /integrations/public/apply",
-        "request": "{\n  \"requestedSlug\": \"site-a\",\n  \"name\": \"Site A\",\n  \"contactEmail\": \"tech@site-a.com\",\n  \"siteUrl\": \"https://site-a.com\",\n  \"allowedDomains\": [\"site-a.com\"],\n  \"useCase\": \"Sync chapter progress from Site A\"\n}",
+        "request": "{\n  \"requestedSlug\": \"site-a\",\n  \"name\": \"Site A\",\n  \"contactEmail\": \"tech@site-a.com\",\n  \"siteUrl\": \"https://site-a.com\",\n  \"allowedDomains\": [\"site-a.com\"],\n  \"useCase\": \"Sync chapter progress from Site A\",\n  \"captchaToken\": \"token-when-captcha-is-enabled\"\n}",
         "response": "{\n  \"id\": \"...\",\n  \"requestedSlug\": \"site-a\",\n  \"status\": \"PENDING\",\n  \"createdAt\": \"...\"\n}",
         "notes": {
           "1": "This endpoint is public and rate-limited.",
-          "2": "Submitting does not activate integration immediately."
+          "2": "Submitting does not activate integration immediately.",
+          "3": "Keep `website` (honeypot field) empty; if captcha is enabled, send `captchaToken`."
+        }
+      },
+      "applicationStatus": {
+        "title": "2) Check application status (optional)",
+        "body": "Use the application id returned in step 1 to track approval progress programmatically.",
+        "endpoint": "GET /integrations/public/apply/{applicationId}/status",
+        "response": "{\n  \"id\": \"...\",\n  \"requestedSlug\": \"site-a\",\n  \"status\": \"PENDING | APPROVED | REJECTED\",\n  \"reviewReason\": \"optional\",\n  \"nextAction\": \"WAIT_APPROVAL | CHECK_EMAIL_FOR_CREDENTIALS | CHECK_REVIEW_REASON_OR_CONTACT_SUPPORT\",\n  \"createdAt\": \"...\",\n  \"reviewedAt\": \"...\",\n  \"updatedAt\": \"...\"\n}",
+        "notes": {
+          "1": "Use this route if you want self-service polling from your backend.",
+          "2": "The application id is returned by POST /integrations/public/apply."
         }
       },
       "approval": {
-        "title": "2) Wait for application approval",
+        "title": "3) Wait for application approval",
         "body": "When approved, you receive an email with partnerSlug, clientSecret and the next steps.",
         "notes": {
           "1": "No partner API call is required in this step."
         }
       },
       "userConnectCode": {
-        "title": "3) Ask the user for the connect code",
+        "title": "4) Ask the user for the connect code",
         "body": "The user generates the code inside Manga Tracker and shares it with your site.",
         "notes": {
           "1": "Connect code expires in 5 minutes and is single-use."
         }
       },
       "exchange": {
-        "title": "4) Exchange code for access token",
+        "title": "5) Exchange code for access token",
         "body": "Your backend exchanges the user code for a partner access token.",
         "endpoint": "POST /integrations/connect/exchange",
         "request": "{\n  \"partnerSlug\": \"site-a\",\n  \"clientSecret\": \"show-once-secret\",\n  \"code\": \"short-lived-connect-code\",\n  \"sourceDomain\": \"site-a.com\"\n}",
@@ -381,14 +424,15 @@
         }
       },
       "sync": {
-        "title": "5) Sync read chapters",
+        "title": "6) Sync read chapters",
         "body": "Send chapter progress updates from your backend.",
         "endpoint": "POST /integrations/sync",
         "request": "Headers:\n  Authorization: Bearer <accessToken>\n  x-idempotency-key: <unique-event-id>\n\nBody:\n{\n  \"partnerSlug\": \"site-a\",\n  \"externalMangaId\": \"one-piece-123\",\n  \"title\": \"One Piece\",\n  \"chapter\": 1123,\n  \"sourceDomain\": \"site-a.com\"\n}",
         "response": "{\n  \"outcome\": \"created | updated | noop\",\n  \"userMangaId\": \"...\",\n  \"currentChapter\": 1123\n}",
         "notes": {
           "1": "Rate limit: 120 requests per minute.",
-          "2": "Reuse the same idempotency key on retries."
+          "2": "Reuse the same idempotency key on retries.",
+          "3": "Optional health check: GET /integrations/connection/status using the same Bearer token."
         }
       }
     },
@@ -495,6 +539,92 @@
     "profile": "Profile",
     "publicProfile": "Public Profile",
     "logout": "Log out"
+  },
+  "PublicIntegrationsApply": {
+    "title": "Partner API application",
+    "subtitle": "Submit your site for review and receive credentials after approval.",
+    "form": {
+      "title": "Application form",
+      "requestedSlugLabel": "Requested slug",
+      "requestedSlugPlaceholder": "site-a",
+      "nameLabel": "Partner name",
+      "namePlaceholder": "Site A",
+      "contactEmailLabel": "Technical contact email",
+      "contactEmailPlaceholder": "tech@site-a.com",
+      "siteUrlLabel": "Site URL",
+      "siteUrlPlaceholder": "https://site-a.com",
+      "allowedDomainsLabel": "Allowed domains (CSV)",
+      "allowedDomainsPlaceholder": "site-a.com, app.site-a.com",
+      "allowedDomainsHint": "If empty, we infer domain from site URL.",
+      "useCaseLabel": "Use case",
+      "useCasePlaceholder": "Sync chapter progress from my reading website.",
+      "websiteTrapLabel": "Website",
+      "captchaLabel": "Captcha",
+      "captchaDisabled": "Captcha is not configured in this environment.",
+      "submitting": "Submitting...",
+      "submit": "Submit application"
+    },
+    "result": {
+      "title": "Application created",
+      "body": "Save your application id to track status without contacting support.",
+      "applicationId": "Application ID",
+      "requestedSlug": "Requested slug",
+      "status": "Status",
+      "copyIdButton": "Copy application ID",
+      "checkStatusButton": "Check status"
+    },
+    "messages": {
+      "submitSuccess": "Application submitted successfully",
+      "submitError": "Failed to submit application",
+      "copyIdSuccess": "Application ID copied",
+      "copyIdError": "Could not copy application ID",
+      "captchaRequired": "Complete the captcha before submitting",
+      "captchaLoadError": "Failed to load captcha widget"
+    }
+  },
+  "PublicIntegrationsStatus": {
+    "title": "Application status",
+    "subtitle": "Track approval progress using the application id.",
+    "lookup": {
+      "title": "Lookup application",
+      "applicationIdLabel": "Application ID",
+      "applicationIdPlaceholder": "Paste your application id",
+      "submit": "Check status",
+      "loading": "Checking..."
+    },
+    "status": {
+      "notLoaded": "Not loaded",
+      "values": {
+        "PENDING": "Pending",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected"
+      }
+    },
+    "nextAction": {
+      "notLoaded": "Not loaded",
+      "values": {
+        "WAIT_APPROVAL": "Wait for approval",
+        "CHECK_EMAIL_FOR_CREDENTIALS": "Check your email for partnerSlug and clientSecret",
+        "CHECK_REVIEW_REASON_OR_CONTACT_SUPPORT": "Review rejection reason or contact support"
+      }
+    },
+    "result": {
+      "title": "Current status",
+      "applicationId": "Application ID",
+      "requestedSlug": "Requested slug",
+      "status": "Status",
+      "nextAction": "Next action",
+      "reviewReason": "Review reason",
+      "createdAt": "Created at",
+      "reviewedAt": "Reviewed at",
+      "updatedAt": "Updated at",
+      "notAvailable": "n/a"
+    },
+    "messages": {
+      "applicationIdRequired": "Paste an application ID before checking",
+      "statusLoadedSuccess": "Status loaded successfully",
+      "statusLoadError": "Failed to load application status"
+    }
   },
   "Footer": {
     "copyright": "All rights reserved.",

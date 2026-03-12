@@ -14,6 +14,7 @@ type IntegrationTokenPayload = {
   psl: string;
   scp: string[];
   typ: 'integration';
+  exp?: number;
 };
 
 type RequestWithIntegrationAuth = Request & {
@@ -22,6 +23,7 @@ type RequestWithIntegrationAuth = Request & {
     partnerId: string;
     partnerSlug: string;
     scopes: string[];
+    tokenExpiresAt?: string;
   };
 };
 
@@ -73,6 +75,7 @@ export class IntegrationTokenGuard implements CanActivate {
       partnerId: payload.pid,
       partnerSlug: payload.psl,
       scopes: payload.scp,
+      tokenExpiresAt: this.resolveTokenExpiresAt(payload.exp),
     };
     return true;
   }
@@ -89,5 +92,12 @@ export class IntegrationTokenGuard implements CanActivate {
     }
 
     return token;
+  }
+
+  private resolveTokenExpiresAt(exp?: number): string | undefined {
+    if (!exp || !Number.isFinite(exp) || exp <= 0) {
+      return undefined;
+    }
+    return new Date(exp * 1000).toISOString();
   }
 }

@@ -5,6 +5,7 @@ type Params = Promise<{ locale: string }>;
 
 type StepKey =
   | "application"
+  | "applicationStatus"
   | "approval"
   | "userConnectCode"
   | "exchange"
@@ -12,6 +13,7 @@ type StepKey =
 
 const STEP_ORDER: StepKey[] = [
   "application",
+  "applicationStatus",
   "approval",
   "userConnectCode",
   "exchange",
@@ -65,7 +67,7 @@ export default async function HowToUseApiPage({ params }: { params: Params }) {
       key,
       title: t(`steps.${key}.title`),
       body: t(`steps.${key}.body`),
-      endpoint: t.has(endpointKey) ? t(endpointKey) : null,
+      endpoint: getRawString(endpointKey),
       request: getRawString(requestKey),
       response: getRawString(responseKey),
       notes,

@@ -14,6 +14,7 @@ import { useTranslations } from "next-intl";
 import {
   approveAdminApplication,
   createAdminPartner,
+  getIntegrationConnectionStatus,
   listAdminApplications,
   listAdminConnections,
   listAdminPartners,
@@ -24,6 +25,7 @@ import {
   type AdminPartner,
   type IntegrationApplication,
   type IntegrationApplicationStatus,
+  type IntegrationConnectionStatus,
   type IntegrationConnection,
 } from "@/lib/integrations-api";
 
@@ -36,6 +38,10 @@ export default function IntegrationsAdminPage() {
   const [connections, setConnections] = useState<IntegrationConnection[]>([]);
   const [applications, setApplications] = useState<IntegrationApplication[]>([]);
   const [newSecret, setNewSecret] = useState<string | null>(null);
+  const [statusToken, setStatusToken] = useState("");
+  const [statusResult, setStatusResult] =
+    useState<IntegrationConnectionStatus | null>(null);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [createForm, setCreateForm] = useState({
     slug: "",
     name: "",
@@ -95,6 +101,36 @@ export default function IntegrationsAdminPage() {
       })),
     ),
     [partners, t],
+  );
+
+  const statusCheckLabels = useMemo(
+    () => [
+      {
+        key: "partnerExists",
+        label: t("connectionStatus.checks.partnerExists"),
+      },
+      {
+        key: "partnerActive",
+        label: t("connectionStatus.checks.partnerActive"),
+      },
+      {
+        key: "connectionExists",
+        label: t("connectionStatus.checks.connectionExists"),
+      },
+      {
+        key: "connectionActive",
+        label: t("connectionStatus.checks.connectionActive"),
+      },
+      {
+        key: "tokenHasWriteScope",
+        label: t("connectionStatus.checks.tokenHasWriteScope"),
+      },
+      {
+        key: "connectionHasWriteScope",
+        label: t("connectionStatus.checks.connectionHasWriteScope"),
+      },
+    ],
+    [t],
   );
 
   if (isAuthLoading || !user) {
@@ -207,6 +243,27 @@ export default function IntegrationsAdminPage() {
     }
   };
 
+  const handleCheckConnectionStatus = async () => {
+    if (!statusToken.trim()) {
+      toast.error(t("messages.connectionStatusTokenRequired"));
+      return;
+    }
+
+    setIsCheckingStatus(true);
+    try {
+      const result = await getIntegrationConnectionStatus(statusToken.trim());
+      setStatusResult(result);
+      toast.success(t("messages.connectionStatusLoadedSuccess"));
+    } catch (error: unknown) {
+      setStatusResult(null);
+      toast.error(
+        getApiErrorMessage(error, t("messages.connectionStatusLoadError")),
+      );
+    } finally {
+      setIsCheckingStatus(false);
+    }
+  };
+
   return (
     <div className="container mx-auto max-w-5xl py-8 px-4 space-y-6">
       <div>
@@ -287,6 +344,93 @@ export default function IntegrationsAdminPage() {
           </CardContent>
         </Card>
       ) : null}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("connectionStatus.title")}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            {t("connectionStatus.description")}
+          </p>
+          <div className="space-y-2">
+            <Label>{t("connectionStatus.tokenLabel")}</Label>
+            <Input
+              value={statusToken}
+              onChange={(event) => setStatusToken(event.target.value)}
+              placeholder={t("connectionStatus.tokenPlaceholder")}
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => void handleCheckConnectionStatus()}
+              disabled={isCheckingStatus}
+            >
+              {isCheckingStatus
+                ? t("connectionStatus.checkingButton")
+                : t("connectionStatus.checkButton")}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setStatusToken("");
+                setStatusResult(null);
+              }}
+            >
+              {t("connectionStatus.clearButton")}
+            </Button>
+          </div>
+
+          {statusResult ? (
+            <div className="rounded-md border p-3 space-y-2 text-sm">
+              <p className="font-medium">
+                {statusResult.connected
+                  ? t("connectionStatus.connected")
+                  : t("connectionStatus.disconnected")}
+              </p>
+              <p className="text-muted-foreground">
+                {t("connectionStatus.partnerLabel")} {statusResult.partner.slug} (
+                {statusResult.partner.id})
+              </p>
+              <p className="text-muted-foreground">
+                {t("connectionStatus.scopesLabel")}{" "}
+                {statusResult.scopes.length
+                  ? statusResult.scopes.join(", ")
+                  : t("connectionStatus.noScopes")}
+              </p>
+              <p className="text-muted-foreground">
+                {t("connectionStatus.tokenExpiresAtLabel")}{" "}
+                {statusResult.tokenExpiresAt ?? t("connectionStatus.notAvailable")}
+              </p>
+              <p className="text-muted-foreground">
+                {t("connectionStatus.connectionIdLabel")}{" "}
+                {statusResult.connectionId ?? t("connectionStatus.notAvailable")}
+              </p>
+              <p className="text-muted-foreground">
+                {t("connectionStatus.connectionUpdatedAtLabel")}{" "}
+                {statusResult.connectionUpdatedAt ??
+                  t("connectionStatus.notAvailable")}
+              </p>
+              <div className="pt-2 space-y-1">
+                <p className="font-medium">{t("connectionStatus.checksTitle")}</p>
+                {statusCheckLabels.map((item) => {
+                  const value = statusResult.checks[
+                    item.key as keyof IntegrationConnectionStatus["checks"]
+                  ];
+                  return (
+                    <p key={item.key} className="text-muted-foreground">
+                      {item.label}:{" "}
+                      {value
+                        ? t("connectionStatus.checkOk")
+                        : t("connectionStatus.checkFail")}
+                    </p>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

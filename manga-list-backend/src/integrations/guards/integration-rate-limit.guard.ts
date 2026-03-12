@@ -90,12 +90,25 @@ export class IntegrationRateLimitGuard implements CanActivate {
       routeKey === 'POST:connect/exchange' ||
       routeKey === 'POST:/connect/exchange';
     const isSync = routeKey === 'POST:sync' || routeKey === 'POST:/sync';
+    const isConnectionStatus =
+      routeKey === 'GET:connection/status' ||
+      routeKey === 'GET:/connection/status';
     const isPublicApply =
       routeKey === 'POST:public/apply' || routeKey === 'POST:/public/apply';
+    const isPublicApplyStatus =
+      routeKey === 'GET:public/apply/:id/status' ||
+      routeKey === 'GET:/public/apply/:id/status';
 
     if (isPublicApply) {
       return {
         maxAttempts: 5,
+        windowMs: CACHE_TTL_MS.AUTH_RATE_LIMIT_WINDOW,
+      };
+    }
+
+    if (isPublicApplyStatus) {
+      return {
+        maxAttempts: 30,
         windowMs: CACHE_TTL_MS.AUTH_RATE_LIMIT_WINDOW,
       };
     }
@@ -108,6 +121,13 @@ export class IntegrationRateLimitGuard implements CanActivate {
     }
 
     if (isSync) {
+      return {
+        maxAttempts: 120,
+        windowMs: CACHE_TTL_MS.INTEGRATION_RATE_LIMIT_WINDOW,
+      };
+    }
+
+    if (isConnectionStatus) {
       return {
         maxAttempts: 120,
         windowMs: CACHE_TTL_MS.INTEGRATION_RATE_LIMIT_WINDOW,

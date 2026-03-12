@@ -41,6 +41,7 @@ type IntegrationRequest = ExpressRequest & {
     partnerId: string;
     partnerSlug: string;
     scopes: string[];
+    tokenExpiresAt?: string;
   };
 };
 
@@ -95,8 +96,17 @@ export class IntegrationsController {
 
   @UseGuards(IntegrationRateLimitGuard)
   @Post('public/apply')
-  async createPartnerApplication(@Body() dto: CreateIntegrationApplicationDto) {
-    return this.integrationsService.createPartnerApplication(dto);
+  async createPartnerApplication(
+    @Request() req: ExpressRequest,
+    @Body() dto: CreateIntegrationApplicationDto,
+  ) {
+    return this.integrationsService.createPartnerApplication(dto, req.ip);
+  }
+
+  @UseGuards(IntegrationRateLimitGuard)
+  @Get('public/apply/:id/status')
+  async getPublicApplicationStatus(@Param('id') id: string) {
+    return this.integrationsService.getPublicApplicationStatus(id);
   }
 
   @UseGuards(IntegrationTokenGuard, IntegrationRateLimitGuard)
@@ -106,6 +116,14 @@ export class IntegrationsController {
       this.requireIntegrationAuth(req),
       dto,
       this.readIdempotencyKey(req),
+    );
+  }
+
+  @UseGuards(IntegrationTokenGuard, IntegrationRateLimitGuard)
+  @Get('connection/status')
+  async getConnectionStatus(@Request() req: IntegrationRequest) {
+    return this.integrationsService.getConnectionStatus(
+      this.requireIntegrationAuth(req),
     );
   }
 

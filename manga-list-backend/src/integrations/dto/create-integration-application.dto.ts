@@ -44,4 +44,14 @@ export class CreateIntegrationApplicationDto {
   @IsString()
   @MaxLength(2000)
   useCase?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  captchaToken?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  website?: string;
 }

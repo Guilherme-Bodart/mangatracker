@@ -25,6 +25,26 @@ export type IntegrationConnection = {
   };
 };
 
+export type IntegrationConnectionStatus = {
+  connected: boolean;
+  partner: {
+    id: string;
+    slug: string;
+  };
+  checks: {
+    partnerExists: boolean;
+    partnerActive: boolean;
+    connectionExists: boolean;
+    connectionActive: boolean;
+    tokenHasWriteScope: boolean;
+    connectionHasWriteScope: boolean;
+  };
+  scopes: string[];
+  tokenExpiresAt: string | null;
+  connectionId: string | null;
+  connectionUpdatedAt: string | null;
+};
+
 export type IntegrationApplicationStatus = "PENDING" | "APPROVED" | "REJECTED";
 
 export type IntegrationApplication = {
@@ -41,6 +61,22 @@ export type IntegrationApplication = {
   reviewedByEmail: string | null;
   reviewedAt: string | null;
   createdAt: string;
+  updatedAt: string;
+};
+
+export type PublicApplicationNextAction =
+  | "WAIT_APPROVAL"
+  | "CHECK_EMAIL_FOR_CREDENTIALS"
+  | "CHECK_REVIEW_REASON_OR_CONTACT_SUPPORT";
+
+export type PublicIntegrationApplicationStatus = {
+  id: string;
+  requestedSlug: string;
+  status: IntegrationApplicationStatus;
+  reviewReason: string | null;
+  nextAction: PublicApplicationNextAction;
+  createdAt: string;
+  reviewedAt: string | null;
   updatedAt: string;
 };
 
@@ -69,6 +105,8 @@ export async function createPublicIntegrationApplication(input: {
   siteUrl: string;
   allowedDomains?: string[];
   useCase?: string;
+  captchaToken?: string;
+  website?: string;
 }) {
   return apiRequest<{
     id: string;
@@ -86,6 +124,12 @@ export async function createPublicIntegrationApplication(input: {
   });
 }
 
+export async function getPublicIntegrationApplicationStatus(applicationId: string) {
+  return apiRequest<PublicIntegrationApplicationStatus>(
+    `/integrations/public/apply/${encodeURIComponent(applicationId)}/status`,
+  );
+}
+
 export async function startIntegrationConnect(input: {
   partnerSlug: string;
   sourceDomain?: string;
@@ -99,6 +143,14 @@ export async function startIntegrationConnect(input: {
       body: input,
     },
   );
+}
+
+export async function getIntegrationConnectionStatus(accessToken: string) {
+  return apiRequest<IntegrationConnectionStatus>("/integrations/connection/status", {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
 }
 
 export async function listAdminPartners() {

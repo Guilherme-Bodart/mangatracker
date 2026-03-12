@@ -205,8 +205,8 @@
       "cancel": "Cancelar",
       "save": "Salvar Altera\u00e7\u00f5es",
       "saving": "Salvando...",
-      "integrations": "IntegraÃ§Ãµes",
-      "integrationsAdmin": "Admin IntegraÃ§Ãµes"
+      "integrations": "Integra\u00e7\u00f5es",
+      "integrationsAdmin": "Admin Integra\u00e7\u00f5es"
     },
     "messages": {
       "noChanges": "Nenhuma altera\u00e7\u00e3o para salvar",
@@ -216,54 +216,54 @@
     }
   },
   "ProfileIntegrations": {
-    "title": "IntegraÃ§Ãµes",
-    "subtitle": "Conecte sua conta com parceiros externos. O parceiro usa o cÃ³digo abaixo para concluir o vÃ­nculo e receber token de escrita.",
+    "title": "Integra\u00e7\u00f5es",
+    "subtitle": "Conecte sua conta com parceiros externos. O parceiro usa o c\u00f3digo abaixo para concluir o v\u00ednculo e receber token de escrita.",
     "connectCard": {
-      "title": "Gerar cÃ³digo de conexÃ£o",
+      "title": "Gerar c\u00f3digo de conex\u00e3o",
       "partnerLabel": "Parceiro",
       "partnerPlaceholder": "Selecione um parceiro",
-      "sourceDomainLabel": "DomÃ­nio de origem (opcional)",
+      "sourceDomainLabel": "Dom\u00ednio de origem (opcional)",
       "sourceDomainPlaceholder": "site-parceiro.com",
-      "allowedDomainsPrefix": "DomÃ­nios permitidos:",
+      "allowedDomainsPrefix": "Dom\u00ednios permitidos:",
       "generating": "Gerando...",
-      "generateButton": "Gerar cÃ³digo"
+      "generateButton": "Gerar c\u00f3digo"
     },
     "codeCard": {
-      "title": "CÃ³digo gerado",
-      "expiresInfo": "Expira em {minutes} minutos. Compartilhe este cÃ³digo com o parceiro para concluir o vÃ­nculo.",
-      "copyButton": "Copiar cÃ³digo"
+      "title": "C\u00f3digo gerado",
+      "expiresInfo": "Expira em {minutes} minutos. Compartilhe este c\u00f3digo com o parceiro para concluir o v\u00ednculo.",
+      "copyButton": "Copiar c\u00f3digo"
     },
     "messages": {
       "loadPartnersError": "Falha ao carregar parceiros",
       "selectPartnerError": "Selecione um parceiro",
-      "codeGeneratedSuccess": "CÃ³digo gerado com sucesso",
-      "generateCodeError": "Falha ao gerar cÃ³digo",
-      "codeCopiedSuccess": "CÃ³digo copiado",
-      "codeCopyError": "NÃ£o foi possÃ­vel copiar o cÃ³digo"
+      "codeGeneratedSuccess": "C\u00f3digo gerado com sucesso",
+      "generateCodeError": "Falha ao gerar c\u00f3digo",
+      "codeCopiedSuccess": "C\u00f3digo copiado",
+      "codeCopyError": "N\u00e3o foi poss\u00edvel copiar o c\u00f3digo"
     }
   },
-    "ProfileIntegrationsAdmin": {
-    "title": "Admin de Integracoes",
-    "subtitle": "Gerencie parceiros allowlist, rotacao de segredo, fila de inscricoes e conexoes ativas.",
+  "ProfileIntegrationsAdmin": {
+    "title": "Admin de Integra\u00e7\u00f5es",
+    "subtitle": "Gerencie parceiros allowlist, rota\u00e7\u00e3o de segredo, fila de inscri\u00e7\u00f5es e conex\u00f5es ativas.",
     "createCard": {
       "title": "Criar parceiro",
       "slugLabel": "Slug",
       "slugPlaceholder": "site-a",
       "nameLabel": "Nome",
       "namePlaceholder": "Site A",
-      "allowedDomainsLabel": "Dominios permitidos (CSV)",
+      "allowedDomainsLabel": "Dom\u00ednios permitidos (CSV)",
       "allowedDomainsPlaceholder": "site-a.com,app.site-a.com",
       "activeLabel": "Parceiro ativo",
       "submitButton": "Criar parceiro"
     },
     "secretCard": {
       "title": "Client Secret gerado",
-      "description": "Armazene com seguranca. Esse valor nao e recuperavel depois."
+      "description": "Armazene com seguran\u00e7a. Esse valor n\u00e3o \u00e9 recuper\u00e1vel depois."
     },
     "partners": {
       "title": "Parceiros",
-      "domainsLabel": "Dominios:",
-      "noDomainRestriction": "sem restricao",
+      "domainsLabel": "Dom\u00ednios:",
+      "noDomainRestriction": "sem restri\u00e7\u00e3o",
       "statusLabel": "Status:",
       "statusActive": "ativo",
       "statusInactive": "inativo",
@@ -273,7 +273,7 @@
       "empty": "Nenhum parceiro cadastrado."
     },
     "applications": {
-      "title": "Fila de inscricoes (waitlist)",
+      "title": "Fila de inscri\u00e7\u00f5es (waitlist)",
       "filters": {
         "all": "Todos",
         "pending": "Pendentes",
@@ -282,19 +282,19 @@
       },
       "contactLabel": "Contato:",
       "siteLabel": "Site:",
-      "domainsLabel": "Dominios:",
-      "noDomainRestriction": "sem restricao",
+      "domainsLabel": "Dom\u00ednios:",
+      "noDomainRestriction": "sem restri\u00e7\u00e3o",
       "useCaseLabel": "Uso:",
       "statusLabel": "Status:",
       "reviewReasonLabel": "Motivo:",
       "approveButton": "Aprovar",
       "rejectButton": "Rejeitar",
-      "rejectPrompt": "Motivo da rejeicao (opcional)",
-      "empty": "Nenhuma inscricao encontrada."
+      "rejectPrompt": "Motivo da rejei\u00e7\u00e3o (opcional)",
+      "empty": "Nenhuma inscri\u00e7\u00e3o encontrada."
     },
     "connectionStatus": {
       "title": "Status do token parceiro",
-      "description": "Cole um bearer token de integracao para validar se a conexao do parceiro esta saudavel agora.",
+      "description": "Cole um bearer token de integra\u00e7\u00e3o para validar se a conex\u00e3o do parceiro est\u00e1 saud\u00e1vel agora.",
       "tokenLabel": "Access token",
       "tokenPlaceholder": "eyJhbGciOi...",
       "checkButton": "Verificar status",
@@ -306,23 +306,23 @@
       "scopesLabel": "Scopes:",
       "noScopes": "sem scope",
       "tokenExpiresAtLabel": "Token expira em:",
-      "connectionIdLabel": "ID da conexao:",
-      "connectionUpdatedAtLabel": "Conexao atualizada em:",
-      "checksTitle": "Validacoes",
+      "connectionIdLabel": "ID da conex\u00e3o:",
+      "connectionUpdatedAtLabel": "Conex\u00e3o atualizada em:",
+      "checksTitle": "Valida\u00e7\u00f5es",
       "checkOk": "ok",
       "checkFail": "falha",
       "notAvailable": "n/d",
       "checks": {
         "partnerExists": "Parceiro existe",
         "partnerActive": "Parceiro ativo",
-        "connectionExists": "Conexao existe",
-        "connectionActive": "Conexao ativa",
+        "connectionExists": "Conex\u00e3o existe",
+        "connectionActive": "Conex\u00e3o ativa",
         "tokenHasWriteScope": "Token tem manga:write",
         "connectionHasWriteScope": "Conexao tem manga:write"
       }
     },
     "connections": {
-      "title": "Conexoes",
+      "title": "Conex\u00f5es",
       "allPartners": "Todos",
       "filterPlaceholder": "Filtrar por slug",
       "filterButton": "Filtrar",
@@ -333,125 +333,125 @@
       "statusActive": "ativo",
       "statusRevoked": "revogado",
       "revokeButton": "Revogar",
-      "empty": "Nenhuma conexao encontrada."
+      "empty": "Nenhuma conex\u00e3o encontrada."
     },
     "messages": {
-      "loadDataError": "Falha ao carregar dados admin de integracoes",
+      "loadDataError": "Falha ao carregar dados admin de integra\u00e7\u00f5es",
       "partnerCreatedSuccess": "Parceiro criado com sucesso",
       "createPartnerError": "Falha ao criar parceiro",
       "partnerStatusUpdatedSuccess": "Status do parceiro atualizado",
       "updatePartnerError": "Falha ao atualizar parceiro",
       "secretRotatedSuccess": "Secret rotacionado para {slug}",
       "rotateSecretError": "Falha ao rotacionar secret",
-      "applicationApprovedSuccess": "Inscricao aprovada para {slug}",
-      "approveApplicationError": "Falha ao aprovar inscricao",
-      "applicationRejectedSuccess": "Inscricao rejeitada para {slug}",
-      "rejectApplicationError": "Falha ao rejeitar inscricao",
+      "applicationApprovedSuccess": "Inscri\u00e7\u00e3o aprovada para {slug}",
+      "approveApplicationError": "Falha ao aprovar inscri\u00e7\u00e3o",
+      "applicationRejectedSuccess": "Inscri\u00e7\u00e3o rejeitada para {slug}",
+      "rejectApplicationError": "Falha ao rejeitar inscri\u00e7\u00e3o",
       "connectionStatusTokenRequired": "Cole um token antes de verificar",
-      "connectionStatusLoadedSuccess": "Status da conexao carregado",
-      "connectionStatusLoadError": "Falha ao carregar status da conexao",
-      "connectionRevokedSuccess": "Conexao revogada",
-      "revokeConnectionError": "Falha ao revogar conexao"
+      "connectionStatusLoadedSuccess": "Status da conex\u00e3o carregado",
+      "connectionStatusLoadError": "Falha ao carregar status da conex\u00e3o",
+      "connectionRevokedSuccess": "Conex\u00e3o revogada",
+      "revokeConnectionError": "Falha ao revogar conex\u00e3o"
     }
   },
   "HowToUseApi": {
     "title": "Como usar a API",
-    "updatedAt": "Última atualização: 11 de março de 2026",
-    "intro": "Use este guia para integrar seu site parceiro ao Manga Tracker sem extensão. Esta página mostra apenas passos voltados ao parceiro.",
+    "updatedAt": "\u00daltima atualiza\u00e7\u00e3o: 11 de mar\u00e7o de 2026",
+    "intro": "Use este guia para integrar seu site parceiro ao Manga Tracker sem extens\u00e3o. Esta p\u00e1gina mostra apenas passos voltados ao parceiro.",
     "baseUrlLabel": "Base URL atual da API neste frontend",
-    "baseUrlNote": "Nas integrações reais, use a URL de produção da sua API. Os endpoints abaixo são relativos a essa base.",
+    "baseUrlNote": "Nas integra\u00e7\u00f5es reais, use a URL de produ\u00e7\u00e3o da sua API. Os endpoints abaixo s\u00e3o relativos a essa base.",
     "rolesTitle": "Quem participa",
     "flowTitle": "Fluxo do parceiro",
     "roles": {
       "partner": {
         "title": "Site parceiro (CLIENTE)",
-        "body": "Envia inscrição, troca códigos de conexão por token e sincroniza progresso de capítulos no próprio backend."
+        "body": "Envia inscri\u00e7\u00e3o, troca c\u00f3digos de conex\u00e3o por token e sincroniza progresso de cap\u00edtulos no pr\u00f3prio backend."
       },
       "user": {
-        "title": "Usuário final",
-        "body": "Gera um código temporário no Manga Tracker e compartilha esse código com o site parceiro."
+        "title": "Usu\u00e1rio final",
+        "body": "Gera um c\u00f3digo tempor\u00e1rio no Manga Tracker e compartilha esse c\u00f3digo com o site parceiro."
       },
       "platform": {
-        "title": "Manga Tracker (automático)",
-        "body": "Após aprovação, as credenciais são emitidas e os requests de sync são validados automaticamente."
+        "title": "Manga Tracker (autom\u00e1tico)",
+        "body": "Ap\u00f3s aprova\u00e7\u00e3o, as credenciais s\u00e3o emitidas e os requests de sync s\u00e3o validados automaticamente."
       }
     },
     "steps": {
       "application": {
-        "title": "1) Envie a inscrição pública",
-        "body": "Cadastre seu site parceiro na fila de espera pública.",
+        "title": "1) Envie a inscri\u00e7\u00e3o p\u00fablica",
+        "body": "Cadastre seu site parceiro na fila de espera p\u00fablica.",
         "endpoint": "POST /integrations/public/apply",
-        "request": "{\n  \"requestedSlug\": \"site-a\",\n  \"name\": \"Site A\",\n  \"contactEmail\": \"tech@site-a.com\",\n  \"siteUrl\": \"https://site-a.com\",\n  \"allowedDomains\": [\"site-a.com\"],\n  \"useCase\": \"Sincronizar progresso de capítulos do Site A\",\n  \"captchaToken\": \"token-quando-captcha-estiver-ativo\"\n}",
+        "request": "{\n  \"requestedSlug\": \"site-a\",\n  \"name\": \"Site A\",\n  \"contactEmail\": \"tech@site-a.com\",\n  \"siteUrl\": \"https://site-a.com\",\n  \"allowedDomains\": [\"site-a.com\"],\n  \"useCase\": \"Sincronizar progresso de cap\u00edtulos do Site A\",\n  \"captchaToken\": \"token-quando-captcha-estiver-ativo\"\n}",
         "response": "{\n  \"id\": \"...\",\n  \"requestedSlug\": \"site-a\",\n  \"status\": \"PENDING\",\n  \"createdAt\": \"...\"\n}",
         "notes": {
-          "1": "Esse endpoint é público e possui rate limit.",
-          "2": "A inscrição não ativa a integração imediatamente.",
+          "1": "Esse endpoint \u00e9 p\u00fablico e possui rate limit.",
+          "2": "A inscri\u00e7\u00e3o n\u00e3o ativa a integra\u00e7\u00e3o imediatamente.",
           "3": "Mantenha `website` (campo honeypot) vazio; se captcha estiver ativo, envie `captchaToken`."
         }
       },
       "applicationStatus": {
-        "title": "2) Consulte o status da solicitação (opcional)",
-        "body": "Use o id da inscrição retornado no passo 1 para acompanhar a aprovação pelo backend.",
+        "title": "2) Consulte o status da solicita\u00e7\u00e3o (opcional)",
+        "body": "Use o id da inscri\u00e7\u00e3o retornado no passo 1 para acompanhar a aprova\u00e7\u00e3o pelo backend.",
         "endpoint": "GET /integrations/public/apply/{applicationId}/status",
         "response": "{\n  \"id\": \"...\",\n  \"requestedSlug\": \"site-a\",\n  \"status\": \"PENDING | APPROVED | REJECTED\",\n  \"reviewReason\": \"opcional\",\n  \"nextAction\": \"WAIT_APPROVAL | CHECK_EMAIL_FOR_CREDENTIALS | CHECK_REVIEW_REASON_OR_CONTACT_SUPPORT\",\n  \"createdAt\": \"...\",\n  \"reviewedAt\": \"...\",\n  \"updatedAt\": \"...\"\n}",
         "notes": {
           "1": "Use essa rota se quiser polling self-service no seu backend.",
-          "2": "O applicationId é retornado no POST /integrations/public/apply."
+          "2": "O applicationId \u00e9 retornado no POST /integrations/public/apply."
         }
       },
       "approval": {
-        "title": "3) Espere a aprovação da solicitação",
-        "body": "Quando aprovarmos, você receberá por e-mail o partnerSlug, o clientSecret e os próximos passos.",
+        "title": "3) Espere a aprova\u00e7\u00e3o da solicita\u00e7\u00e3o",
+        "body": "Quando aprovarmos, voc\u00ea receber\u00e1 por e-mail o partnerSlug, o clientSecret e os pr\u00f3ximos passos.",
         "notes": {
-          "1": "Nesta etapa, não há chamada de API obrigatória do parceiro."
+          "1": "Nesta etapa, n\u00e3o h\u00e1 chamada de API obrigat\u00f3ria do parceiro."
         }
       },
       "userConnectCode": {
-        "title": "4) Peça ao usuário o código de conexão",
-        "body": "O usuário gera o código dentro do Manga Tracker e compartilha com o seu site.",
+        "title": "4) Pe\u00e7a ao usu\u00e1rio o c\u00f3digo de conex\u00e3o",
+        "body": "O usu\u00e1rio gera o c\u00f3digo dentro do Manga Tracker e compartilha com o seu site.",
         "notes": {
-          "1": "O código expira em 5 minutos e só pode ser usado uma vez."
+          "1": "O c\u00f3digo expira em 5 minutos e s\u00f3 pode ser usado uma vez."
         }
       },
       "exchange": {
-        "title": "5) Troque o código por access token",
-        "body": "Seu backend troca o código do usuário por um token de acesso do parceiro.",
+        "title": "5) Troque o c\u00f3digo por access token",
+        "body": "Seu backend troca o c\u00f3digo do usu\u00e1rio por um token de acesso do parceiro.",
         "endpoint": "POST /integrations/connect/exchange",
         "request": "{\n  \"partnerSlug\": \"site-a\",\n  \"clientSecret\": \"secret-mostrado-uma-vez\",\n  \"code\": \"codigo-temporario\",\n  \"sourceDomain\": \"site-a.com\"\n}",
         "response": "{\n  \"accessToken\": \"integration-jwt\",\n  \"tokenType\": \"Bearer\",\n  \"expiresInSeconds\": 2592000,\n  \"scopes\": [\"manga:write\"]\n}",
         "notes": {
           "1": "Guarde clientSecret somente no backend.",
-          "2": "Rate limit: 20 requisições por minuto."
+          "2": "Rate limit: 20 requisi\u00e7\u00f5es por minuto."
         }
       },
       "sync": {
-        "title": "6) Sincronize capítulos lidos",
-        "body": "Envie atualizações de capítulo a partir do seu backend.",
+        "title": "6) Sincronize cap\u00edtulos lidos",
+        "body": "Envie atualiza\u00e7\u00f5es de cap\u00edtulo a partir do seu backend.",
         "endpoint": "POST /integrations/sync",
         "request": "Headers:\n  Authorization: Bearer <accessToken>\n  x-idempotency-key: <id-unico-do-evento>\n\nBody:\n{\n  \"partnerSlug\": \"site-a\",\n  \"externalMangaId\": \"one-piece-123\",\n  \"title\": \"One Piece\",\n  \"chapter\": 1123,\n  \"sourceDomain\": \"site-a.com\"\n}",
         "response": "{\n  \"outcome\": \"created | updated | noop\",\n  \"userMangaId\": \"...\",\n  \"currentChapter\": 1123\n}",
         "notes": {
-          "1": "Rate limit: 120 requisições por minuto.",
-          "2": "Reutilize a mesma chave de idempotência em retries.",
+          "1": "Rate limit: 120 requisi\u00e7\u00f5es por minuto.",
+          "2": "Reutilize a mesma chave de idempot\u00eancia em retries.",
           "3": "Health check opcional: GET /integrations/connection/status usando o mesmo Bearer token."
         }
       }
     },
     "security": {
-      "title": "Checklist de segurança",
+      "title": "Checklist de seguran\u00e7a",
       "items": {
         "1": "Armazene clientSecret apenas no backend (nunca no frontend).",
         "2": "Sempre envie sourceDomain e mantenha a lista de allowedDomains atualizada.",
         "3": "Use x-idempotency-key para retry seguro.",
-        "4": "Use HTTPS em produção em todo tráfego do parceiro.",
+        "4": "Use HTTPS em produ\u00e7\u00e3o em todo tr\u00e1fego do parceiro.",
         "5": "Rotacione clientSecret periodicamente."
       }
     },
     "limits": {
       "title": "Comportamento do sync",
       "items": {
-        "1": "Neste MVP, apenas o escopo manga:write é aceito.",
-        "2": "Se chapter recebido <= chapter atual, o retorno será noop.",
+        "1": "Neste MVP, apenas o escopo manga:write \u00e9 aceito.",
+        "2": "Se chapter recebido <= chapter atual, o retorno ser\u00e1 noop.",
         "3": "O access token expira em 30 dias (2592000 segundos).",
         "4": "Outcomes created/updated/noop indicam o resultado do sync por request."
       }
@@ -636,6 +636,3 @@
     "language": "Idioma"
   }
 }
-
-
-

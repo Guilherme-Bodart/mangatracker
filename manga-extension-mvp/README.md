@@ -5,8 +5,10 @@ Extensão de navegador (Manifest V3) para sincronizar progresso de leitura com a
 ## O que já faz
 - Configura `apiBaseUrl`, `partnerSlug`, `accessToken` e domínios permitidos.
 - Faz `POST /integrations/connect/exchange` para trocar código por token.
+- Suporta fluxo "Conectar com Manga Tracker" sem copiar codigo (web -> extensao por mensagem externa).
 - Detecta leitura em sites permitidos e envia `POST /integrations/sync`.
 - Envia `x-idempotency-key` por evento para reduzir duplicidade.
+- Mantem fila local persistente com retry/backoff para falhas temporarias de rede/API.
 - Tem adapter específico para `mangalivre.tv`.
 
 ## Aviso
@@ -34,3 +36,6 @@ Extensão de navegador (Manifest V3) para sincronizar progresso de leitura com a
 
 ## Publicação
 - Use `EXTENSION_RELEASE_CHECKLIST.md` para publicar na Chrome Web Store e Opera Add-ons.
+- Pipeline automatizado: `.github/workflows/extension-release.yml`.
+- Script de build por target: `manga-extension-mvp/scripts/build-zip.sh <chromium|firefox|opera>`.
+- Smoke check de artifact: `manga-extension-mvp/scripts/smoke-check.sh <zip> <target>`.

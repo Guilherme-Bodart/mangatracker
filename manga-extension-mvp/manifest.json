@@ -3,8 +3,15 @@
   "name": "Manga Tracker Sync",
   "version": "1.0.2",
   "description": "Sincroniza progresso de leitura de manga com a sua conta Manga Tracker.",
-  "permissions": ["storage"],
+  "permissions": ["storage", "alarms"],
   "host_permissions": ["*://mangalivre.tv/*", "*://www.mangalivre.tv/*"],
+  "externally_connectable": {
+    "matches": [
+      "https://mangastracker.vercel.app/*",
+      "http://localhost:3000/*",
+      "http://127.0.0.1:3000/*"
+    ]
+  },
   "icons": {
     "16": "assets/icons/icon-16.png",
     "48": "assets/icons/icon-48.png",

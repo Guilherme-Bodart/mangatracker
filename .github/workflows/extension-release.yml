@@ -1,0 +1,60 @@
+﻿name: Extension Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'extension-v*'
+
+jobs:
+  build-extension:
+    name: Build extension (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [chromium, firefox, opera]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate tag version matches manifest
+        if: startsWith(github.ref, 'refs/tags/extension-v')
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF_NAME#extension-v}"
+          MANIFEST_VERSION="$(node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('manga-extension-mvp/manifest.json','utf8'));process.stdout.write(m.version);")"
+          echo "tag=${TAG_VERSION} manifest=${MANIFEST_VERSION}"
+          if [[ "${TAG_VERSION}" != "${MANIFEST_VERSION}" ]]; then
+            echo "::error::Tag version must match manifest version"
+            exit 1
+          fi
+
+      - name: Prepare scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x manga-extension-mvp/scripts/build-zip.sh
+          chmod +x manga-extension-mvp/scripts/smoke-check.sh
+
+      - name: Build zip artifact
+        id: build
+        shell: bash
+        run: |
+          set -euo pipefail
+          ZIP_PATH="$(manga-extension-mvp/scripts/build-zip.sh "${{ matrix.target }}" "manga-extension-mvp/dist")"
+          echo "zip_path=${ZIP_PATH}" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke check artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          manga-extension-mvp/scripts/smoke-check.sh "${{ steps.build.outputs.zip_path }}" "${{ matrix.target }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-${{ matrix.target }}
+          path: ${{ steps.build.outputs.zip_path }}
+          if-no-files-found: error

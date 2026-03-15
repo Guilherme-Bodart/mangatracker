@@ -74,6 +74,11 @@ describe('Integrations routes (e2e)', () => {
       status: 'PENDING',
       nextAction: 'WAIT_APPROVAL',
     })),
+    verifyPublicApplicationDomain: jest.fn(async () => ({
+      id: 'app-1',
+      verificationDomain: 'site-a.com',
+      domainVerificationStatus: 'VERIFIED',
+    })),
     syncWithIntegrationToken: jest.fn(async () => ({
       outcome: 'created',
       userMangaId: 'um-1',
@@ -97,6 +102,17 @@ describe('Integrations routes (e2e)', () => {
       slug: 'site-a',
       name: 'Site A',
       clientSecret: 'secret',
+    })),
+    listPartnerWebhooks: jest.fn(async () => ({
+      partner: { id: 'partner-1', slug: 'site-a', name: 'Site A' },
+      endpoints: [],
+    })),
+    createPartnerWebhook: jest.fn(async () => ({
+      id: 'wh-1',
+      partnerId: 'partner-1',
+      url: 'https://site-a.com/webhooks/mangalist',
+      isActive: true,
+      signingSecret: 'wh-secret',
     })),
     updatePartner: jest.fn(),
     rotatePartnerSecret: jest.fn(),
@@ -249,6 +265,49 @@ describe('Integrations routes (e2e)', () => {
 
     expect(integrationsService.getPublicApplicationStatus).toHaveBeenCalledWith(
       'app-1',
+    );
+  });
+
+  it('should expose public verify-domain route', async () => {
+    await request(app.getHttpServer())
+      .post('/integrations/public/apply/app-1/verify-domain')
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body.id).toBe('app-1');
+        expect(body.domainVerificationStatus).toBe('VERIFIED');
+      });
+
+    expect(integrationsService.verifyPublicApplicationDomain).toHaveBeenCalledWith(
+      'app-1',
+    );
+  });
+
+  it('should expose admin partner webhooks routes', async () => {
+    await request(app.getHttpServer())
+      .get('/integrations/admin/partners/partner-1/webhooks')
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.partner.id).toBe('partner-1');
+      });
+
+    await request(app.getHttpServer())
+      .post('/integrations/admin/partners/partner-1/webhooks')
+      .send({
+        url: 'https://site-a.com/webhooks/mangalist',
+      })
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body.id).toBe('wh-1');
+      });
+
+    expect(integrationsService.listPartnerWebhooks).toHaveBeenCalledWith(
+      'partner-1',
+    );
+    expect(integrationsService.createPartnerWebhook).toHaveBeenCalledWith(
+      'partner-1',
+      {
+        url: 'https://site-a.com/webhooks/mangalist',
+      },
     );
   });
 });

@@ -5,12 +5,14 @@ import { AppModule } from './../src/app.module';
 import { ApiExceptionFilter } from '../src/common/filters/api-exception.filter';
 import { requestTraceMiddleware } from '../src/common/middleware/request-trace.middleware';
 import { resetHttpMetricsForTests } from '../src/observability/http-metrics.registry';
+import { resetIntegrationMetricsForTests } from '../src/observability/integration-metrics.registry';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
 
   beforeEach(async () => {
     resetHttpMetricsForTests();
+    resetIntegrationMetricsForTests();
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],

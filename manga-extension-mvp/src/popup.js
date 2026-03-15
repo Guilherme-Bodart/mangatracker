@@ -13,10 +13,12 @@ const I18N = {
     openIntegrations: "Open Integrations",
     openSite: "Open Manga Tracker",
     noPartners: "No active partners available.",
+    loadingPartners: "Loading partners...",
     connected: "Connected",
     notConnected: "Not connected",
     slug: "Slug",
     statusEnterCode: "Enter a connect code.",
+    statusOpenConnectFlow: "Opening Manga Tracker connect flow...",
     statusSelectPartner: "Select a valid partner.",
     statusConnecting: "Connecting account...",
     statusExchangeFail: "Connection failed",
@@ -27,6 +29,22 @@ const I18N = {
     statusDisconnected: "Partner disconnected.",
     statusSaved: "Settings saved.",
     statusPartnerSelectionSaved: "Tracked sites updated.",
+    diagnosticsTitle: "Diagnostics",
+    diagnosticsRefresh: "Refresh",
+    diagnosticsRetryNow: "Retry now",
+    diagQueueSize: "Queue",
+    diagDueCount: "Due now",
+    diagNextRetry: "Next retry",
+    diagEnabledPartners: "Enabled",
+    diagConnectedPartners: "Connected",
+    diagLastUpdate: "Last update",
+    diagApiBase: "API base",
+    diagNever: "never",
+    diagUnknown: "unknown",
+    statusDiagnosticsLoaded: "Diagnostics updated.",
+    statusDiagnosticsLoadError: "Diagnostics failed",
+    statusDiagnosticsDrainOk: "Queue retry started.",
+    statusDiagnosticsDrainError: "Failed to retry queue",
   },
   pt: {
     subtitle: "Escolha os sites que podem sincronizar leitura.",
@@ -39,10 +57,12 @@ const I18N = {
     openIntegrations: "Abrir Integrations",
     openSite: "Abrir Manga Tracker",
     noPartners: "Nenhum parceiro ativo disponivel.",
+    loadingPartners: "Carregando parceiros...",
     connected: "Conectado",
     notConnected: "Nao conectado",
     slug: "Slug",
     statusEnterCode: "Informe o código de conexão.",
+    statusOpenConnectFlow: "Abrindo fluxo de conexão no Manga Tracker...",
     statusSelectPartner: "Selecione um parceiro valido.",
     statusConnecting: "Conectando conta...",
     statusExchangeFail: "Falha na conexao",
@@ -53,6 +73,22 @@ const I18N = {
     statusDisconnected: "Parceiro desconectado.",
     statusSaved: "Configuracoes salvas.",
     statusPartnerSelectionSaved: "Selecao de sites atualizada.",
+    diagnosticsTitle: "Diagnostico",
+    diagnosticsRefresh: "Atualizar",
+    diagnosticsRetryNow: "Forcar retry agora",
+    diagQueueSize: "Fila",
+    diagDueCount: "Prontos agora",
+    diagNextRetry: "Proximo retry",
+    diagEnabledPartners: "Habilitados",
+    diagConnectedPartners: "Conectados",
+    diagLastUpdate: "Ultima atualizacao",
+    diagApiBase: "API base",
+    diagNever: "nunca",
+    diagUnknown: "desconhecido",
+    statusDiagnosticsLoaded: "Diagnostico atualizado.",
+    statusDiagnosticsLoadError: "Falha no diagnostico",
+    statusDiagnosticsDrainOk: "Retry da fila iniciado.",
+    statusDiagnosticsDrainError: "Falha ao reprocessar fila",
   },
 };
 
@@ -60,6 +96,7 @@ const state = {
   lang: "en",
   partners: [],
   apiBaseUrl: DEFAULT_API_BASE_URL,
+  isLoadingPartners: false,
 };
 
 function byId(id) {
@@ -83,6 +120,9 @@ function normalizeUrl(value) {
 }
 
 function firstAllowedDomain(partner) {
+  if (!partner || typeof partner !== "object") {
+    return undefined;
+  }
   if (!Array.isArray(partner.allowedDomains) || partner.allowedDomains.length === 0) {
     return undefined;
   }
@@ -128,6 +168,28 @@ async function loadStorage() {
   ]);
 }
 
+async function readCurrentPartnerState() {
+  const current = await chrome.storage.sync.get([
+    "enabledPartnerSlugs",
+    "partnerTokens",
+    "partnerSlug",
+  ]);
+
+  const enabledSet = new Set(
+    Array.isArray(current.enabledPartnerSlugs) ? current.enabledPartnerSlugs : [],
+  );
+  const partnerTokens =
+    current.partnerTokens && typeof current.partnerTokens === "object"
+      ? current.partnerTokens
+      : {};
+
+  return {
+    enabledSet,
+    partnerTokens,
+    fallbackSlug: current.partnerSlug || "",
+  };
+}
+
 async function fetchPublicPartners(apiBaseUrl) {
   const response = await fetch(`${apiBaseUrl}/integrations/partners/public`);
   if (!response.ok) {
@@ -161,15 +223,195 @@ function applyI18nTexts() {
   byId("connectCode").placeholder = t("connectCodePlaceholder");
   byId("langPt").classList.toggle("active", state.lang === "pt");
   byId("langEn").classList.toggle("active", state.lang === "en");
+  updateExternalLinks();
+}
 
-  const localePath = state.lang === "pt" ? "pt" : "en";
-  byId("openIntegrations").href = `${DEFAULT_FRONTEND_BASE_URL}/${localePath}/profile/integrations`;
+function getLocalePath() {
+  return state.lang === "pt" ? "pt" : "en";
+}
+
+function getSelectedConnectPartnerSlug() {
+  return String(byId("connectPartnerSlug").value || "").trim();
+}
+
+function buildIntegrationsUrl() {
+  const localePath = getLocalePath();
+  const selectedSlug = getSelectedConnectPartnerSlug();
+  const selectedPartner = findPartner(state.partners, selectedSlug);
+  const sourceDomain = firstAllowedDomain(selectedPartner);
+
+  const url = new URL(`${DEFAULT_FRONTEND_BASE_URL}/${localePath}/profile/integrations`);
+  url.searchParams.set("mt_ext_connect", "1");
+  if (chrome?.runtime?.id) {
+    url.searchParams.set("mt_ext_id", chrome.runtime.id);
+  }
+  if (selectedSlug) {
+    url.searchParams.set("mt_partner_slug", selectedSlug);
+  }
+  if (sourceDomain) {
+    url.searchParams.set("mt_source_domain", sourceDomain);
+  }
+  if (state.apiBaseUrl) {
+    url.searchParams.set("mt_api_base", state.apiBaseUrl);
+  }
+
+  return url.toString();
+}
+
+function updateExternalLinks() {
+  const localePath = getLocalePath();
+  byId("openIntegrations").href = buildIntegrationsUrl();
   byId("openSite").href = `${DEFAULT_FRONTEND_BASE_URL}/${localePath}`;
+}
+
+function setDiagnosticsValue(id, value) {
+  byId(id).textContent = String(value ?? "-");
+}
+
+function formatTimestamp(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return t("diagNever");
+  }
+
+  const date = new Date(numeric);
+  if (!Number.isFinite(date.getTime())) {
+    return t("diagUnknown");
+  }
+
+  const locale = state.lang === "pt" ? "pt-BR" : "en-US";
+  return date.toLocaleString(locale, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+}
+
+function formatNextRetry(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return t("diagNever");
+  }
+
+  const deltaMs = Math.max(0, numeric - Date.now());
+  const totalSeconds = Math.ceil(deltaMs / 1000);
+  return `${formatTimestamp(numeric)} (${totalSeconds}s)`;
+}
+
+function countConnectedPartners(partnerTokens) {
+  if (!partnerTokens || typeof partnerTokens !== "object") {
+    return 0;
+  }
+
+  return Object.values(partnerTokens).filter((value) => String(value || "").trim()).length;
+}
+
+function sendRuntimeMessage(message, timeoutMs = 4000) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error("runtime message timeout"));
+    }, timeoutMs);
+
+    chrome.runtime.sendMessage(message, (response) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
+
+      resolve(response);
+    });
+  });
+}
+
+async function refreshDiagnostics({ showStatus = false } = {}) {
+  try {
+    const [storage, queueStats] = await Promise.all([
+      chrome.storage.sync.get([
+        "apiBaseUrl",
+        "enabledPartnerSlugs",
+        "partnerTokens",
+      ]),
+      sendRuntimeMessage({ type: "MANGA_SYNC_QUEUE_STATS" }),
+    ]);
+
+    const enabledPartnerSlugs = Array.isArray(storage.enabledPartnerSlugs)
+      ? storage.enabledPartnerSlugs
+      : [];
+    const partnerTokens =
+      storage.partnerTokens && typeof storage.partnerTokens === "object"
+        ? storage.partnerTokens
+        : {};
+
+    const queueSize = Number(queueStats?.size);
+    const dueCount = Number(queueStats?.dueCount);
+
+    setDiagnosticsValue("diagQueueSize", Number.isFinite(queueSize) ? queueSize : 0);
+    setDiagnosticsValue("diagDueCount", Number.isFinite(dueCount) ? dueCount : 0);
+    setDiagnosticsValue("diagNextRetry", formatNextRetry(queueStats?.nextAttemptAt));
+    setDiagnosticsValue("diagEnabledPartners", enabledPartnerSlugs.length);
+    setDiagnosticsValue("diagConnectedPartners", countConnectedPartners(partnerTokens));
+    setDiagnosticsValue("diagLastUpdate", formatTimestamp(Date.now()));
+    setDiagnosticsValue(
+      "diagApiBase",
+      normalizeUrl(storage.apiBaseUrl || state.apiBaseUrl || DEFAULT_API_BASE_URL),
+    );
+
+    if (showStatus) {
+      setStatusFromKey("statusDiagnosticsLoaded", "ok");
+    }
+  } catch (error) {
+    setDiagnosticsValue("diagQueueSize", t("diagUnknown"));
+    setDiagnosticsValue("diagDueCount", t("diagUnknown"));
+    setDiagnosticsValue("diagNextRetry", t("diagUnknown"));
+    setDiagnosticsValue("diagLastUpdate", formatTimestamp(Date.now()));
+
+    if (showStatus) {
+      setStatusFromKey(
+        "statusDiagnosticsLoadError",
+        "err",
+        error instanceof Error ? error.message : "unknown",
+      );
+    }
+  }
+}
+
+async function drainQueueNow() {
+  try {
+    await sendRuntimeMessage({ type: "MANGA_SYNC_QUEUE_DRAIN" });
+    setStatusFromKey("statusDiagnosticsDrainOk", "ok");
+  } catch (error) {
+    setStatusFromKey(
+      "statusDiagnosticsDrainError",
+      "err",
+      error instanceof Error ? error.message : "unknown",
+    );
+  }
+
+  await refreshDiagnostics({ showStatus: false });
 }
 
 function renderPartners(partners, enabledSet, partnerTokens) {
   const list = byId("partnersList");
   list.innerHTML = "";
+
+  if (state.isLoadingPartners) {
+    const node = document.createElement("div");
+    node.className = "partner-item";
+    node.textContent = t("loadingPartners");
+    list.appendChild(node);
+    return;
+  }
 
   if (partners.length === 0) {
     const node = document.createElement("div");
@@ -237,6 +479,8 @@ function renderConnectSelect(partners, enabledSet, fallbackSlug) {
   } else if (source[0]) {
     select.value = source[0].slug;
   }
+
+  updateExternalLinks();
 }
 
 function buildLegacyCompatibility(partners, enabledPartnerSlugs, partnerTokens) {
@@ -271,7 +515,7 @@ function buildPartnerDomainsMap(partners) {
   return map;
 }
 
-async function persistState(partners) {
+async function persistState(partners = state.partners) {
   const enabled = byId("enabled").checked;
 
   const checkboxes = Array.from(document.querySelectorAll("input[data-partner-slug]"));
@@ -298,20 +542,35 @@ async function persistState(partners) {
     ...legacy,
   });
 
+  await refreshDiagnostics({ showStatus: false });
   return { enabledPartnerSlugs, partnerTokens };
 }
 
-async function connectAccount(partners) {
-  const connectCodeOrToken = byId("connectCode").value.trim();
-  if (!connectCodeOrToken) {
-    setStatusFromKey("statusEnterCode", "err");
-    return;
-  }
-
+async function connectAccount(partners = state.partners) {
   const partnerSlug = byId("connectPartnerSlug").value.trim();
   const partner = findPartner(partners, partnerSlug);
   if (!partner) {
     setStatusFromKey("statusSelectPartner", "err");
+    return;
+  }
+
+  const connectCodeOrToken = byId("connectCode").value.trim();
+  if (!connectCodeOrToken) {
+    const connectUrl = buildIntegrationsUrl();
+    try {
+      if (chrome?.tabs?.create) {
+        await chrome.tabs.create({ url: connectUrl });
+      } else {
+        window.open(connectUrl, "_blank", "noopener,noreferrer");
+      }
+      setStatusFromKey("statusOpenConnectFlow", "ok");
+    } catch (error) {
+      setStatusFromKey(
+        "statusConnectError",
+        "err",
+        error instanceof Error ? error.message : "failed to open connect flow",
+      );
+    }
     return;
   }
 
@@ -340,6 +599,7 @@ async function connectAccount(partners) {
     renderPartners(partners, enabledSet, nextTokens);
     renderConnectSelect(partners, enabledSet, partnerSlug);
     setStatusFromKey("statusConnected", "ok");
+    await refreshDiagnostics({ showStatus: false });
     return;
   }
 
@@ -394,6 +654,7 @@ async function connectAccount(partners) {
     renderPartners(partners, enabledSet, nextTokens);
     renderConnectSelect(partners, enabledSet, partnerSlug);
     setStatusFromKey("statusConnected", "ok");
+    await refreshDiagnostics({ showStatus: false });
   } catch (error) {
     setStatusFromKey(
       "statusConnectError",
@@ -403,7 +664,7 @@ async function connectAccount(partners) {
   }
 }
 
-async function disconnectSelectedPartner(partners) {
+async function disconnectSelectedPartner(partners = state.partners) {
   const slug = byId("connectPartnerSlug").value.trim();
   if (!slug) {
     setStatusFromKey("statusSelectDisconnect", "err");
@@ -434,23 +695,35 @@ async function disconnectSelectedPartner(partners) {
   renderPartners(partners, enabledSet, partnerTokens);
   renderConnectSelect(partners, enabledSet, enabledPartnerSlugs[0] || "");
   setStatusFromKey("statusDisconnected", "ok");
+  await refreshDiagnostics({ showStatus: false });
 }
 
 async function setLanguage(lang) {
   state.lang = lang === "pt" ? "pt" : "en";
-  const current = await chrome.storage.sync.get(["enabledPartnerSlugs", "partnerTokens", "partnerSlug"]);
-  const enabledSet = new Set(
-    Array.isArray(current.enabledPartnerSlugs) ? current.enabledPartnerSlugs : [],
-  );
-  const partnerTokens =
-    current.partnerTokens && typeof current.partnerTokens === "object"
-      ? current.partnerTokens
-      : {};
-  const fallbackSlug = current.partnerSlug || "";
+  const { enabledSet, partnerTokens, fallbackSlug } = await readCurrentPartnerState();
   applyI18nTexts();
   renderPartners(state.partners, enabledSet, partnerTokens);
   renderConnectSelect(state.partners, enabledSet, fallbackSlug);
+  await refreshDiagnostics({ showStatus: false });
   await chrome.storage.sync.set({ popupLang: state.lang });
+}
+
+async function refreshPartnersInBackground() {
+  state.isLoadingPartners = true;
+  try {
+    const preState = await readCurrentPartnerState();
+    renderPartners(state.partners, preState.enabledSet, preState.partnerTokens);
+
+    const partners = await fetchPublicPartners(state.apiBaseUrl);
+    state.partners = partners;
+  } catch {
+    state.partners = [];
+  } finally {
+    state.isLoadingPartners = false;
+    const currentState = await readCurrentPartnerState();
+    renderPartners(state.partners, currentState.enabledSet, currentState.partnerTokens);
+    renderConnectSelect(state.partners, currentState.enabledSet, currentState.fallbackSlug);
+  }
 }
 
 async function init() {
@@ -460,14 +733,6 @@ async function init() {
 
   byId("enabled").checked = Boolean(saved.enabled);
 
-  let partners = [];
-  try {
-    partners = await fetchPublicPartners(state.apiBaseUrl);
-  } catch {
-    partners = [];
-  }
-  state.partners = partners;
-
   const enabledSet = new Set(
     Array.isArray(saved.enabledPartnerSlugs) ? saved.enabledPartnerSlugs : [],
   );
@@ -476,28 +741,35 @@ async function init() {
       ? saved.partnerTokens
       : {};
 
+  state.partners = [];
+  state.isLoadingPartners = true;
+
   applyI18nTexts();
-  renderPartners(partners, enabledSet, partnerTokens);
-  renderConnectSelect(partners, enabledSet, saved.partnerSlug || "");
+  renderPartners(state.partners, enabledSet, partnerTokens);
+  renderConnectSelect(state.partners, enabledSet, saved.partnerSlug || "");
 
   byId("enabled").addEventListener("change", async () => {
-    await persistState(partners);
+    await persistState();
     setStatusFromKey("statusSaved", "ok");
   });
 
   byId("partnersList").addEventListener("change", async () => {
-    const updated = await persistState(partners);
+    const updated = await persistState();
     const nextEnabledSet = new Set(updated.enabledPartnerSlugs);
-    renderConnectSelect(partners, nextEnabledSet, byId("connectPartnerSlug").value);
+    renderConnectSelect(state.partners, nextEnabledSet, byId("connectPartnerSlug").value);
     setStatusFromKey("statusPartnerSelectionSaved", "ok");
   });
 
+  byId("connectPartnerSlug").addEventListener("change", () => {
+    updateExternalLinks();
+  });
+
   byId("connectBtn").addEventListener("click", () => {
-    void connectAccount(partners);
+    void connectAccount();
   });
 
   byId("disconnectBtn").addEventListener("click", () => {
-    void disconnectSelectedPartner(partners);
+    void disconnectSelectedPartner();
   });
 
   byId("langPt").addEventListener("click", () => {
@@ -507,6 +779,17 @@ async function init() {
   byId("langEn").addEventListener("click", () => {
     void setLanguage("en");
   });
+
+  byId("refreshDiagBtn").addEventListener("click", () => {
+    void refreshDiagnostics({ showStatus: true });
+  });
+
+  byId("drainQueueBtn").addEventListener("click", () => {
+    void drainQueueNow();
+  });
+
+  void refreshPartnersInBackground();
+  void refreshDiagnostics({ showStatus: false });
 }
 
 void init();

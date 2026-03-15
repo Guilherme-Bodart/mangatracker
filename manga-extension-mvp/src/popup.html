@@ -182,6 +182,76 @@
 
       .links a { color: #b9c5ff; text-decoration: none; }
 
+      .diag-panel {
+        margin-top: 10px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 8px;
+        background: rgba(17, 30, 68, 0.85);
+      }
+
+      .diag-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .diag-title {
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.2px;
+      }
+
+      .diag-grid {
+        margin-top: 8px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+      }
+
+      .diag-item {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 6px 8px;
+        background: rgba(12, 23, 56, 0.9);
+      }
+
+      .diag-item .k {
+        display: block;
+        font-size: 10px;
+        color: var(--muted);
+      }
+
+      .diag-item .v {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        margin-top: 2px;
+      }
+
+      .diag-actions {
+        margin-top: 8px;
+        display: flex;
+        gap: 6px;
+      }
+
+      .diag-btn {
+        flex: 1;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 7px 8px;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 11px;
+        background: #1a2f66;
+        color: #dbe4ff;
+      }
+
+      .diag-btn.secondary {
+        background: #142450;
+      }
+
       #status {
         margin-top: 10px;
         font-size: 12px;
@@ -230,6 +300,48 @@
       <div class="links">
         <a id="openIntegrations" href="#" target="_blank" rel="noreferrer" data-i18n="openIntegrations"></a>
         <a id="openSite" href="#" target="_blank" rel="noreferrer" data-i18n="openSite"></a>
+      </div>
+
+      <div class="diag-panel">
+        <div class="diag-head">
+          <span class="diag-title" data-i18n="diagnosticsTitle"></span>
+          <button id="refreshDiagBtn" class="diag-btn secondary" type="button" data-i18n="diagnosticsRefresh"></button>
+        </div>
+
+        <div class="diag-grid">
+          <div class="diag-item">
+            <span class="k" data-i18n="diagQueueSize"></span>
+            <span class="v" id="diagQueueSize">-</span>
+          </div>
+          <div class="diag-item">
+            <span class="k" data-i18n="diagDueCount"></span>
+            <span class="v" id="diagDueCount">-</span>
+          </div>
+          <div class="diag-item">
+            <span class="k" data-i18n="diagNextRetry"></span>
+            <span class="v" id="diagNextRetry">-</span>
+          </div>
+          <div class="diag-item">
+            <span class="k" data-i18n="diagEnabledPartners"></span>
+            <span class="v" id="diagEnabledPartners">-</span>
+          </div>
+          <div class="diag-item">
+            <span class="k" data-i18n="diagConnectedPartners"></span>
+            <span class="v" id="diagConnectedPartners">-</span>
+          </div>
+          <div class="diag-item">
+            <span class="k" data-i18n="diagLastUpdate"></span>
+            <span class="v" id="diagLastUpdate">-</span>
+          </div>
+          <div class="diag-item" style="grid-column: 1 / -1;">
+            <span class="k" data-i18n="diagApiBase"></span>
+            <span class="v" id="diagApiBase">-</span>
+          </div>
+        </div>
+
+        <div class="diag-actions">
+          <button id="drainQueueBtn" class="diag-btn" type="button" data-i18n="diagnosticsRetryNow"></button>
+        </div>
       </div>
 
       <div id="status"></div>

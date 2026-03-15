@@ -2,14 +2,14 @@
   "Auth": {
     "login": {
       "title": "Bem-vindo de volta",
-      "subtitle": "Insira suas credenciais para acessar sua cole\u00e7\u00e3o de mang\u00e1s",
+      "subtitle": "Insira suas credenciais para acessar sua coleção de mangás",
       "emailParams": {
         "label": "E-mail",
         "placeholder": "seu@email.com"
       },
       "passwordParams": {
         "label": "Senha",
-        "placeholder": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",
+        "placeholder": "••••••••",
         "forgot": "Esqueceu a senha?"
       },
       "rememberMe": "Lembrar de mim por 30 dias",
@@ -17,7 +17,7 @@
       "divider": "Ou continue com",
       "google": "Google",
       "github": "Github",
-      "noAccount": "N\u00e3o tem uma conta?",
+      "noAccount": "Não tem uma conta?",
       "signUp": "Cadastre-se",
       "success": "Bem-vindo de volta!",
       "successDescription": "Login realizado com sucesso.",
@@ -26,11 +26,11 @@
     },
     "register": {
       "title": "Criar Conta",
-      "subtitle": "Junte-se \u00e0 nossa comunidade de mang\u00e1s",
+      "subtitle": "Junte-se à nossa comunidade de mangás",
       "usernameParams": {
-        "label": "Nome de Usu\u00e1rio",
+        "label": "Nome de Usuário",
         "placeholder": "seu_usuario",
-        "description": "Este \u00e9 seu nome p\u00fablico de exibi\u00e7\u00e3o"
+        "description": "Este é seu nome público de exibição"
       },
       "emailParams": {
         "label": "E-mail",
@@ -38,106 +38,106 @@
       },
       "passwordParams": {
         "label": "Senha",
-        "placeholder": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+        "placeholder": "••••••••"
       },
       "confirmPasswordParams": {
         "label": "Confirmar Senha",
-        "placeholder": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+        "placeholder": "••••••••"
       },
       "submit": "Criar Conta",
       "divider": "Ou cadastre-se com",
       "google": "Google",
-      "hasAccount": "J\u00e1 tem uma conta?",
+      "hasAccount": "Já tem uma conta?",
       "signIn": "Entrar",
       "success": "Conta criada!",
-      "successDescription": "Bem-vindo \u00e0 comunidade de mang\u00e1s.",
+      "successDescription": "Bem-vindo à comunidade de mangás.",
       "error": "Falha no cadastro",
-      "errorDescription": "Verifique suas informa\u00e7\u00f5es e tente novamente.",
-      "passwordMismatch": "As senhas n\u00e3o coincidem."
+      "errorDescription": "Verifique suas informações e tente novamente.",
+      "passwordMismatch": "As senhas não coincidem."
     },
     "page": {
       "title": "Login | Manga Tracker",
-      "quote": "O mundo dos mang\u00e1s \u00e9 vasto e infinito. Acompanhe sua jornada, descubra novas hist\u00f3rias e compartilhe sua paix\u00e3o com outros.",
+      "quote": "O mundo dos mangás é vasto e infinito. Acompanhe sua jornada, descubra novas histórias e compartilhe sua paixão com outros.",
       "quoteAuthor": "Guilherme",
       "subtitle": "Bem-vindo de volta",
-      "description": "Fa\u00e7a login para acessar sua conta",
-      "noAccount": "N\u00e3o tem uma conta?",
+      "description": "Faça login para acessar sua conta",
+      "noAccount": "Não tem uma conta?",
       "register": "Cadastre-se",
       "footer": "Guilherme",
       "brand": "Manga Tracker",
-      "terms": "Termos de Servi\u00e7o",
-      "privacy": "Pol\u00edtica de Privacidade",
-      "agreementPrefix": "Ao clicar em continuar, voc\u00ea concorda com nossos",
+      "terms": "Termos de Serviço",
+      "privacy": "Política de Privacidade",
+      "agreementPrefix": "Ao clicar em continuar, você concorda com nossos",
       "agreementAnd": "e"
     }
   },
   "Home": {
     "hero": {
       "title": "Acompanhe Sua Jornada Manga",
-      "subtitle": "Crie sua lista, compartilhe com amigos e descubra novas hist\u00f3rias",
-      "cta": "Come\u00e7ar Agora"
+      "subtitle": "Crie sua lista, compartilhe com amigos e descubra novas histórias",
+      "cta": "Começar Agora"
     },
     "trending": {
       "title": "Em Alta Agora",
-      "subtitle": "Os mang\u00e1s mais populares do momento",
+      "subtitle": "Os mangás mais populares do momento",
       "viewAll": "Ver Todos"
     },
     "features": {
       "title": "Por que usar o Manga Tracker?",
       "track": {
         "title": "Acompanhe",
-        "description": "Mantenha registro de todos os mang\u00e1s que voc\u00ea est\u00e1 lendo, j\u00e1 completou ou planeja ler"
+        "description": "Mantenha registro de todos os mangás que você está lendo, já completou ou planeja ler"
       },
       "share": {
         "title": "Compartilhe",
-        "description": "Mostre sua cole\u00e7\u00e3o para amigos e descubra o que outras pessoas est\u00e3o lendo"
+        "description": "Mostre sua coleção para amigos e descubra o que outras pessoas estão lendo"
       },
       "discover": {
         "title": "Descubra",
-        "description": "Explore novos t\u00edtulos, veja recomenda\u00e7\u00f5es e encontre seu pr\u00f3ximo mang\u00e1 favorito"
+        "description": "Explore novos títulos, veja recomendações e encontre seu próximo mangá favorito"
       }
     },
     "cta": {
-      "title": "Pronto para come\u00e7ar?",
-      "subtitle": "Junte-se a milhares de f\u00e3s de mang\u00e1 hoje",
-      "button": "Criar Conta Gr\u00e1tis"
+      "title": "Pronto para começar?",
+      "subtitle": "Junte-se a milhares de fãs de mangá hoje",
+      "button": "Criar Conta Grátis"
     }
   },
   "Browse": {
-    "title": "Explorar Mang\u00e1s",
+    "title": "Explorar Mangás",
     "provider": "Provedor",
     "providers": {
       "jikan": "MyAnimeList (Jikan)",
       "anilist": "AniList"
     },
-    "search": "Pesquisar mang\u00e1s...",
-    "searchPlaceholder": "Digite o nome do mang\u00e1",
+    "search": "Pesquisar mangás...",
+    "searchPlaceholder": "Digite o nome do mangá",
     "filters": "Filtros",
-    "genres": "G\u00eaneros",
-    "genresPlaceholder": "Selecione os g\u00eaneros",
-    "matchAny": "Pelo menos um dos g\u00eaneros",
-    "matchAll": "Todos os g\u00eaneros selecionados",
+    "genres": "Gêneros",
+    "genresPlaceholder": "Selecione os gêneros",
+    "matchAny": "Pelo menos um dos gêneros",
+    "matchAll": "Todos os gêneros selecionados",
     "type": "Tipo de Obra",
     "types": {
       "all": "Todos",
-      "manga": "Mang\u00e1 (Japon\u00eas)",
+      "manga": "Mangá (Japonês)",
       "manhwa": "Manhwa (Coreano)",
-      "manhua": "Manhua (Chin\u00eas)",
+      "manhua": "Manhua (Chinês)",
       "novel": "Light Novel",
       "oneshot": "One-shot"
     },
     "filterMode": "Modo de Filtro",
-    "addToList": "Adicionar \u00e0 Lista",
-    "alreadyInList": "J\u00e1 est\u00e1 na lista",
+    "addToList": "Adicionar à Lista",
+    "alreadyInList": "Já está na lista",
     "previous": "Anterior",
-    "next": "Pr\u00f3xima",
-    "page": "P\u00e1gina",
+    "next": "Próxima",
+    "page": "Página",
     "noResults": "Nenhum resultado encontrado",
     "loading": "Carregando...",
-    "startSearching": "Comece pesquisando um mang\u00e1"
+    "startSearching": "Comece pesquisando um mangá"
   },
   "AddManga": {
-    "title": "Adicionar \u00e0 Lista",
+    "title": "Adicionar à Lista",
     "status": {
       "label": "Status",
       "reading": "Lendo",
@@ -146,29 +146,29 @@
       "dropped": "Dropado"
     },
     "rating": {
-      "label": "Avalia\u00e7\u00e3o",
+      "label": "Avaliação",
       "placeholder": "0-10"
     },
     "currentChapter": {
-      "label": "Cap\u00edtulo Atual",
+      "label": "Capítulo Atual",
       "placeholder": "0"
     },
     "notes": {
       "label": "Notas",
-      "placeholder": "Suas anota\u00e7\u00f5es..."
+      "placeholder": "Suas anotações..."
     },
     "actions": {
       "cancel": "Cancelar",
       "add": "Adicionar",
       "save": "Salvar"
     },
-    "success": "Mang\u00e1 adicionado com sucesso!",
-    "error": "Erro ao adicionar mang\u00e1"
+    "success": "Mangá adicionado com sucesso!",
+    "error": "Erro ao adicionar mangá"
   },
   "Profile": {
-    "title": "Configura\u00e7\u00f5es de Perfil",
-    "viewPublic": "Ver Perfil P\u00fablico",
-    "subtitle": "Gerencie suas configura\u00e7\u00f5es e prefer\u00eancias",
+    "title": "Configurações de Perfil",
+    "viewPublic": "Ver Perfil Público",
+    "subtitle": "Gerencie suas configurações e preferências",
     "images": {
       "title": "Imagens do Perfil",
       "description": "Atualize seu avatar e banner",
@@ -181,17 +181,17 @@
       "avatarPlaceholder": "https://exemplo.com/avatar.jpg"
     },
     "allowNsfw": {
-      "label": "Permitir Conte\u00fado Adulto (+18)",
-      "description": "Mostrar mang\u00e1s com conte\u00fado mature/NSFW nas buscas"
+      "label": "Permitir Conteúdo Adulto (+18)",
+      "description": "Mostrar mangás com conteúdo mature/NSFW nas buscas"
     },
     "account": {
-      "title": "Informa\u00e7\u00f5es da Conta",
+      "title": "Informações da Conta",
       "description": "Atualize os detalhes da sua conta",
-      "username": "Nome de Usu\u00e1rio",
+      "username": "Nome de Usuário",
       "usernamePlaceholder": "seu-usuario",
-      "usernameHint": "Seu perfil estar\u00e1 dispon\u00edvel em /@{username}",
+      "usernameHint": "Seu perfil estará disponível em /@{username}",
       "email": "E-mail",
-      "emailHint": "O e-mail n\u00e3o pode ser alterado"
+      "emailHint": "O e-mail não pode ser alterado"
     },
     "password": {
       "title": "Alterar Senha",
@@ -199,81 +199,93 @@
       "current": "Senha Atual",
       "new": "Nova Senha",
       "confirm": "Confirmar Nova Senha",
-      "placeholder": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+      "placeholder": "••••••••"
     },
     "actions": {
       "cancel": "Cancelar",
-      "save": "Salvar Altera\u00e7\u00f5es",
+      "save": "Salvar Alterações",
       "saving": "Salvando...",
-      "integrations": "Integra\u00e7\u00f5es",
-      "integrationsAdmin": "Admin Integra\u00e7\u00f5es"
+      "integrations": "Integrações",
+      "integrationsAdmin": "Admin Integrações"
     },
     "messages": {
-      "noChanges": "Nenhuma altera\u00e7\u00e3o para salvar",
-      "passwordMismatch": "As senhas n\u00e3o coincidem",
+      "noChanges": "Nenhuma alteração para salvar",
+      "passwordMismatch": "As senhas não coincidem",
       "success": "Perfil atualizado com sucesso!",
       "error": "Erro ao atualizar perfil"
     }
   },
   "ProfileIntegrations": {
-    "title": "Integra\u00e7\u00f5es",
-    "subtitle": "Conecte sua conta com parceiros externos. O parceiro usa o c\u00f3digo abaixo para concluir o v\u00ednculo e receber token de escrita.",
+    "title": "Integrações",
+    "subtitle": "Conecte sua conta com parceiros externos. O parceiro usa o código abaixo para concluir o vínculo e receber token de escrita.",
     "connectCard": {
-      "title": "Gerar c\u00f3digo de conex\u00e3o",
+      "title": "Gerar código de conexão",
       "partnerLabel": "Parceiro",
       "partnerPlaceholder": "Selecione um parceiro",
-      "sourceDomainLabel": "Dom\u00ednio de origem (opcional)",
+      "sourceDomainLabel": "Domínio de origem (opcional)",
       "sourceDomainPlaceholder": "site-parceiro.com",
-      "allowedDomainsPrefix": "Dom\u00ednios permitidos:",
+      "allowedDomainsPrefix": "Domínios permitidos:",
+      "extensionModeReady": "Modo extensão detectado. Vamos enviar o código automaticamente sem copiar e colar.",
+      "extensionModeConnecting": "Conectando com a extensão automaticamente...",
       "generating": "Gerando...",
-      "generateButton": "Gerar c\u00f3digo"
+      "generateButton": "Gerar código"
     },
     "codeCard": {
-      "title": "C\u00f3digo gerado",
-      "expiresInfo": "Expira em {minutes} minutos. Compartilhe este c\u00f3digo com o parceiro para concluir o v\u00ednculo.",
-      "copyButton": "Copiar c\u00f3digo"
+      "title": "Código gerado",
+      "expiresInfo": "Expira em {minutes} minutos. Compartilhe este código com o parceiro para concluir o vínculo.",
+      "extensionFallbackInfo": "Se a conexão automática falhar, copie o código e cole na extensão.",
+      "copyButton": "Copiar código"
     },
     "messages": {
       "loadPartnersError": "Falha ao carregar parceiros",
       "selectPartnerError": "Selecione um parceiro",
-      "codeGeneratedSuccess": "C\u00f3digo gerado com sucesso",
-      "generateCodeError": "Falha ao gerar c\u00f3digo",
-      "codeCopiedSuccess": "C\u00f3digo copiado",
-      "codeCopyError": "N\u00e3o foi poss\u00edvel copiar o c\u00f3digo"
+      "codeGeneratedSuccess": "Código gerado com sucesso",
+      "generateCodeError": "Falha ao gerar código",
+      "codeCopiedSuccess": "Código copiado",
+      "codeCopyError": "Não foi possível copiar o código",
+      "extensionConnectedSuccess": "Extensão conectada com sucesso. Você pode voltar para a extensão.",
+      "extensionConnectError": "Não foi possível conectar automaticamente com a extensão ({error})"
     }
   },
   "ProfileIntegrationsAdmin": {
-    "title": "Admin de Integra\u00e7\u00f5es",
-    "subtitle": "Gerencie parceiros allowlist, rota\u00e7\u00e3o de segredo, fila de inscri\u00e7\u00f5es e conex\u00f5es ativas.",
+    "title": "Admin de Integrações",
+    "subtitle": "Gerencie parceiros allowlist, rotação de segredo, fila de inscrições e conexões ativas.",
     "createCard": {
       "title": "Criar parceiro",
       "slugLabel": "Slug",
       "slugPlaceholder": "site-a",
       "nameLabel": "Nome",
       "namePlaceholder": "Site A",
-      "allowedDomainsLabel": "Dom\u00ednios permitidos (CSV)",
+      "allowedDomainsLabel": "Domínios permitidos (CSV)",
       "allowedDomainsPlaceholder": "site-a.com,app.site-a.com",
       "activeLabel": "Parceiro ativo",
       "submitButton": "Criar parceiro"
     },
     "secretCard": {
       "title": "Client Secret gerado",
-      "description": "Armazene com seguran\u00e7a. Esse valor n\u00e3o \u00e9 recuper\u00e1vel depois."
+      "description": "Armazene com segurança. Esse valor não é recuperável depois.",
+      "rotationWindowInfo": "Janela de transição ativa por {hours}h. O secret anterior expira em {expiresAt}."
     },
     "partners": {
       "title": "Parceiros",
-      "domainsLabel": "Dom\u00ednios:",
-      "noDomainRestriction": "sem restri\u00e7\u00e3o",
+      "domainsLabel": "Domínios:",
+      "noDomainRestriction": "sem restrição",
+      "notAvailable": "n/d",
       "statusLabel": "Status:",
       "statusActive": "ativo",
       "statusInactive": "inativo",
+      "previousSecretWindowLabel": "Janela do secret anterior:",
+      "previousSecretWindowActive": "ativa",
+      "previousSecretWindowInactive": "inativa",
+      "previousSecretExpiresAtLabel": "Secret anterior expira em:",
+      "lastPreviousSecretUsedAtLabel": "Último uso do secret anterior:",
       "activateButton": "Ativar",
       "deactivateButton": "Desativar",
       "rotateSecretButton": "Rotacionar secret",
       "empty": "Nenhum parceiro cadastrado."
     },
     "applications": {
-      "title": "Fila de inscri\u00e7\u00f5es (waitlist)",
+      "title": "Fila de inscrições (waitlist)",
       "filters": {
         "all": "Todos",
         "pending": "Pendentes",
@@ -282,19 +294,24 @@
       },
       "contactLabel": "Contato:",
       "siteLabel": "Site:",
-      "domainsLabel": "Dom\u00ednios:",
-      "noDomainRestriction": "sem restri\u00e7\u00e3o",
+      "domainsLabel": "Domínios:",
+      "noDomainRestriction": "sem restrição",
       "useCaseLabel": "Uso:",
       "statusLabel": "Status:",
       "reviewReasonLabel": "Motivo:",
       "approveButton": "Aprovar",
       "rejectButton": "Rejeitar",
-      "rejectPrompt": "Motivo da rejei\u00e7\u00e3o (opcional)",
-      "empty": "Nenhuma inscri\u00e7\u00e3o encontrada."
+      "rejectPrompt": "Motivo da rejeição (opcional)",
+      "empty": "Nenhuma inscrição encontrada.",
+      "domainVerificationStatusLabel": "Verificação de domínio:",
+      "verificationDomainLabel": "Domínio de verificação:",
+      "domainVerificationErrorLabel": "Erro de verificação:",
+      "notAvailable": "n/d",
+      "verifyDomainButton": "Verificar domínio"
     },
     "connectionStatus": {
       "title": "Status do token parceiro",
-      "description": "Cole um bearer token de integra\u00e7\u00e3o para validar se a conex\u00e3o do parceiro est\u00e1 saud\u00e1vel agora.",
+      "description": "Cole um bearer token de integração para validar se a conexão do parceiro está saudável agora.",
       "tokenLabel": "Access token",
       "tokenPlaceholder": "eyJhbGciOi...",
       "checkButton": "Verificar status",
@@ -306,23 +323,23 @@
       "scopesLabel": "Scopes:",
       "noScopes": "sem scope",
       "tokenExpiresAtLabel": "Token expira em:",
-      "connectionIdLabel": "ID da conex\u00e3o:",
-      "connectionUpdatedAtLabel": "Conex\u00e3o atualizada em:",
-      "checksTitle": "Valida\u00e7\u00f5es",
+      "connectionIdLabel": "ID da conexão:",
+      "connectionUpdatedAtLabel": "Conexão atualizada em:",
+      "checksTitle": "Validações",
       "checkOk": "ok",
       "checkFail": "falha",
       "notAvailable": "n/d",
       "checks": {
         "partnerExists": "Parceiro existe",
         "partnerActive": "Parceiro ativo",
-        "connectionExists": "Conex\u00e3o existe",
-        "connectionActive": "Conex\u00e3o ativa",
+        "connectionExists": "Conexão existe",
+        "connectionActive": "Conexão ativa",
         "tokenHasWriteScope": "Token tem manga:write",
         "connectionHasWriteScope": "Conexao tem manga:write"
       }
     },
     "connections": {
-      "title": "Conex\u00f5es",
+      "title": "Conexões",
       "allPartners": "Todos",
       "filterPlaceholder": "Filtrar por slug",
       "filterButton": "Filtrar",
@@ -333,172 +350,196 @@
       "statusActive": "ativo",
       "statusRevoked": "revogado",
       "revokeButton": "Revogar",
-      "empty": "Nenhuma conex\u00e3o encontrada."
+      "empty": "Nenhuma conexão encontrada."
     },
     "messages": {
-      "loadDataError": "Falha ao carregar dados admin de integra\u00e7\u00f5es",
+      "loadDataError": "Falha ao carregar dados admin de integrações",
       "partnerCreatedSuccess": "Parceiro criado com sucesso",
       "createPartnerError": "Falha ao criar parceiro",
       "partnerStatusUpdatedSuccess": "Status do parceiro atualizado",
       "updatePartnerError": "Falha ao atualizar parceiro",
       "secretRotatedSuccess": "Secret rotacionado para {slug}",
       "rotateSecretError": "Falha ao rotacionar secret",
-      "applicationApprovedSuccess": "Inscri\u00e7\u00e3o aprovada para {slug}",
-      "approveApplicationError": "Falha ao aprovar inscri\u00e7\u00e3o",
-      "applicationRejectedSuccess": "Inscri\u00e7\u00e3o rejeitada para {slug}",
-      "rejectApplicationError": "Falha ao rejeitar inscri\u00e7\u00e3o",
+      "applicationApprovedSuccess": "Inscrição aprovada para {slug}",
+      "approveApplicationError": "Falha ao aprovar inscrição",
+      "applicationRejectedSuccess": "Inscrição rejeitada para {slug}",
+      "rejectApplicationError": "Falha ao rejeitar inscrição",
       "connectionStatusTokenRequired": "Cole um token antes de verificar",
-      "connectionStatusLoadedSuccess": "Status da conex\u00e3o carregado",
-      "connectionStatusLoadError": "Falha ao carregar status da conex\u00e3o",
-      "connectionRevokedSuccess": "Conex\u00e3o revogada",
-      "revokeConnectionError": "Falha ao revogar conex\u00e3o"
+      "connectionStatusLoadedSuccess": "Status da conexão carregado",
+      "connectionStatusLoadError": "Falha ao carregar status da conexão",
+      "connectionRevokedSuccess": "Conexão revogada",
+      "revokeConnectionError": "Falha ao revogar conexão",
+      "applicationDomainVerifiedSuccess": "Verificação de domínio da inscrição atualizada",
+      "applicationDomainVerifyError": "Falha ao verificar domínio da inscrição"
     }
   },
   "HowToUseApi": {
     "title": "Como usar a API",
-    "updatedAt": "\u00daltima atualiza\u00e7\u00e3o: 11 de mar\u00e7o de 2026",
-    "intro": "Use este guia para integrar seu site parceiro ao Manga Tracker sem extens\u00e3o. Esta p\u00e1gina mostra apenas passos voltados ao parceiro.",
+    "updatedAt": "?ltima atualiza??o: 13 de mar?o de 2026",
+    "intro": "Guia final para integra??o de parceiros com foco em opera??o real, sem copiar c?digo e com troubleshooting objetivo.",
     "baseUrlLabel": "Base URL atual da API neste frontend",
-    "baseUrlNote": "Nas integra\u00e7\u00f5es reais, use a URL de produ\u00e7\u00e3o da sua API. Os endpoints abaixo s\u00e3o relativos a essa base.",
+    "baseUrlNote": "Em produ??o, use a URL oficial da API. Os endpoints abaixo s?o relativos a essa base.",
     "rolesTitle": "Quem participa",
-    "flowTitle": "Fluxo do parceiro",
+    "flowTitle": "Fluxo final do parceiro (sem copiar c?digo)",
     "roles": {
       "partner": {
         "title": "Site parceiro (CLIENTE)",
-        "body": "Envia inscri\u00e7\u00e3o, troca c\u00f3digos de conex\u00e3o por token e sincroniza progresso de cap\u00edtulos no pr\u00f3prio backend."
+        "body": "Orquestra inscri??o, troca de c?digo por token e envio de sync a partir do backend do parceiro."
       },
       "user": {
-        "title": "Usu\u00e1rio final",
-        "body": "Gera um c\u00f3digo tempor\u00e1rio no Manga Tracker e compartilha esse c\u00f3digo com o site parceiro."
+        "title": "Usu?rio final",
+        "body": "Gera c?digo tempor?rio no Manga Tracker e compartilha com o parceiro."
       },
       "platform": {
-        "title": "Manga Tracker (autom\u00e1tico)",
-        "body": "Ap\u00f3s aprova\u00e7\u00e3o, as credenciais s\u00e3o emitidas e os requests de sync s\u00e3o validados automaticamente."
+        "title": "Manga Tracker (autom?tico)",
+        "body": "Valida dom?nio, credenciais, escopo, dom?nio permitido e regras de idempot?ncia/sync."
       }
     },
     "steps": {
       "application": {
-        "title": "1) Envie a inscri\u00e7\u00e3o p\u00fablica",
-        "body": "Cadastre seu site parceiro na fila de espera p\u00fablica.",
+        "title": "1) Envie a inscri??o p?blica",
+        "body": "Cadastre o parceiro e guarde o id da inscri??o para acompanhamento.",
         "endpoint": "POST /integrations/public/apply",
-        "request": "{\n  \"requestedSlug\": \"site-a\",\n  \"name\": \"Site A\",\n  \"contactEmail\": \"tech@site-a.com\",\n  \"siteUrl\": \"https://site-a.com\",\n  \"allowedDomains\": [\"site-a.com\"],\n  \"useCase\": \"Sincronizar progresso de cap\u00edtulos do Site A\",\n  \"captchaToken\": \"token-quando-captcha-estiver-ativo\"\n}",
-        "response": "{\n  \"id\": \"...\",\n  \"requestedSlug\": \"site-a\",\n  \"status\": \"PENDING\",\n  \"createdAt\": \"...\"\n}",
         "notes": {
-          "1": "Esse endpoint \u00e9 p\u00fablico e possui rate limit.",
-          "2": "A inscri\u00e7\u00e3o n\u00e3o ativa a integra\u00e7\u00e3o imediatamente.",
-          "3": "Mantenha `website` (campo honeypot) vazio; se captcha estiver ativo, envie `captchaToken`."
+          "1": "Endpoint p?blico com rate limit e prote??o anti-abuso.",
+          "2": "O envio n?o ativa a integra??o automaticamente."
+        }
+      },
+      "domainVerification": {
+        "title": "2) Verifique posse do dom?nio",
+        "body": "Publique a prova de dom?nio e execute a verifica??o antes da aprova??o.",
+        "endpoint": "POST /integrations/public/apply/{applicationId}/verify-domain",
+        "notes": {
+          "1": "DNS TXT ? o caminho recomendado; arquivo .well-known ? fallback.",
+          "2": "Aprova??o fica bloqueada at? status VERIFIED."
         }
       },
       "applicationStatus": {
-        "title": "2) Consulte o status da solicita\u00e7\u00e3o (opcional)",
-        "body": "Use o id da inscri\u00e7\u00e3o retornado no passo 1 para acompanhar a aprova\u00e7\u00e3o pelo backend.",
-        "endpoint": "GET /integrations/public/apply/{applicationId}/status",
-        "response": "{\n  \"id\": \"...\",\n  \"requestedSlug\": \"site-a\",\n  \"status\": \"PENDING | APPROVED | REJECTED\",\n  \"reviewReason\": \"opcional\",\n  \"nextAction\": \"WAIT_APPROVAL | CHECK_EMAIL_FOR_CREDENTIALS | CHECK_REVIEW_REASON_OR_CONTACT_SUPPORT\",\n  \"createdAt\": \"...\",\n  \"reviewedAt\": \"...\",\n  \"updatedAt\": \"...\"\n}",
-        "notes": {
-          "1": "Use essa rota se quiser polling self-service no seu backend.",
-          "2": "O applicationId \u00e9 retornado no POST /integrations/public/apply."
-        }
+        "title": "3) Consulte status quando necess?rio",
+        "body": "Use o applicationId para polling de progresso e pr?xima a??o.",
+        "endpoint": "GET /integrations/public/apply/{applicationId}/status"
       },
       "approval": {
-        "title": "3) Espere a aprova\u00e7\u00e3o da solicita\u00e7\u00e3o",
-        "body": "Quando aprovarmos, voc\u00ea receber\u00e1 por e-mail o partnerSlug, o clientSecret e os pr\u00f3ximos passos.",
-        "notes": {
-          "1": "Nesta etapa, n\u00e3o h\u00e1 chamada de API obrigat\u00f3ria do parceiro."
-        }
+        "title": "4) Aguarde aprova??o",
+        "body": "Ap?s aprova??o, as credenciais (partnerSlug e clientSecret) s?o enviadas por e-mail."
       },
       "userConnectCode": {
-        "title": "4) Pe\u00e7a ao usu\u00e1rio o c\u00f3digo de conex\u00e3o",
-        "body": "O usu\u00e1rio gera o c\u00f3digo dentro do Manga Tracker e compartilha com o seu site.",
-        "notes": {
-          "1": "O c\u00f3digo expira em 5 minutos e s\u00f3 pode ser usado uma vez."
-        }
+        "title": "5) Usu?rio gera c?digo de conex?o",
+        "body": "O usu?rio gera c?digo tempor?rio no Manga Tracker para vincular a conta ao parceiro."
       },
       "exchange": {
-        "title": "5) Troque o c\u00f3digo por access token",
-        "body": "Seu backend troca o c\u00f3digo do usu\u00e1rio por um token de acesso do parceiro.",
+        "title": "6) Troque c?digo por token no backend do parceiro",
+        "body": "Use o endpoint de exchange com credenciais de parceiro e valide dom?nio de origem.",
         "endpoint": "POST /integrations/connect/exchange",
-        "request": "{\n  \"partnerSlug\": \"site-a\",\n  \"clientSecret\": \"secret-mostrado-uma-vez\",\n  \"code\": \"codigo-temporario\",\n  \"sourceDomain\": \"site-a.com\"\n}",
-        "response": "{\n  \"accessToken\": \"integration-jwt\",\n  \"tokenType\": \"Bearer\",\n  \"expiresInSeconds\": 2592000,\n  \"scopes\": [\"manga:write\"]\n}",
         "notes": {
-          "1": "Guarde clientSecret somente no backend.",
-          "2": "Rate limit: 20 requisi\u00e7\u00f5es por minuto."
+          "1": "Rota??o: secret ativo e secret anterior s?o aceitos durante a janela de transi??o.",
+          "2": "Ap?s expira??o da janela, apenas o secret ativo autentica."
         }
       },
       "sync": {
-        "title": "6) Sincronize cap\u00edtulos lidos",
-        "body": "Envie atualiza\u00e7\u00f5es de cap\u00edtulo a partir do seu backend.",
+        "title": "7) Envie sync de progresso",
+        "body": "Envie eventos com idempotency key para retries seguros e resultado determin?stico.",
         "endpoint": "POST /integrations/sync",
-        "request": "Headers:\n  Authorization: Bearer <accessToken>\n  x-idempotency-key: <id-unico-do-evento>\n\nBody:\n{\n  \"partnerSlug\": \"site-a\",\n  \"externalMangaId\": \"one-piece-123\",\n  \"title\": \"One Piece\",\n  \"chapter\": 1123,\n  \"sourceDomain\": \"site-a.com\"\n}",
-        "response": "{\n  \"outcome\": \"created | updated | noop\",\n  \"userMangaId\": \"...\",\n  \"currentChapter\": 1123\n}",
         "notes": {
-          "1": "Rate limit: 120 requisi\u00e7\u00f5es por minuto.",
-          "2": "Reutilize a mesma chave de idempot\u00eancia em retries.",
-          "3": "Health check opcional: GET /integrations/connection/status usando o mesmo Bearer token."
+          "1": "Outcomes: created, updated ou noop.",
+          "2": "Health check opcional: GET /integrations/connection/status."
+        }
+      },
+      "webhooks": {
+        "title": "8) Configure webhooks de eventos",
+        "body": "Cadastre endpoint por parceiro para receber eventos assinados e monitorar entregas/retries/DLQ.",
+        "endpoint": "POST/GET /integrations/admin/partners/{partnerId}/webhooks",
+        "notes": {
+          "1": "Assinatura HMAC SHA-256 em timestamp.body; valide antes de processar.",
+          "2": "Em falhas tempor?rias, a plataforma faz retry com backoff + jitter; no limite, evento vai para DLQ.",
+          "3": "Fa?a deduplica??o do consumidor por x-mangalist-event-id."
         }
       }
     },
     "security": {
-      "title": "Checklist de seguran\u00e7a",
+      "title": "Checklist de seguran?a",
       "items": {
-        "1": "Armazene clientSecret apenas no backend (nunca no frontend).",
-        "2": "Sempre envie sourceDomain e mantenha a lista de allowedDomains atualizada.",
-        "3": "Use x-idempotency-key para retry seguro.",
-        "4": "Use HTTPS em produ\u00e7\u00e3o em todo tr\u00e1fego do parceiro.",
-        "5": "Rotacione clientSecret periodicamente."
+        "1": "Armazene clientSecret somente no backend.",
+        "2": "Use allowlist de dom?nio e envie sourceDomain.",
+        "3": "Use x-idempotency-key em todo retry.",
+        "4": "Rotacione secrets periodicamente com janela de transi??o.",
+        "5": "Use HTTPS fim a fim em produ??o."
       }
     },
     "limits": {
-      "title": "Comportamento do sync",
+      "title": "Comportamento operacional",
       "items": {
-        "1": "Neste MVP, apenas o escopo manga:write \u00e9 aceito.",
-        "2": "Se chapter recebido <= chapter atual, o retorno ser\u00e1 noop.",
-        "3": "O access token expira em 30 dias (2592000 segundos).",
-        "4": "Outcomes created/updated/noop indicam o resultado do sync por request."
+        "1": "Scope exigido no MVP: manga:write.",
+        "2": "chapter menor/igual ao atual retorna noop.",
+        "3": "Access token de integra??o expira em 30 dias.",
+        "4": "Rate limits e valida??es retornam erros claros por endpoint."
+      }
+    },
+    "troubleshooting": {
+      "title": "Erros comuns e troubleshooting",
+      "items": {
+        "1": "401 Missing partner credentials: clientSecret ausente para parceiro n?o p?blico.",
+        "2": "401 Invalid partner credentials: secret inv?lido ou janela do secret anterior expirada.",
+        "3": "401 Invalid or expired connect code: gere novo c?digo no Manga Tracker.",
+        "4": "401 Connect code domain mismatch: alinhe sourceDomain no start e no exchange.",
+        "5": "403 Missing manga:write scope: revise escopo da conex?o/token.",
+        "6": "403 Source domain is not allowed for partner: ajuste allowedDomains no admin.",
+        "7": "429 Too many requests: respeite Retry-After e use backoff com jitter.",
+        "8": "Sync em noop: comportamento esperado quando cap?tulo n?o avan?ou."
+      }
+    },
+    "examples": {
+      "title": "Exemplos ponta-a-ponta",
+      "items": {
+        "1": "Novo v?nculo: start -> exchange -> sync(created).",
+        "2": "Progresso cont?nuo: sync(updated) com cap?tulo maior.",
+        "3": "Retry seguro: mesmo evento + mesma idempotency key mant?m resultado sem duplicidade.",
+        "4": "Rota??o sem downtime: exchange aceita secret anterior na janela e migra para o novo."
       }
     }
   },
   "MyTrack": {
     "title": "Adicionar Manga",
-    "heading": "Meus Mang\u00e1s",
-    "syncDisclaimer": "Cap\u00edtulos podem n\u00e3o refletir 100% o estado real em todos os t\u00edtulos.",
-    "empty": "Sua lista est\u00e1 vazia",
-    "addFirst": "Adicione seu primeiro mang\u00e1!",
-    "browseManga": "Explorar Mang\u00e1s",
-    "latestChapters": "\u00daltimos cap\u00edtulos",
-    "noChapterData": "Sem dados de cap\u00edtulos",
+    "heading": "Meus Mangás",
+    "syncDisclaimer": "Capítulos podem não refletir 100% o estado real em todos os títulos.",
+    "empty": "Sua lista está vazia",
+    "addFirst": "Adicione seu primeiro mangá!",
+    "browseManga": "Explorar Mangás",
+    "latestChapters": "Últimos capítulos",
+    "noChapterData": "Sem dados de capítulos",
     "chapterLabel": "Cap.",
     "chapterRead": {
       "read": "Lido",
-      "unread": "N\u00e3o lido",
-      "success": "Leitura atualizada at\u00e9 o cap\u00edtulo {chapter}",
+      "unread": "Não lido",
+      "success": "Leitura atualizada até o capítulo {chapter}",
       "error": "Erro ao atualizar leitura",
-      "noValidChapter": "N\u00e3o foi poss\u00edvel identificar o cap\u00edtulo"
+      "noValidChapter": "Não foi possível identificar o capítulo"
     },
     "actions": {
       "edit": "Editar",
       "delete": "Excluir",
       "cancel": "Cancelar",
-      "confirmDelete": "Tem certeza que deseja remover este mang\u00e1 da sua lista?",
-      "deleteSuccess": "Mang\u00e1 removido com sucesso",
-      "deleteError": "Erro ao remover mang\u00e1"
+      "confirmDelete": "Tem certeza que deseja remover este mangá da sua lista?",
+      "deleteSuccess": "Mangá removido com sucesso",
+      "deleteError": "Erro ao remover mangá"
     },
     "edit": {
-      "title": "Editar Mang\u00e1"
+      "title": "Editar Mangá"
     }
   },
   "PublicProfile": {
     "loading": "Carregando perfil...",
-    "notFound": "Usu\u00e1rio n\u00e3o encontrado",
-    "notFoundDesc": "Este usu\u00e1rio n\u00e3o existe ou foi deletado",
+    "notFound": "Usuário não encontrado",
+    "notFoundDesc": "Este usuário não existe ou foi deletado",
     "editProfile": "Editar Perfil",
     "likes": "curtidas",
     "likeToLogin": "Entrar para curtir",
     "likeProfile": "Curtir perfil",
     "unlikeProfile": "Remover curtida",
-    "mangaList": "Lista de Mang\u00e1s",
-    "emptyList": "Nenhum mang\u00e1 nesta lista ainda",
+    "mangaList": "Lista de Mangás",
+    "emptyList": "Nenhum mangá nesta lista ainda",
     "stats": {
-      "totalManga": "Total de Mang\u00e1s",
+      "totalManga": "Total de Mangás",
       "total": "total",
       "favorites": "Favoritos"
     },
@@ -510,23 +551,23 @@
       "dropped": "Dropado"
     },
     "details": {
-      "rating": "Avalia\u00e7\u00e3o",
-      "chapter": "Cap\u00edtulo",
-      "latestChapter": "\u00daltimo Cap\u00edtulo",
+      "rating": "Avaliação",
+      "chapter": "Capítulo",
+      "latestChapter": "Último Capítulo",
       "notes": "Notas",
       "addedOn": "Adicionado em",
       "added": "Adicionado",
       "showDetails": "Mostrar Detalhes",
       "hideDetails": "Ocultar"
     },
-    "empty": "Nenhum mang\u00e1 na lista ainda"
+    "empty": "Nenhum mangá na lista ainda"
   },
   "Ranking": {
     "title": "Ranking de Perfis",
     "subtitle": "Top 100 perfis com mais curtidas",
     "loading": "Carregando ranking...",
-    "error": "N\u00e3o foi poss\u00edvel carregar o ranking",
-    "empty": "Ainda n\u00e3o h\u00e1 perfis ranqueados",
+    "error": "Não foi possível carregar o ranking",
+    "empty": "Ainda não há perfis ranqueados",
     "likes": "Curtidas",
     "completed": "Completos",
     "reading": "Lendo"
@@ -538,63 +579,80 @@
     "login": "Entrar",
     "profileMenu": "Menu do perfil",
     "profile": "Perfil",
-    "publicProfile": "Perfil P\u00fablico",
+    "publicProfile": "Perfil Público",
     "logout": "Sair"
   },
   "PublicIntegrationsApply": {
-    "title": "Inscri\u00e7\u00e3o para API de parceiros",
-    "subtitle": "Envie seu site para revis\u00e3o e receba credenciais ap\u00f3s aprova\u00e7\u00e3o.",
+    "title": "Inscrição para API de parceiros",
+    "subtitle": "Envie seu site para revisão e receba credenciais após aprovação.",
     "form": {
-      "title": "Formul\u00e1rio de inscri\u00e7\u00e3o",
+      "title": "Formulário de inscrição",
       "requestedSlugLabel": "Slug desejado",
       "requestedSlugPlaceholder": "site-a",
       "nameLabel": "Nome do parceiro",
       "namePlaceholder": "Site A",
-      "contactEmailLabel": "E-mail t\u00e9cnico de contato",
+      "contactEmailLabel": "E-mail técnico de contato",
       "contactEmailPlaceholder": "tech@site-a.com",
       "siteUrlLabel": "URL do site",
       "siteUrlPlaceholder": "https://site-a.com",
-      "allowedDomainsLabel": "Dom\u00ednios permitidos (CSV)",
+      "allowedDomainsLabel": "Domínios permitidos (CSV)",
       "allowedDomainsPlaceholder": "site-a.com, app.site-a.com",
-      "allowedDomainsHint": "Se vazio, inferimos o dom\u00ednio pela URL do site.",
+      "allowedDomainsHint": "Se vazio, inferimos o domínio pela URL do site.",
       "useCaseLabel": "Caso de uso",
-      "useCasePlaceholder": "Sincronizar progresso de cap\u00edtulos do meu site de leitura.",
+      "useCasePlaceholder": "Sincronizar progresso de capítulos do meu site de leitura.",
       "websiteTrapLabel": "Website",
       "captchaLabel": "Captcha",
-      "captchaDisabled": "Captcha n\u00e3o configurado neste ambiente.",
+      "captchaDisabled": "Captcha não configurado neste ambiente.",
       "submitting": "Enviando...",
-      "submit": "Enviar inscri\u00e7\u00e3o"
+      "submit": "Enviar inscrição"
     },
     "result": {
-      "title": "Inscri\u00e7\u00e3o criada",
-      "body": "Guarde o id da inscri\u00e7\u00e3o para acompanhar status sem contato manual.",
-      "applicationId": "ID da inscri\u00e7\u00e3o",
+      "title": "Inscrição criada",
+      "body": "Guarde o id da inscrição para acompanhar status sem contato manual.",
+      "applicationId": "ID da inscrição",
       "requestedSlug": "Slug solicitado",
       "status": "Status",
-      "copyIdButton": "Copiar ID da inscri\u00e7\u00e3o",
-      "checkStatusButton": "Consultar status"
+      "copyIdButton": "Copiar ID da inscrição",
+      "checkStatusButton": "Consultar status",
+      "domainVerificationStatus": "Verificação de domínio",
+      "domainVerificationValues": {
+        "PENDING": "Pendente",
+        "VERIFIED": "Verificado",
+        "FAILED": "Falhou"
+      },
+      "verificationDomain": "Domínio de verificação",
+      "verificationToken": "Token de verificação",
+      "wellKnownPath": "Caminho well-known",
+      "domainVerificationError": "Erro de verificação",
+      "domainVerifiedAt": "Verificado em",
+      "notAvailable": "n/d",
+      "verifyDomainButton": "Verificar domínio agora",
+      "verifyingDomainButton": "Verificando domínio...",
+      "dnsRecordName": "Registro DNS TXT"
     },
     "messages": {
-      "submitSuccess": "Inscri\u00e7\u00e3o enviada com sucesso",
-      "submitError": "Falha ao enviar inscri\u00e7\u00e3o",
-      "copyIdSuccess": "ID da inscri\u00e7\u00e3o copiado",
-      "copyIdError": "N\u00e3o foi poss\u00edvel copiar o ID",
+      "submitSuccess": "Inscrição enviada com sucesso",
+      "submitError": "Falha ao enviar inscrição",
+      "copyIdSuccess": "ID da inscrição copiado",
+      "copyIdError": "Não foi possível copiar o ID",
       "captchaRequired": "Conclua o captcha antes de enviar",
-      "captchaLoadError": "Falha ao carregar o captcha"
+      "captchaLoadError": "Falha ao carregar o captcha",
+      "verifyDomainSuccess": "Verificação de domínio concluída",
+      "verifyDomainError": "Falha ao verificar domínio"
     }
   },
   "PublicIntegrationsStatus": {
-    "title": "Status da inscri\u00e7\u00e3o",
-    "subtitle": "Acompanhe o progresso da aprova\u00e7\u00e3o com o id da inscri\u00e7\u00e3o.",
+    "title": "Status da inscrição",
+    "subtitle": "Acompanhe o progresso da aprovação com o id da inscrição.",
     "lookup": {
-      "title": "Consultar inscri\u00e7\u00e3o",
-      "applicationIdLabel": "ID da inscri\u00e7\u00e3o",
-      "applicationIdPlaceholder": "Cole o id da inscri\u00e7\u00e3o",
+      "title": "Consultar inscrição",
+      "applicationIdLabel": "ID da inscrição",
+      "applicationIdPlaceholder": "Cole o id da inscrição",
       "submit": "Consultar status",
       "loading": "Consultando..."
     },
     "status": {
-      "notLoaded": "N\u00e3o carregado",
+      "notLoaded": "Não carregado",
       "values": {
         "PENDING": "Pendente",
         "APPROVED": "Aprovado",
@@ -602,29 +660,46 @@
       }
     },
     "nextAction": {
-      "notLoaded": "N\u00e3o carregado",
+      "notLoaded": "Não carregado",
       "values": {
-        "WAIT_APPROVAL": "Aguardar aprova\u00e7\u00e3o",
+        "WAIT_APPROVAL": "Aguardar aprovação",
         "CHECK_EMAIL_FOR_CREDENTIALS": "Verifique o e-mail para partnerSlug e clientSecret",
-        "CHECK_REVIEW_REASON_OR_CONTACT_SUPPORT": "Revise o motivo da rejei\u00e7\u00e3o ou fale com suporte"
+        "CHECK_REVIEW_REASON_OR_CONTACT_SUPPORT": "Revise o motivo da rejeição ou fale com suporte",
+        "VERIFY_DOMAIN": "Publique prova de token via DNS TXT (ou .well-known) e verifique o domínio"
       }
     },
     "result": {
       "title": "Status atual",
-      "applicationId": "ID da inscri\u00e7\u00e3o",
+      "applicationId": "ID da inscrição",
       "requestedSlug": "Slug solicitado",
       "status": "Status",
-      "nextAction": "Pr\u00f3xima a\u00e7\u00e3o",
-      "reviewReason": "Motivo da revis\u00e3o",
+      "nextAction": "Próxima ação",
+      "reviewReason": "Motivo da revisão",
       "createdAt": "Criado em",
       "reviewedAt": "Revisado em",
       "updatedAt": "Atualizado em",
-      "notAvailable": "n/d"
+      "notAvailable": "n/d",
+      "domainVerificationStatus": "Verificação de domínio",
+      "domainVerificationValues": {
+        "PENDING": "Pendente",
+        "VERIFIED": "Verificado",
+        "FAILED": "Falhou"
+      },
+      "verificationDomain": "Domínio de verificação",
+      "verificationToken": "Token de verificação",
+      "wellKnownPath": "Caminho well-known",
+      "domainVerificationError": "Erro de verificação",
+      "domainVerificationLastCheckedAt": "Última verificação em",
+      "verifyDomainButton": "Verificar domínio agora",
+      "verifyingDomainButton": "Verificando domínio...",
+      "dnsRecordName": "Registro DNS TXT"
     },
     "messages": {
-      "applicationIdRequired": "Cole o ID da inscri\u00e7\u00e3o antes de consultar",
+      "applicationIdRequired": "Cole o ID da inscrição antes de consultar",
       "statusLoadedSuccess": "Status carregado com sucesso",
-      "statusLoadError": "Falha ao carregar status da inscri\u00e7\u00e3o"
+      "statusLoadError": "Falha ao carregar status da inscrição",
+      "verifyDomainSuccess": "Verificação de domínio concluída",
+      "verifyDomainError": "Falha ao verificar domínio"
     }
   },
   "Footer": {

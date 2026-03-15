@@ -224,12 +224,15 @@
       "sourceDomainLabel": "Source domain (optional)",
       "sourceDomainPlaceholder": "partner-site.com",
       "allowedDomainsPrefix": "Allowed domains:",
+      "extensionModeReady": "Extension mode detected. We will send the code automatically without copy/paste.",
+      "extensionModeConnecting": "Connecting to the extension automatically...",
       "generating": "Generating...",
       "generateButton": "Generate code"
     },
     "codeCard": {
       "title": "Generated code",
       "expiresInfo": "Expires in {minutes} minutes. Share this code with the partner to finish linking.",
+      "extensionFallbackInfo": "If automatic connection fails, copy this code and paste it in the extension.",
       "copyButton": "Copy code"
     },
     "messages": {
@@ -238,10 +241,12 @@
       "codeGeneratedSuccess": "Code generated successfully",
       "generateCodeError": "Failed to generate code",
       "codeCopiedSuccess": "Code copied",
-      "codeCopyError": "Could not copy the code"
+      "codeCopyError": "Could not copy the code",
+      "extensionConnectedSuccess": "Extension connected successfully. You can return to the extension.",
+      "extensionConnectError": "Could not connect automatically to the extension ({error})"
     }
   },
-    "ProfileIntegrationsAdmin": {
+  "ProfileIntegrationsAdmin": {
     "title": "Integrations Admin",
     "subtitle": "Manage partner allowlist, secret rotation, waitlist applications, and active connections.",
     "createCard": {
@@ -257,15 +262,22 @@
     },
     "secretCard": {
       "title": "Generated client secret",
-      "description": "Store this securely. This value is not retrievable later."
+      "description": "Store this securely. This value is not retrievable later.",
+      "rotationWindowInfo": "Transition window active for {hours}h. Previous secret expires at {expiresAt}."
     },
     "partners": {
       "title": "Partners",
       "domainsLabel": "Domains:",
       "noDomainRestriction": "no restriction",
+      "notAvailable": "n/a",
       "statusLabel": "Status:",
       "statusActive": "active",
       "statusInactive": "inactive",
+      "previousSecretWindowLabel": "Previous secret window:",
+      "previousSecretWindowActive": "active",
+      "previousSecretWindowInactive": "inactive",
+      "previousSecretExpiresAtLabel": "Previous secret expires at:",
+      "lastPreviousSecretUsedAtLabel": "Last previous secret use:",
       "activateButton": "Enable",
       "deactivateButton": "Disable",
       "rotateSecretButton": "Rotate secret",
@@ -289,7 +301,12 @@
       "approveButton": "Approve",
       "rejectButton": "Reject",
       "rejectPrompt": "Rejection reason (optional)",
-      "empty": "No applications found."
+      "empty": "No applications found.",
+      "domainVerificationStatusLabel": "Domain verification:",
+      "verificationDomainLabel": "Verification domain:",
+      "domainVerificationErrorLabel": "Verification error:",
+      "notAvailable": "n/a",
+      "verifyDomainButton": "Verify domain"
     },
     "connectionStatus": {
       "title": "Partner token status",
@@ -350,109 +367,133 @@
       "connectionStatusLoadedSuccess": "Connection status loaded",
       "connectionStatusLoadError": "Failed to load connection status",
       "connectionRevokedSuccess": "Connection revoked",
-      "revokeConnectionError": "Failed to revoke connection"
+      "revokeConnectionError": "Failed to revoke connection",
+      "applicationDomainVerifiedSuccess": "Application domain verification updated",
+      "applicationDomainVerifyError": "Failed to verify application domain"
     }
   },
   "HowToUseApi": {
     "title": "How to use API",
-    "updatedAt": "Last updated: March 11, 2026",
-    "intro": "Use this guide to integrate your partner site with Manga Tracker without extension. This page only shows partner-facing steps.",
+    "updatedAt": "Last updated: March 13, 2026",
+    "intro": "Final guide for partner integration focused on real operations, without copy-paste code and with practical troubleshooting.",
     "baseUrlLabel": "Current API base URL in this frontend",
-    "baseUrlNote": "Use your production API URL in real integrations. Endpoints below are relative to this base.",
+    "baseUrlNote": "In production, use the official API URL. Endpoints below are relative to that base.",
     "rolesTitle": "Who is involved",
-    "flowTitle": "Partner flow",
+    "flowTitle": "Final partner flow (without copy-paste code)",
     "roles": {
       "partner": {
         "title": "Partner site (CLIENT)",
-        "body": "Submits application, exchanges connect codes for tokens, and syncs chapter updates from its own backend."
+        "body": "Orchestrates application, code exchange for token, and sync delivery from partner backend."
       },
       "user": {
         "title": "End user",
-        "body": "Generates a short-lived connect code in Manga Tracker and shares it with the partner site."
+        "body": "Generates a short-lived code in Manga Tracker and shares it with the partner."
       },
       "platform": {
         "title": "Manga Tracker (automatic)",
-        "body": "After approval, credentials are issued and sync requests are validated automatically."
+        "body": "Validates domain, credentials, scopes, allowed domains, and idempotency/sync rules."
       }
     },
     "steps": {
       "application": {
         "title": "1) Submit public application",
-        "body": "Register your partner site in the public waitlist.",
+        "body": "Register the partner and store the application id for tracking.",
         "endpoint": "POST /integrations/public/apply",
-        "request": "{\n  \"requestedSlug\": \"site-a\",\n  \"name\": \"Site A\",\n  \"contactEmail\": \"tech@site-a.com\",\n  \"siteUrl\": \"https://site-a.com\",\n  \"allowedDomains\": [\"site-a.com\"],\n  \"useCase\": \"Sync chapter progress from Site A\",\n  \"captchaToken\": \"token-when-captcha-is-enabled\"\n}",
-        "response": "{\n  \"id\": \"...\",\n  \"requestedSlug\": \"site-a\",\n  \"status\": \"PENDING\",\n  \"createdAt\": \"...\"\n}",
         "notes": {
-          "1": "This endpoint is public and rate-limited.",
-          "2": "Submitting does not activate integration immediately.",
-          "3": "Keep `website` (honeypot field) empty; if captcha is enabled, send `captchaToken`."
+          "1": "Public endpoint with rate limits and anti-abuse protections.",
+          "2": "Submitting does not activate integration automatically."
+        }
+      },
+      "domainVerification": {
+        "title": "2) Verify domain ownership",
+        "body": "Publish domain proof and run verification before approval.",
+        "endpoint": "POST /integrations/public/apply/{applicationId}/verify-domain",
+        "notes": {
+          "1": "DNS TXT is recommended; .well-known file is fallback.",
+          "2": "Approval is blocked until status becomes VERIFIED."
         }
       },
       "applicationStatus": {
-        "title": "2) Check application status (optional)",
-        "body": "Use the application id returned in step 1 to track approval progress programmatically.",
-        "endpoint": "GET /integrations/public/apply/{applicationId}/status",
-        "response": "{\n  \"id\": \"...\",\n  \"requestedSlug\": \"site-a\",\n  \"status\": \"PENDING | APPROVED | REJECTED\",\n  \"reviewReason\": \"optional\",\n  \"nextAction\": \"WAIT_APPROVAL | CHECK_EMAIL_FOR_CREDENTIALS | CHECK_REVIEW_REASON_OR_CONTACT_SUPPORT\",\n  \"createdAt\": \"...\",\n  \"reviewedAt\": \"...\",\n  \"updatedAt\": \"...\"\n}",
-        "notes": {
-          "1": "Use this route if you want self-service polling from your backend.",
-          "2": "The application id is returned by POST /integrations/public/apply."
-        }
+        "title": "3) Check status when needed",
+        "body": "Use applicationId for progress polling and next action.",
+        "endpoint": "GET /integrations/public/apply/{applicationId}/status"
       },
       "approval": {
-        "title": "3) Wait for application approval",
-        "body": "When approved, you receive an email with partnerSlug, clientSecret and the next steps.",
-        "notes": {
-          "1": "No partner API call is required in this step."
-        }
+        "title": "4) Wait for approval",
+        "body": "After approval, credentials (partnerSlug and clientSecret) are sent by email."
       },
       "userConnectCode": {
-        "title": "4) Ask the user for the connect code",
-        "body": "The user generates the code inside Manga Tracker and shares it with your site.",
-        "notes": {
-          "1": "Connect code expires in 5 minutes and is single-use."
-        }
+        "title": "5) User generates connect code",
+        "body": "User generates a short-lived code in Manga Tracker to link account to partner."
       },
       "exchange": {
-        "title": "5) Exchange code for access token",
-        "body": "Your backend exchanges the user code for a partner access token.",
+        "title": "6) Exchange code for token in partner backend",
+        "body": "Use exchange endpoint with partner credentials and source domain validation.",
         "endpoint": "POST /integrations/connect/exchange",
-        "request": "{\n  \"partnerSlug\": \"site-a\",\n  \"clientSecret\": \"show-once-secret\",\n  \"code\": \"short-lived-connect-code\",\n  \"sourceDomain\": \"site-a.com\"\n}",
-        "response": "{\n  \"accessToken\": \"integration-jwt\",\n  \"tokenType\": \"Bearer\",\n  \"expiresInSeconds\": 2592000,\n  \"scopes\": [\"manga:write\"]\n}",
         "notes": {
-          "1": "Keep clientSecret only on backend.",
-          "2": "Rate limit: 20 requests per minute."
+          "1": "Rotation: active and previous secret are accepted during transition window.",
+          "2": "After transition window expires, only active secret authenticates."
         }
       },
       "sync": {
-        "title": "6) Sync read chapters",
-        "body": "Send chapter progress updates from your backend.",
+        "title": "7) Send progress sync",
+        "body": "Send events with idempotency key for safe retries and deterministic outcomes.",
         "endpoint": "POST /integrations/sync",
-        "request": "Headers:\n  Authorization: Bearer <accessToken>\n  x-idempotency-key: <unique-event-id>\n\nBody:\n{\n  \"partnerSlug\": \"site-a\",\n  \"externalMangaId\": \"one-piece-123\",\n  \"title\": \"One Piece\",\n  \"chapter\": 1123,\n  \"sourceDomain\": \"site-a.com\"\n}",
-        "response": "{\n  \"outcome\": \"created | updated | noop\",\n  \"userMangaId\": \"...\",\n  \"currentChapter\": 1123\n}",
         "notes": {
-          "1": "Rate limit: 120 requests per minute.",
-          "2": "Reuse the same idempotency key on retries.",
-          "3": "Optional health check: GET /integrations/connection/status using the same Bearer token."
+          "1": "Outcomes: created, updated, or noop.",
+          "2": "Optional health check: GET /integrations/connection/status."
+        }
+      },
+      "webhooks": {
+        "title": "8) Configure event webhooks",
+        "body": "Register endpoint per partner to receive signed events and monitor deliveries/retries/DLQ.",
+        "endpoint": "POST/GET /integrations/admin/partners/{partnerId}/webhooks",
+        "notes": {
+          "1": "HMAC SHA-256 signature over timestamp.body; verify before processing.",
+          "2": "On transient failures, platform retries with backoff + jitter; at max attempts, event goes to DLQ.",
+          "3": "Deduplicate on consumer side by x-mangalist-event-id."
         }
       }
     },
     "security": {
       "title": "Security checklist",
       "items": {
-        "1": "Store clientSecret only on backend (never in frontend code).",
-        "2": "Always send sourceDomain and keep your allowedDomains list updated.",
-        "3": "Use x-idempotency-key for retry safety.",
-        "4": "Use HTTPS in production for all partner traffic.",
-        "5": "Rotate clientSecret periodically."
+        "1": "Store clientSecret only on backend.",
+        "2": "Use domain allowlist and send sourceDomain.",
+        "3": "Use x-idempotency-key on every retry.",
+        "4": "Rotate secrets periodically with transition windows.",
+        "5": "Use end-to-end HTTPS in production."
       }
     },
     "limits": {
-      "title": "Sync behavior",
+      "title": "Operational behavior",
       "items": {
-        "1": "Only manga:write scope is accepted in this MVP.",
-        "2": "If incoming chapter <= current chapter, outcome is noop.",
-        "3": "Access token expires in 30 days (2592000 seconds).",
-        "4": "Created/updated/noop outcomes indicate sync result per request."
+        "1": "Required scope in MVP: manga:write.",
+        "2": "Incoming chapter <= current chapter returns noop.",
+        "3": "Integration access token expires in 30 days.",
+        "4": "Rate limits and validations return clear endpoint-specific errors."
+      }
+    },
+    "troubleshooting": {
+      "title": "Common errors and troubleshooting",
+      "items": {
+        "1": "401 Missing partner credentials: clientSecret missing for non-public partner.",
+        "2": "401 Invalid partner credentials: invalid secret or expired previous-secret window.",
+        "3": "401 Invalid or expired connect code: generate a new code in Manga Tracker.",
+        "4": "401 Connect code domain mismatch: align sourceDomain in start and exchange.",
+        "5": "403 Missing manga:write scope: review connection/token scope.",
+        "6": "403 Source domain is not allowed for partner: adjust allowedDomains in admin.",
+        "7": "429 Too many requests: honor Retry-After and use backoff with jitter.",
+        "8": "Sync noop: expected when chapter did not move forward."
+      }
+    },
+    "examples": {
+      "title": "End-to-end examples",
+      "items": {
+        "1": "New link: start -> exchange -> sync(created).",
+        "2": "Continuous progress: sync(updated) with higher chapter.",
+        "3": "Safe retry: same event + same idempotency key keeps result without duplication.",
+        "4": "Zero-downtime rotation: exchange accepts previous secret in-window and migrates to new one."
       }
     }
   },
@@ -571,7 +612,22 @@
       "requestedSlug": "Requested slug",
       "status": "Status",
       "copyIdButton": "Copy application ID",
-      "checkStatusButton": "Check status"
+      "checkStatusButton": "Check status",
+      "domainVerificationStatus": "Domain verification",
+      "domainVerificationValues": {
+        "PENDING": "Pending",
+        "VERIFIED": "Verified",
+        "FAILED": "Failed"
+      },
+      "verificationDomain": "Verification domain",
+      "dnsRecordName": "DNS TXT record",
+      "verificationToken": "Verification token",
+      "wellKnownPath": "Well-known path",
+      "domainVerificationError": "Verification error",
+      "domainVerifiedAt": "Verified at",
+      "notAvailable": "n/a",
+      "verifyDomainButton": "Verify domain now",
+      "verifyingDomainButton": "Verifying domain..."
     },
     "messages": {
       "submitSuccess": "Application submitted successfully",
@@ -579,7 +635,9 @@
       "copyIdSuccess": "Application ID copied",
       "copyIdError": "Could not copy application ID",
       "captchaRequired": "Complete the captcha before submitting",
-      "captchaLoadError": "Failed to load captcha widget"
+      "captchaLoadError": "Failed to load captcha widget",
+      "verifyDomainSuccess": "Domain verification completed",
+      "verifyDomainError": "Failed to verify domain"
     }
   },
   "PublicIntegrationsStatus": {
@@ -605,7 +663,8 @@
       "values": {
         "WAIT_APPROVAL": "Wait for approval",
         "CHECK_EMAIL_FOR_CREDENTIALS": "Check your email for partnerSlug and clientSecret",
-        "CHECK_REVIEW_REASON_OR_CONTACT_SUPPORT": "Review rejection reason or contact support"
+        "CHECK_REVIEW_REASON_OR_CONTACT_SUPPORT": "Review rejection reason or contact support",
+        "VERIFY_DOMAIN": "Publish DNS TXT (or .well-known) token proof and verify domain"
       }
     },
     "result": {
@@ -618,12 +677,28 @@
       "createdAt": "Created at",
       "reviewedAt": "Reviewed at",
       "updatedAt": "Updated at",
-      "notAvailable": "n/a"
+      "notAvailable": "n/a",
+      "domainVerificationStatus": "Domain verification",
+      "domainVerificationValues": {
+        "PENDING": "Pending",
+        "VERIFIED": "Verified",
+        "FAILED": "Failed"
+      },
+      "verificationDomain": "Verification domain",
+      "dnsRecordName": "DNS TXT record",
+      "verificationToken": "Verification token",
+      "wellKnownPath": "Well-known path",
+      "domainVerificationError": "Verification error",
+      "domainVerificationLastCheckedAt": "Last checked at",
+      "verifyDomainButton": "Verify domain now",
+      "verifyingDomainButton": "Verifying domain..."
     },
     "messages": {
       "applicationIdRequired": "Paste an application ID before checking",
       "statusLoadedSuccess": "Status loaded successfully",
-      "statusLoadError": "Failed to load application status"
+      "statusLoadError": "Failed to load application status",
+      "verifyDomainSuccess": "Domain verification completed",
+      "verifyDomainError": "Failed to verify domain"
     }
   },
   "Footer": {
@@ -635,8 +710,3 @@
     "language": "Language"
   }
 }
-
-
-
-
-

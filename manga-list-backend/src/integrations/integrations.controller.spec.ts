@@ -7,6 +7,7 @@ describe('IntegrationsController', () => {
     exchangeConnectionCode: jest.fn(),
     createPartnerApplication: jest.fn(),
     getPublicApplicationStatus: jest.fn(),
+    verifyPublicApplicationDomain: jest.fn(),
     syncWithIntegrationToken: jest.fn(),
     getConnectionStatus: jest.fn(),
     listPartners: jest.fn(),
@@ -14,6 +15,8 @@ describe('IntegrationsController', () => {
     approvePartnerApplication: jest.fn(),
     rejectPartnerApplication: jest.fn(),
     createPartner: jest.fn(),
+    listPartnerWebhooks: jest.fn(),
+    createPartnerWebhook: jest.fn(),
     updatePartner: jest.fn(),
     rotatePartnerSecret: jest.fn(),
     listConnections: jest.fn(),
@@ -225,5 +228,56 @@ describe('IntegrationsController', () => {
       status: 'PENDING',
       nextAction: 'WAIT_APPROVAL',
     });
+  });
+
+  it('should call verifyPublicApplicationDomain with route id', async () => {
+    integrationsService.verifyPublicApplicationDomain.mockResolvedValue({
+      id: 'app-1',
+      domainVerificationStatus: 'VERIFIED',
+    });
+
+    const result = await controller.verifyPublicApplicationDomain('app-1');
+
+    expect(integrationsService.verifyPublicApplicationDomain).toHaveBeenCalledWith(
+      'app-1',
+    );
+    expect(result).toEqual({
+      id: 'app-1',
+      domainVerificationStatus: 'VERIFIED',
+    });
+  });
+
+  it('should list partner webhooks for admin route', async () => {
+    integrationsService.listPartnerWebhooks.mockResolvedValue({
+      partner: { id: 'partner-1', slug: 'site-a', name: 'Site A' },
+      endpoints: [],
+    });
+
+    const result = await controller.listPartnerWebhooks('partner-1');
+
+    expect(integrationsService.listPartnerWebhooks).toHaveBeenCalledWith(
+      'partner-1',
+    );
+    expect(result.partner.id).toBe('partner-1');
+  });
+
+  it('should create partner webhook for admin route', async () => {
+    integrationsService.createPartnerWebhook.mockResolvedValue({
+      id: 'wh-1',
+      partnerId: 'partner-1',
+      url: 'https://site-a.com/webhooks/mangalist',
+      isActive: true,
+      signingSecret: 'secret',
+    });
+
+    const result = await controller.createPartnerWebhook('partner-1', {
+      url: 'https://site-a.com/webhooks/mangalist',
+    });
+
+    expect(integrationsService.createPartnerWebhook).toHaveBeenCalledWith(
+      'partner-1',
+      { url: 'https://site-a.com/webhooks/mangalist' },
+    );
+    expect(result.id).toBe('wh-1');
   });
 });

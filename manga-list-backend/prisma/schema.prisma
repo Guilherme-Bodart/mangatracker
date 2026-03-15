@@ -23,6 +23,23 @@ enum IntegrationPartnerApplicationStatus {
   REJECTED
 }
 
+enum DomainVerificationStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+enum IntegrationPartnerSecretVersion {
+  ACTIVE
+  PREVIOUS
+}
+
+enum IntegrationWebhookDeliveryStatus {
+  DELIVERED
+  RETRY
+  DLQ
+}
+
 model User {
   id            String        @id @default(uuid())
   username      String        @unique
@@ -101,11 +118,16 @@ model IntegrationPartner {
   slug             String                  @unique
   name             String
   clientSecretHash String
+  previousClientSecretHash String?
+  previousClientSecretExpiresAt DateTime?
   allowedDomains   String[]                @default([])
   isActive         Boolean                 @default(true)
   connections      UserPartnerConnection[]
   externalMangaMaps ExternalMangaMap[]
   syncEvents       SyncEventLog[]
+  secretUsageLogs  IntegrationSecretUsageLog[]
+  webhookEndpoints IntegrationWebhookEndpoint[]
+  webhookEvents    IntegrationWebhookEventLog[]
   createdAt        DateTime                @default(now())
   updatedAt        DateTime                @updatedAt
 }
@@ -167,6 +189,12 @@ model IntegrationPartnerApplication {
   siteUrl          String
   allowedDomains   String[]                          @default([])
   useCase          String?                           @db.Text
+  verificationDomain String?
+  domainVerificationToken String?
+  domainVerificationStatus DomainVerificationStatus  @default(PENDING)
+  domainVerificationError String?                    @db.Text
+  domainVerificationLastCheckedAt DateTime?
+  domainVerifiedAt DateTime?
   status           IntegrationPartnerApplicationStatus @default(PENDING)
   reviewReason     String?                           @db.Text
   approvedPartnerId String?
@@ -176,6 +204,66 @@ model IntegrationPartnerApplication {
   updatedAt        DateTime                          @updatedAt
 
   @@index([status, createdAt])
+  @@index([domainVerificationStatus, createdAt])
   @@index([requestedSlug])
   @@index([contactEmail, createdAt])
+}
+
+model IntegrationSecretUsageLog {
+  id            String                          @id @default(uuid())
+  partnerId     String
+  secretVersion IntegrationPartnerSecretVersion
+  sourceDomain  String?
+  usedAt        DateTime                        @default(now())
+  partner       IntegrationPartner              @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@index([partnerId, usedAt])
+  @@index([partnerId, secretVersion, usedAt])
+}
+
+model IntegrationWebhookEndpoint {
+  id            String                         @id @default(uuid())
+  partnerId     String
+  url           String
+  signingSecret String
+  isActive      Boolean                        @default(true)
+  partner       IntegrationPartner             @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  deliveries    IntegrationWebhookDeliveryLog[]
+  createdAt     DateTime                       @default(now())
+  updatedAt     DateTime                       @updatedAt
+
+  @@unique([partnerId, url])
+  @@index([partnerId, isActive])
+}
+
+model IntegrationWebhookEventLog {
+  id         String                         @id @default(uuid())
+  partnerId  String
+  eventType  String
+  payload    Json
+  partner    IntegrationPartner             @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  deliveries IntegrationWebhookDeliveryLog[]
+  createdAt  DateTime                       @default(now())
+
+  @@index([partnerId, createdAt])
+  @@index([eventType, createdAt])
+}
+
+model IntegrationWebhookDeliveryLog {
+  id             String                           @id @default(uuid())
+  eventId        String
+  endpointId     String
+  attempt        Int
+  status         IntegrationWebhookDeliveryStatus
+  responseStatus Int?
+  errorMessage   String?
+  nextRetryAt    DateTime?
+  deliveredAt    DateTime?
+  event          IntegrationWebhookEventLog       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  endpoint       IntegrationWebhookEndpoint       @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  createdAt      DateTime                         @default(now())
+
+  @@index([endpointId, createdAt])
+  @@index([eventId, createdAt])
+  @@index([status, nextRetryAt])
 }

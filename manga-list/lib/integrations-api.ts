@@ -46,6 +46,7 @@ export type IntegrationConnectionStatus = {
 };
 
 export type IntegrationApplicationStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type DomainVerificationStatus = "PENDING" | "VERIFIED" | "FAILED";
 
 export type IntegrationApplication = {
   id: string;
@@ -55,6 +56,11 @@ export type IntegrationApplication = {
   siteUrl: string;
   allowedDomains: string[];
   useCase: string | null;
+  verificationDomain: string | null;
+  domainVerificationStatus: DomainVerificationStatus;
+  domainVerificationError: string | null;
+  domainVerificationLastCheckedAt: string | null;
+  domainVerifiedAt: string | null;
   status: IntegrationApplicationStatus;
   reviewReason: string | null;
   approvedPartnerId: string | null;
@@ -65,6 +71,7 @@ export type IntegrationApplication = {
 };
 
 export type PublicApplicationNextAction =
+  | "VERIFY_DOMAIN"
   | "WAIT_APPROVAL"
   | "CHECK_EMAIL_FOR_CREDENTIALS"
   | "CHECK_REVIEW_REASON_OR_CONTACT_SUPPORT";
@@ -72,6 +79,13 @@ export type PublicApplicationNextAction =
 export type PublicIntegrationApplicationStatus = {
   id: string;
   requestedSlug: string;
+  verificationDomain: string | null;
+  domainVerificationDnsRecordName: string | null;
+  domainVerificationToken: string | null;
+  domainVerificationStatus: DomainVerificationStatus;
+  domainVerificationError: string | null;
+  domainVerificationLastCheckedAt: string | null;
+  domainVerifiedAt: string | null;
   status: IntegrationApplicationStatus;
   reviewReason: string | null;
   nextAction: PublicApplicationNextAction;
@@ -86,12 +100,40 @@ export type AdminPartner = {
   name: string;
   allowedDomains: string[];
   isActive: boolean;
+  secretRotation: {
+    previousSecretExpiresAt: string | null;
+    previousSecretActive: boolean;
+    lastPreviousSecretUsedAt: string | null;
+  };
   createdAt: string;
   updatedAt: string;
 };
 
 export type AdminPartnerWithSecret = AdminPartner & {
   clientSecret: string;
+};
+
+export type AdminPartnerWebhook = {
+  id: string;
+  url: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  deliveryStats: {
+    delivered: number;
+    retry: number;
+    dlq: number;
+  };
+  lastDelivery: {
+    eventId: string;
+    status: "DELIVERED" | "RETRY" | "DLQ";
+    attempt: number;
+    responseStatus: number | null;
+    errorMessage: string | null;
+    deliveredAt: string | null;
+    nextRetryAt: string | null;
+    createdAt: string;
+  } | null;
 };
 
 export async function listConnectablePartners() {
@@ -116,6 +158,10 @@ export async function createPublicIntegrationApplication(input: {
     siteUrl: string;
     allowedDomains: string[];
     useCase: string | null;
+    verificationDomain: string | null;
+    domainVerificationDnsRecordName: string | null;
+    domainVerificationToken: string | null;
+    domainVerificationStatus: DomainVerificationStatus;
     status: IntegrationApplicationStatus;
     createdAt: string;
   }>("/integrations/public/apply", {
@@ -128,6 +174,23 @@ export async function getPublicIntegrationApplicationStatus(applicationId: strin
   return apiRequest<PublicIntegrationApplicationStatus>(
     `/integrations/public/apply/${encodeURIComponent(applicationId)}/status`,
   );
+}
+
+export async function verifyPublicIntegrationApplicationDomain(
+  applicationId: string,
+) {
+  return apiRequest<{
+    id: string;
+    verificationDomain: string | null;
+    domainVerificationDnsRecordName: string | null;
+    domainVerificationToken: string | null;
+    domainVerificationStatus: DomainVerificationStatus;
+    domainVerificationError: string | null;
+    domainVerificationLastCheckedAt: string | null;
+    domainVerifiedAt: string | null;
+  }>(`/integrations/public/apply/${encodeURIComponent(applicationId)}/verify-domain`, {
+    method: "POST",
+  });
 }
 
 export async function startIntegrationConnect(input: {
@@ -188,9 +251,14 @@ export async function updateAdminPartner(
 
 export async function rotateAdminPartnerSecret(
   id: string,
-  input: { clientSecret?: string } = {},
+  input: { clientSecret?: string; transitionWindowHours?: number } = {},
 ) {
-  return apiRequest<{ id: string; clientSecret: string }>(
+  return apiRequest<{
+    id: string;
+    clientSecret: string;
+    previousSecretExpiresAt: string;
+    transitionWindowHours: number;
+  }>(
     `/integrations/admin/partners/${id}/rotate-secret`,
     {
       method: "POST",
@@ -198,6 +266,36 @@ export async function rotateAdminPartnerSecret(
       body: input,
     },
   );
+}
+
+export async function listAdminPartnerWebhooks(partnerId: string) {
+  return apiRequest<{
+    partner: { id: string; slug: string; name: string };
+    endpoints: AdminPartnerWebhook[];
+  }>(`/integrations/admin/partners/${encodeURIComponent(partnerId)}/webhooks`);
+}
+
+export async function createAdminPartnerWebhook(
+  partnerId: string,
+  input: {
+    url: string;
+    isActive?: boolean;
+    signingSecret?: string;
+  },
+) {
+  return apiRequest<{
+    id: string;
+    partnerId: string;
+    url: string;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+    signingSecret: string;
+  }>(`/integrations/admin/partners/${encodeURIComponent(partnerId)}/webhooks`, {
+    method: "POST",
+    csrf: "authenticated-required",
+    body: input,
+  });
 }
 
 export async function listAdminConnections(partnerSlug?: string) {

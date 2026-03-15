@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApproveIntegrationApplicationDto } from './dto/approve-integration-application.dto';
 import { CreateIntegrationApplicationDto } from './dto/create-integration-application.dto';
 import { CreateIntegrationPartnerDto } from './dto/create-integration-partner.dto';
+import { CreateIntegrationWebhookDto } from './dto/create-integration-webhook.dto';
 import { ExchangeIntegrationConnectDto } from './dto/exchange-integration-connect.dto';
 import { ListIntegrationApplicationsQueryDto } from './dto/list-integration-applications-query.dto';
 import { RejectIntegrationApplicationDto } from './dto/reject-integration-application.dto';
@@ -109,6 +110,12 @@ export class IntegrationsController {
     return this.integrationsService.getPublicApplicationStatus(id);
   }
 
+  @UseGuards(IntegrationRateLimitGuard)
+  @Post('public/apply/:id/verify-domain')
+  async verifyPublicApplicationDomain(@Param('id') id: string) {
+    return this.integrationsService.verifyPublicApplicationDomain(id);
+  }
+
   @UseGuards(IntegrationTokenGuard, IntegrationRateLimitGuard)
   @Post('sync')
   async sync(@Request() req: IntegrationRequest, @Body() dto: SyncIntegrationDto) {
@@ -148,6 +155,21 @@ export class IntegrationsController {
   @Post('admin/partners')
   async createPartner(@Body() dto: CreateIntegrationPartnerDto) {
     return this.integrationsService.createPartner(dto);
+  }
+
+  @UseGuards(JwtAuthGuard, IntegrationAdminGuard)
+  @Get('admin/partners/:id/webhooks')
+  async listPartnerWebhooks(@Param('id') id: string) {
+    return this.integrationsService.listPartnerWebhooks(id);
+  }
+
+  @UseGuards(JwtAuthGuard, CsrfGuard, IntegrationAdminGuard)
+  @Post('admin/partners/:id/webhooks')
+  async createPartnerWebhook(
+    @Param('id') id: string,
+    @Body() dto: CreateIntegrationWebhookDto,
+  ) {
+    return this.integrationsService.createPartnerWebhook(id, dto);
   }
 
   @UseGuards(JwtAuthGuard, CsrfGuard, IntegrationAdminGuard)

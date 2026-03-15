@@ -5,19 +5,23 @@ type Params = Promise<{ locale: string }>;
 
 type StepKey =
   | "application"
+  | "domainVerification"
   | "applicationStatus"
   | "approval"
   | "userConnectCode"
   | "exchange"
-  | "sync";
+  | "sync"
+  | "webhooks";
 
 const STEP_ORDER: StepKey[] = [
   "application",
+  "domainVerification",
   "applicationStatus",
   "approval",
   "userConnectCode",
   "exchange",
   "sync",
+  "webhooks",
 ];
 
 function CodeBlock({ value }: { value: string }) {
@@ -84,6 +88,20 @@ export default async function HowToUseApiPage({ params }: { params: Params }) {
   const limitItems = [1, 2, 3, 4, 5]
     .map((index) => {
       const key = `limits.items.${index}`;
+      return t.has(key) ? t(key) : null;
+    })
+    .filter((value): value is string => !!value);
+
+  const troubleshootingItems = [1, 2, 3, 4, 5, 6, 7, 8]
+    .map((index) => {
+      const key = `troubleshooting.items.${index}`;
+      return t.has(key) ? t(key) : null;
+    })
+    .filter((value): value is string => !!value);
+
+  const exampleItems = [1, 2, 3, 4, 5]
+    .map((index) => {
+      const key = `examples.items.${index}`;
       return t.has(key) ? t(key) : null;
     })
     .filter((value): value is string => !!value);
@@ -160,6 +178,28 @@ export default async function HowToUseApiPage({ params }: { params: Params }) {
           </ul>
         </article>
       </section>
+
+      {troubleshootingItems.length ? (
+        <section className="space-y-3">
+          <h2 className="text-2xl font-semibold">{t("troubleshooting.title")}</h2>
+          <ul className="list-disc pl-5 space-y-2 text-sm text-muted-foreground">
+            {troubleshootingItems.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {exampleItems.length ? (
+        <section className="space-y-3">
+          <h2 className="text-2xl font-semibold">{t("examples.title")}</h2>
+          <ul className="list-disc pl-5 space-y-2 text-sm text-muted-foreground">
+            {exampleItems.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }

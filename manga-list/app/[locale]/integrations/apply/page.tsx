@@ -10,7 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getApiErrorMessage } from "@/lib/api-client";
-import { createPublicIntegrationApplication } from "@/lib/integrations-api";
+import {
+  createPublicIntegrationApplication,
+  verifyPublicIntegrationApplicationDomain,
+  type DomainVerificationStatus,
+} from "@/lib/integrations-api";
 
 type TurnstileWidgetId = string | number;
 
@@ -87,10 +91,17 @@ export default function PublicIntegrationsApplyPage() {
   const [captchaToken, setCaptchaToken] = useState("");
   const [websiteTrap, setWebsiteTrap] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVerifyingDomain, setIsVerifyingDomain] = useState(false);
   const [result, setResult] = useState<{
     id: string;
     requestedSlug: string;
     status: string;
+    verificationDomain: string | null;
+    domainVerificationDnsRecordName: string | null;
+    domainVerificationToken: string | null;
+    domainVerificationStatus: DomainVerificationStatus;
+    domainVerificationError: string | null;
+    domainVerifiedAt: string | null;
   } | null>(null);
   const [form, setForm] = useState({
     requestedSlug: "",
@@ -169,6 +180,12 @@ export default function PublicIntegrationsApplyPage() {
         id: created.id,
         requestedSlug: created.requestedSlug,
         status: created.status,
+        verificationDomain: created.verificationDomain,
+        domainVerificationDnsRecordName: created.domainVerificationDnsRecordName,
+        domainVerificationToken: created.domainVerificationToken,
+        domainVerificationStatus: created.domainVerificationStatus,
+        domainVerificationError: null,
+        domainVerifiedAt: null,
       });
       toast.success(t("messages.submitSuccess"));
       setForm({
@@ -188,6 +205,36 @@ export default function PublicIntegrationsApplyPage() {
       toast.error(getApiErrorMessage(error, t("messages.submitError")));
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyDomain = async () => {
+    if (!result?.id) {
+      return;
+    }
+
+    setIsVerifyingDomain(true);
+    try {
+      const verification = await verifyPublicIntegrationApplicationDomain(result.id);
+      setResult((current) =>
+        current
+          ? {
+              ...current,
+              verificationDomain: verification.verificationDomain,
+              domainVerificationDnsRecordName:
+                verification.domainVerificationDnsRecordName,
+              domainVerificationToken: verification.domainVerificationToken,
+              domainVerificationStatus: verification.domainVerificationStatus,
+              domainVerificationError: verification.domainVerificationError,
+              domainVerifiedAt: verification.domainVerifiedAt,
+            }
+          : current,
+      );
+      toast.success(t("messages.verifyDomainSuccess"));
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, t("messages.verifyDomainError")));
+    } finally {
+      setIsVerifyingDomain(false);
     }
   };
 
@@ -355,6 +402,45 @@ export default function PublicIntegrationsApplyPage() {
                 <span className="font-medium">{t("result.status")}:</span>{" "}
                 {result.status}
               </p>
+              <p>
+                <span className="font-medium">
+                  {t("result.domainVerificationStatus")}:
+                </span>{" "}
+                {t(`result.domainVerificationValues.${result.domainVerificationStatus}`)}
+              </p>
+              <p>
+                <span className="font-medium">{t("result.verificationDomain")}:</span>{" "}
+                {result.verificationDomain ?? t("result.notAvailable")}
+              </p>
+              <p>
+                <span className="font-medium">{t("result.verificationToken")}:</span>{" "}
+                <span className="font-mono break-all">
+                  {result.domainVerificationToken ?? t("result.notAvailable")}
+                </span>
+              </p>
+              <p>
+                <span className="font-medium">{t("result.dnsRecordName")}:</span>{" "}
+                <span className="font-mono break-all">
+                  {result.domainVerificationDnsRecordName ??
+                    t("result.notAvailable")}
+                </span>
+              </p>
+              <p>
+                <span className="font-medium">{t("result.wellKnownPath")}:</span>{" "}
+                <span className="font-mono">/.well-known/manga-tracker-verification.txt</span>
+              </p>
+              {result.domainVerificationError ? (
+                <p>
+                  <span className="font-medium">{t("result.domainVerificationError")}:</span>{" "}
+                  {result.domainVerificationError}
+                </p>
+              ) : null}
+              {result.domainVerifiedAt ? (
+                <p>
+                  <span className="font-medium">{t("result.domainVerifiedAt")}:</span>{" "}
+                  {result.domainVerifiedAt}
+                </p>
+              ) : null}
             </div>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -380,6 +466,16 @@ export default function PublicIntegrationsApplyPage() {
                 >
                   {t("result.checkStatusButton")}
                 </Link>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void handleVerifyDomain()}
+                disabled={isVerifyingDomain}
+              >
+                {isVerifyingDomain
+                  ? t("result.verifyingDomainButton")
+                  : t("result.verifyDomainButton")}
               </Button>
             </div>
           </CardContent>

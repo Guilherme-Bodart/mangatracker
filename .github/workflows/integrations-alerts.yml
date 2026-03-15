@@ -1,0 +1,88 @@
+﻿name: Integrations Alerts
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/15 * * * *'
+
+jobs:
+  alert-checks:
+    name: Integrations operational alerts
+    runs-on: ubuntu-latest
+    env:
+      BACKEND_METRICS_URL: ${{ secrets.BACKEND_METRICS_URL }}
+      METRICS_API_KEY: ${{ secrets.METRICS_API_KEY }}
+      MAX_SYNC_REJECTED_RATE: '0.08'
+      MAX_EXCHANGE_REJECTION_RATE: '0.10'
+      MAX_WEBHOOK_RETRY_COUNT: '25'
+      MAX_WEBHOOK_DLQ_COUNT: '3'
+    steps:
+      - name: Validate configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${BACKEND_METRICS_URL:-}" ]]; then
+            echo "::error::BACKEND_METRICS_URL is not configured"
+            exit 1
+          fi
+
+          if [[ "${BACKEND_METRICS_URL}" != https://* ]]; then
+            echo "::error::BACKEND_METRICS_URL must use https://"
+            exit 1
+          fi
+
+      - name: Fetch metrics snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          headers=()
+          if [[ -n "${METRICS_API_KEY:-}" ]]; then
+            headers+=(-H "x-metrics-key: ${METRICS_API_KEY}")
+          fi
+
+          curl -sS "${headers[@]}" "${BACKEND_METRICS_URL}" > metrics.json
+          jq '.' metrics.json > /dev/null
+
+      - name: Evaluate alert thresholds
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          sync_rejected_rate="$(jq -r '.integrations.sync.rejectedRate // 0' metrics.json)"
+          exchange_rejection_rate="$(jq -r '.integrations.exchange.rejectionRate // 0' metrics.json)"
+          webhook_retry_count="$(jq -r '.integrations.webhook.retry // 0' metrics.json)"
+          webhook_dlq_count="$(jq -r '.integrations.webhook.dlq // 0' metrics.json)"
+
+          echo "sync_rejected_rate=${sync_rejected_rate}"
+          echo "exchange_rejection_rate=${exchange_rejection_rate}"
+          echo "webhook_retry_count=${webhook_retry_count}"
+          echo "webhook_dlq_count=${webhook_dlq_count}"
+
+          if awk "BEGIN { exit !(${sync_rejected_rate} > ${MAX_SYNC_REJECTED_RATE}) }"; then
+            echo "::error::Sync rejected rate ${sync_rejected_rate} is above ${MAX_SYNC_REJECTED_RATE}"
+            exit 1
+          fi
+
+          if awk "BEGIN { exit !(${exchange_rejection_rate} > ${MAX_EXCHANGE_REJECTION_RATE}) }"; then
+            echo "::error::Exchange rejection rate ${exchange_rejection_rate} is above ${MAX_EXCHANGE_REJECTION_RATE}"
+            exit 1
+          fi
+
+          if (( webhook_retry_count > MAX_WEBHOOK_RETRY_COUNT )); then
+            echo "::error::Webhook retry backlog ${webhook_retry_count} is above ${MAX_WEBHOOK_RETRY_COUNT}"
+            exit 1
+          fi
+
+          if (( webhook_dlq_count > MAX_WEBHOOK_DLQ_COUNT )); then
+            echo "::error::Webhook DLQ count ${webhook_dlq_count} is above ${MAX_WEBHOOK_DLQ_COUNT}"
+            exit 1
+          fi
+
+      - name: Alert summary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Integrations alert check finished at $(date -u +%FT%TZ)"

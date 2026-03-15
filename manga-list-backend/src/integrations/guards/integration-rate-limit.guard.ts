@@ -98,6 +98,9 @@ export class IntegrationRateLimitGuard implements CanActivate {
     const isPublicApplyStatus =
       routeKey === 'GET:public/apply/:id/status' ||
       routeKey === 'GET:/public/apply/:id/status';
+    const isPublicApplyVerifyDomain =
+      routeKey === 'POST:public/apply/:id/verify-domain' ||
+      routeKey === 'POST:/public/apply/:id/verify-domain';
 
     if (isPublicApply) {
       return {
@@ -109,6 +112,13 @@ export class IntegrationRateLimitGuard implements CanActivate {
     if (isPublicApplyStatus) {
       return {
         maxAttempts: 30,
+        windowMs: CACHE_TTL_MS.AUTH_RATE_LIMIT_WINDOW,
+      };
+    }
+
+    if (isPublicApplyVerifyDomain) {
+      return {
+        maxAttempts: 20,
         windowMs: CACHE_TTL_MS.AUTH_RATE_LIMIT_WINDOW,
       };
     }

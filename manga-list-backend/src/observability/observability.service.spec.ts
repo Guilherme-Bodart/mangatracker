@@ -3,12 +3,17 @@ import {
   recordHttpMetric,
   resetHttpMetricsForTests,
 } from './http-metrics.registry';
+import {
+  recordIntegrationExchangeResult,
+  resetIntegrationMetricsForTests,
+} from './integration-metrics.registry';
 
 describe('ObservabilityService', () => {
   let service: ObservabilityService;
 
   beforeEach(() => {
     resetHttpMetricsForTests();
+    resetIntegrationMetricsForTests();
     service = new ObservabilityService();
   });
 
@@ -39,5 +44,13 @@ describe('ObservabilityService', () => {
         errors: 1,
       }),
     );
+  });
+
+  it('exposes integration metrics snapshot', () => {
+    recordIntegrationExchangeResult('success');
+
+    const metrics = service.getMetrics();
+    expect(metrics.integrations.exchange.success).toBe(1);
+    expect(metrics.integrations.exchange.total).toBe(1);
   });
 });

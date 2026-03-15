@@ -22,6 +22,7 @@ import {
   revokeAdminConnection,
   rotateAdminPartnerSecret,
   updateAdminPartner,
+  verifyPublicIntegrationApplicationDomain,
   type AdminPartner,
   type IntegrationApplication,
   type IntegrationApplicationStatus,
@@ -38,6 +39,10 @@ export default function IntegrationsAdminPage() {
   const [connections, setConnections] = useState<IntegrationConnection[]>([]);
   const [applications, setApplications] = useState<IntegrationApplication[]>([]);
   const [newSecret, setNewSecret] = useState<string | null>(null);
+  const [newSecretRotationInfo, setNewSecretRotationInfo] = useState<{
+    previousSecretExpiresAt: string;
+    transitionWindowHours: number;
+  } | null>(null);
   const [statusToken, setStatusToken] = useState("");
   const [statusResult, setStatusResult] =
     useState<IntegrationConnectionStatus | null>(null);
@@ -150,6 +155,7 @@ export default function IntegrationsAdminPage() {
         isActive: createForm.isActive,
       });
       setNewSecret(created.clientSecret);
+      setNewSecretRotationInfo(null);
       toast.success(t("messages.partnerCreatedSuccess"));
       setCreateForm({ slug: "", name: "", allowedDomains: "", isActive: true });
       await loadData(
@@ -178,6 +184,10 @@ export default function IntegrationsAdminPage() {
     try {
       const rotated = await rotateAdminPartnerSecret(partner.id);
       setNewSecret(rotated.clientSecret);
+      setNewSecretRotationInfo({
+        previousSecretExpiresAt: rotated.previousSecretExpiresAt,
+        transitionWindowHours: rotated.transitionWindowHours,
+      });
       toast.success(t("messages.secretRotatedSuccess", { slug: partner.slug }));
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, t("messages.rotateSecretError")));
@@ -207,6 +217,7 @@ export default function IntegrationsAdminPage() {
         allowedDomains: application.allowedDomains,
       });
       setNewSecret(approved.partner.clientSecret);
+      setNewSecretRotationInfo(null);
       toast.success(
         t("messages.applicationApprovedSuccess", { slug: application.requestedSlug }),
       );
@@ -243,6 +254,23 @@ export default function IntegrationsAdminPage() {
     }
   };
 
+  const handleVerifyApplicationDomain = async (
+    application: IntegrationApplication,
+  ) => {
+    try {
+      await verifyPublicIntegrationApplicationDomain(application.id);
+      toast.success(t("messages.applicationDomainVerifiedSuccess"));
+      await loadData(
+        connectionFilter || undefined,
+        applicationStatusFilter || undefined,
+      );
+    } catch (error: unknown) {
+      toast.error(
+        getApiErrorMessage(error, t("messages.applicationDomainVerifyError")),
+      );
+    }
+  };
+
   const handleCheckConnectionStatus = async () => {
     if (!statusToken.trim()) {
       toast.error(t("messages.connectionStatusTokenRequired"));
@@ -262,6 +290,11 @@ export default function IntegrationsAdminPage() {
     } finally {
       setIsCheckingStatus(false);
     }
+  };
+
+  const formatDateTime = (value: string | null) => {
+    if (!value) return t("partners.notAvailable");
+    return new Date(value).toLocaleString();
   };
 
   return (
@@ -341,6 +374,16 @@ export default function IntegrationsAdminPage() {
             <p className="text-sm text-muted-foreground">
               {t("secretCard.description")}
             </p>
+            {newSecretRotationInfo ? (
+              <p className="text-sm text-muted-foreground">
+                {t("secretCard.rotationWindowInfo", {
+                  hours: newSecretRotationInfo.transitionWindowHours,
+                  expiresAt: new Date(
+                    newSecretRotationInfo.previousSecretExpiresAt,
+                  ).toLocaleString(),
+                })}
+              </p>
+            ) : null}
           </CardContent>
         </Card>
       ) : null}
@@ -458,6 +501,20 @@ export default function IntegrationsAdminPage() {
                     ? t("partners.statusActive")
                     : t("partners.statusInactive")}
                 </p>
+                <p className="text-sm text-muted-foreground">
+                  {t("partners.previousSecretWindowLabel")}{" "}
+                  {partner.secretRotation.previousSecretActive
+                    ? t("partners.previousSecretWindowActive")
+                    : t("partners.previousSecretWindowInactive")}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {t("partners.previousSecretExpiresAtLabel")}{" "}
+                  {formatDateTime(partner.secretRotation.previousSecretExpiresAt)}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {t("partners.lastPreviousSecretUsedAtLabel")}{" "}
+                  {formatDateTime(partner.secretRotation.lastPreviousSecretUsedAt)}
+                </p>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -540,6 +597,20 @@ export default function IntegrationsAdminPage() {
                 <p className="text-sm text-muted-foreground">
                   {t("applications.statusLabel")} {application.status}
                 </p>
+                <p className="text-sm text-muted-foreground">
+                  {t("applications.domainVerificationStatusLabel")}{" "}
+                  {application.domainVerificationStatus}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {t("applications.verificationDomainLabel")}{" "}
+                  {application.verificationDomain ?? t("applications.notAvailable")}
+                </p>
+                {application.domainVerificationError ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t("applications.domainVerificationErrorLabel")}{" "}
+                    {application.domainVerificationError}
+                  </p>
+                ) : null}
                 {application.reviewReason ? (
                   <p className="text-sm text-muted-foreground">
                     {t("applications.reviewReasonLabel")} {application.reviewReason}
@@ -548,6 +619,12 @@ export default function IntegrationsAdminPage() {
               </div>
               {application.status === "PENDING" ? (
                 <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => void handleVerifyApplicationDomain(application)}
+                  >
+                    {t("applications.verifyDomainButton")}
+                  </Button>
                   <Button
                     onClick={() => void handleApproveApplication(application)}
                   >

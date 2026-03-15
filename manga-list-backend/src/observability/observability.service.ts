@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { getHttpMetricsSnapshot } from './http-metrics.registry';
+import { getIntegrationMetricsSnapshot } from './integration-metrics.registry';
 
 @Injectable()
 export class ObservabilityService {
@@ -22,6 +23,7 @@ export class ObservabilityService {
         memoryHeapTotalBytes: memoryUsage.heapTotal,
       },
       http: getHttpMetricsSnapshot(),
+      integrations: getIntegrationMetricsSnapshot(),
     };
   }
 }

@@ -57,6 +57,12 @@ export default function IntegrationsAdminPage() {
   const [applicationStatusFilter, setApplicationStatusFilter] = useState<
     "" | IntegrationApplicationStatus
   >("PENDING");
+  const getSecretRotation = (partner: AdminPartner) =>
+    partner.secretRotation ?? {
+      previousSecretExpiresAt: null,
+      previousSecretActive: false,
+      lastPreviousSecretUsedAt: null,
+    };
 
   useEffect(() => {
     if (!isAuthLoading && !user) {
@@ -503,17 +509,17 @@ export default function IntegrationsAdminPage() {
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {t("partners.previousSecretWindowLabel")}{" "}
-                  {partner.secretRotation.previousSecretActive
+                  {getSecretRotation(partner).previousSecretActive
                     ? t("partners.previousSecretWindowActive")
                     : t("partners.previousSecretWindowInactive")}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {t("partners.previousSecretExpiresAtLabel")}{" "}
-                  {formatDateTime(partner.secretRotation.previousSecretExpiresAt)}
+                  {formatDateTime(getSecretRotation(partner).previousSecretExpiresAt)}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {t("partners.lastPreviousSecretUsedAtLabel")}{" "}
-                  {formatDateTime(partner.secretRotation.lastPreviousSecretUsedAt)}
+                  {formatDateTime(getSecretRotation(partner).lastPreviousSecretUsedAt)}
                 </p>
               </div>
               <div className="flex gap-2">

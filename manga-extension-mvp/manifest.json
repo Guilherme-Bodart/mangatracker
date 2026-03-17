@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Manga Tracker Sync",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Sincroniza progresso de leitura de manga com a sua conta Manga Tracker.",
   "permissions": ["storage", "alarms"],
   "host_permissions": ["*://mangalivre.tv/*", "*://www.mangalivre.tv/*"],

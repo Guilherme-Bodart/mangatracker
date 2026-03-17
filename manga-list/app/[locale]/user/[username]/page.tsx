@@ -61,6 +61,8 @@ interface UserData {
   };
 }
 
+const FALLBACK_COVER_IMAGE = "/logos/logo-icon-light.svg";
+
 export default function PublicProfilePage() {
   const pathname = usePathname();
   const username = useMemo(() => {
@@ -338,18 +340,24 @@ export default function PublicProfilePage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3">
+            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3 auto-rows-fr">
               {userData.mangaList.map((item) => (
                 <Card
                   key={item.id}
-                  className="overflow-hidden group hover:shadow-lg hover:scale-105 transition-all cursor-pointer"
+                  className="overflow-hidden group hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer p-0 py-0 gap-0 h-full"
                   onClick={() => setSelectedManga(item)}
                 >
-                  <div className="relative aspect-[2/3]">
+                  <div className="relative w-full overflow-hidden" style={{ aspectRatio: "2 / 3" }}>
                     <img
-                      src={item.manga.coverImage || "/placeholder.png"}
+                      src={item.manga.coverImage || FALLBACK_COVER_IMAGE}
                       alt={item.manga.title}
                       className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget.src = FALLBACK_COVER_IMAGE;
+                        event.currentTarget.classList.remove("object-cover");
+                        event.currentTarget.classList.add("object-contain", "bg-muted", "p-3");
+                      }}
                     />
 
                     {/* Favorite Heart Overlay */}
@@ -406,9 +414,13 @@ export default function PublicProfilePage() {
                 {/* Cover Image */}
                 <div className="flex justify-center">
                   <img
-                    src={selectedManga.manga.coverImage || "/placeholder.png"}
+                    src={selectedManga.manga.coverImage || FALLBACK_COVER_IMAGE}
                     alt={selectedManga.manga.title}
                     className="w-full max-w-[200px] rounded-lg shadow-lg"
+                    onError={(event) => {
+                      event.currentTarget.src = FALLBACK_COVER_IMAGE;
+                      event.currentTarget.classList.add("bg-muted", "p-3");
+                    }}
                   />
                 </div>
 

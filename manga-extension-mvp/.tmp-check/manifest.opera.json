@@ -1,0 +1,55 @@
+{
+  "manifest_version": 3,
+  "name": "Manga Tracker Sync",
+  "version": "1.0.3",
+  "description": "Sincroniza progresso de leitura de manga com a sua conta Manga Tracker.",
+  "permissions": [
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "*://mangalivre.tv/*",
+    "*://www.mangalivre.tv/*"
+  ],
+  "externally_connectable": {
+    "matches": [
+      "https://mangastracker.vercel.app/*",
+      "http://localhost:3000/*",
+      "http://127.0.0.1:3000/*"
+    ]
+  },
+  "icons": {
+    "16": "assets/icons/icon-16.png",
+    "48": "assets/icons/icon-48.png",
+    "128": "assets/icons/icon-128.png"
+  },
+  "background": {
+    "scripts": [
+      "src/background.js"
+    ],
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Manga Tracker Sync",
+    "default_popup": "src/popup.html",
+    "default_icon": {
+      "16": "assets/icons/icon-16.png",
+      "48": "assets/icons/icon-48.png",
+      "128": "assets/icons/icon-128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://mangalivre.tv/*",
+        "*://www.mangalivre.tv/*"
+      ],
+      "js": [
+        "src/adapters.js",
+        "src/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

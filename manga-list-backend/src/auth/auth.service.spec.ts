@@ -121,16 +121,18 @@ describe('AuthService', () => {
 
   it('should reject exchange code when code is invalid or expired', async () => {
     const contextHash = service.buildOAuthContextHash('session-1', 'agent-a');
+    const userAgentHash = service.buildUserAgentHash('agent-a');
     const state = await service.createOAuthState(contextHash);
 
     await expect(
-      service.exchangeOAuthCode('invalid-code', state, contextHash),
+      service.exchangeOAuthCode('invalid-code', state, contextHash, userAgentHash),
     ).rejects.toThrow(UnauthorizedException);
     expect(cacheManager.del).not.toHaveBeenCalled();
   });
 
   it('should exchange valid oauth code and return user + token', async () => {
     const contextHash = service.buildOAuthContextHash('session-1', 'agent-a');
+    const userAgentHash = service.buildUserAgentHash('agent-a');
     const state = await service.createOAuthState(contextHash);
     const [stateNonce] = state.split('.');
 
@@ -138,6 +140,7 @@ describe('AuthService', () => {
       userId: 'user-123',
       contextHash,
       stateNonce,
+      userAgentHash,
     });
 
     prisma.user.findUnique.mockResolvedValue({
@@ -156,6 +159,7 @@ describe('AuthService', () => {
       'valid-code',
       state,
       contextHash,
+      userAgentHash,
     );
 
     expect(cacheManager.del).toHaveBeenCalledWith('oauth:code:valid-code');
@@ -177,6 +181,7 @@ describe('AuthService', () => {
 
   it('should reject oauth exchange when context hash does not match', async () => {
     const contextHash = service.buildOAuthContextHash('session-1', 'agent-a');
+    const userAgentHash = service.buildUserAgentHash('agent-a');
     const wrongContextHash = service.buildOAuthContextHash(
       'session-2',
       'agent-a',
@@ -188,10 +193,11 @@ describe('AuthService', () => {
       userId: 'user-123',
       contextHash,
       stateNonce,
+      userAgentHash,
     });
 
     await expect(
-      service.exchangeOAuthCode('valid-code', state, wrongContextHash),
+      service.exchangeOAuthCode('valid-code', state, wrongContextHash, userAgentHash),
     ).rejects.toThrow('OAuth exchange context mismatch');
   });
 

@@ -187,11 +187,27 @@ export class AuthController {
       throw new BadRequestException('Missing oauth session cookie');
     }
 
-    const userAgent = req.headers['user-agent'];
     return this.authService.buildOAuthContextHash(
       sessionId,
-      typeof userAgent === 'string' ? userAgent : undefined,
+      this.getUserAgent(req),
     );
+  }
+
+  private tryGetOAuthContextHash(req: ExpressRequest): string | null {
+    const sessionId = this.readCookie(req.headers?.cookie, 'oauth_session');
+    if (!sessionId) {
+      return null;
+    }
+
+    return this.authService.buildOAuthContextHash(
+      sessionId,
+      this.getUserAgent(req),
+    );
+  }
+
+  private getUserAgent(req: ExpressRequest): string | undefined {
+    const userAgent = req.headers['user-agent'];
+    return typeof userAgent === 'string' ? userAgent : undefined;
   }
 
   private requireUser(req: RequestWithUser): AuthenticatedUser {
@@ -302,11 +318,15 @@ export class AuthController {
     @Body() dto: OAuthExchangeDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const contextHash = this.getOAuthContextHash(req);
+    const contextHash = this.tryGetOAuthContextHash(req);
+    const userAgentHash = this.authService.buildUserAgentHash(
+      this.getUserAgent(req),
+    );
     const result = await this.authService.exchangeOAuthCode(
       dto.code,
       dto.state,
       contextHash,
+      userAgentHash,
     );
     this.clearOAuthSessionCookie(res);
     this.setAuthCookie(res, result.token);
@@ -421,10 +441,14 @@ export class AuthController {
 
     // Validate Google user and mint a short-lived one-time exchange code
     const result = await this.authService.validateGoogleUser(req.user);
+    const userAgentHash = this.authService.buildUserAgentHash(
+      this.getUserAgent(req),
+    );
     const code = await this.authService.createOAuthExchangeCode(
       result.user.id,
       contextHash,
       parsedState.nonce,
+      userAgentHash,
     );
 
     // Redirect to frontend with temporary code (never with JWT)

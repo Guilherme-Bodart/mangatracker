@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { setCsrfToken } from "@/lib/csrf";
-import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
+import { ApiClientError, apiRequest, getApiErrorMessage } from "@/lib/api-client";
 import { useRouter } from "@/i18n/routing";
 import { logger } from "@/lib/logger";
 
@@ -48,7 +48,9 @@ export function AuthProvider({
       setUser(data.user);
       return data.user;
     } catch (error) {
-      logger.error("Failed to fetch user", error);
+      if (error instanceof ApiClientError && error.status !== 401) {
+        logger.error("Failed to fetch user", error);
+      }
       setUser(null);
       return null;
     }

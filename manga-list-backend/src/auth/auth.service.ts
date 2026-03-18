@@ -28,6 +28,7 @@ type OAuthExchangePayload = {
   userId: string;
   contextHash: string;
   stateNonce: string;
+  userAgentHash: string;
 };
 
 @Injectable()
@@ -416,10 +417,14 @@ export class AuthService {
   }
 
   buildOAuthContextHash(sessionId: string, userAgent?: string): string {
-    const normalizedAgent = (userAgent ?? 'unknown').trim().toLowerCase();
+    const normalizedAgent = this.normalizeUserAgent(userAgent);
     return createHash('sha256')
       .update(`${sessionId}|${normalizedAgent}`)
       .digest('hex');
+  }
+
+  buildUserAgentHash(userAgent?: string): string {
+    return createHash('sha256').update(this.normalizeUserAgent(userAgent)).digest('hex');
   }
 
   async createOAuthState(contextHash: string): Promise<string> {
@@ -463,12 +468,14 @@ export class AuthService {
     userId: string,
     contextHash: string,
     stateNonce: string,
+    userAgentHash: string,
   ): Promise<string> {
     const code = randomBytes(32).toString('hex');
     const payload: OAuthExchangePayload = {
       userId,
       contextHash,
       stateNonce,
+      userAgentHash,
     };
 
     await this.cacheManager.set(
@@ -480,7 +487,12 @@ export class AuthService {
     return code;
   }
 
-  async exchangeOAuthCode(code: string, state: string, contextHash: string) {
+  async exchangeOAuthCode(
+    code: string,
+    state: string,
+    contextHash: string | null,
+    userAgentHash: string,
+  ) {
     const parsedState = this.parseAndValidateOAuthState(state);
     const cacheKey = `oauth:code:${code}`;
     const payload = await this.cacheManager.get<OAuthExchangePayload>(cacheKey);
@@ -491,12 +503,16 @@ export class AuthService {
 
     await this.cacheManager.del(cacheKey);
 
-    if (payload.contextHash !== contextHash) {
+    if (contextHash && payload.contextHash !== contextHash) {
       throw new UnauthorizedException('OAuth exchange context mismatch');
     }
 
     if (payload.stateNonce !== parsedState.nonce) {
       throw new UnauthorizedException('OAuth exchange state mismatch');
+    }
+
+    if (payload.userAgentHash !== userAgentHash) {
+      throw new UnauthorizedException('OAuth exchange user agent mismatch');
     }
 
     const user = await this.getUserById(payload.userId);
@@ -740,5 +756,9 @@ export class AuthService {
       .digest('hex');
 
     return `password-reset:${digest}`;
+  }
+
+  private normalizeUserAgent(userAgent?: string): string {
+    return (userAgent ?? 'unknown').trim().toLowerCase();
   }
 }

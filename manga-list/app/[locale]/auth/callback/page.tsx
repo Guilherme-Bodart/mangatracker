@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { apiRequest } from "@/lib/api-client";
+import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
 import { useRouter } from "@/i18n/routing";
 
 export default function AuthCallbackPage() {
@@ -30,16 +30,19 @@ export default function AuthCallbackPage() {
           method: "POST",
           body: { code, state },
         });
-        await refreshUser();
+        const refreshedUser = await refreshUser();
+        if (!refreshedUser) {
+          throw new Error("Could not establish authenticated session");
+        }
 
         toast.success("Login successful!", {
           description: "Welcome back!",
         });
 
         router.push("/my-track");
-      } catch {
+      } catch (error: unknown) {
         toast.error("Authentication failed", {
-          description: "Could not complete social login",
+          description: getApiErrorMessage(error, "Could not complete social login"),
         });
         router.push("/auth/login");
       }

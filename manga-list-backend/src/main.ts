@@ -122,6 +122,7 @@ function validateProductionConfig(): void {
   const errors: string[] = [];
   const cookieSecure = process.env.COOKIE_SECURE === 'true';
   const cookieSameSite = (process.env.COOKIE_SAMESITE ?? 'lax').toLowerCase();
+  const cookiePartitioned = process.env.COOKIE_PARTITIONED === 'true';
   const resetDevResponse = process.env.PASSWORD_RESET_DEV_RESPONSE === 'true';
   const hashRounds = parseHashRounds(process.env.PASSWORD_HASH_ROUNDS);
   const frontendUrls = (
@@ -143,6 +144,14 @@ function validateProductionConfig(): void {
 
   if (cookieSameSite === 'none' && !cookieSecure) {
     errors.push('COOKIE_SAMESITE=none requires COOKIE_SECURE=true');
+  }
+
+  if (cookiePartitioned && cookieSameSite !== 'none') {
+    errors.push('COOKIE_PARTITIONED=true requires COOKIE_SAMESITE=none');
+  }
+
+  if (cookiePartitioned && !cookieSecure) {
+    errors.push('COOKIE_PARTITIONED=true requires COOKIE_SECURE=true');
   }
 
   if (resetDevResponse) {

@@ -11,6 +11,7 @@ import { CacheModule } from './cache/cache.module';
 import { TasksModule } from './tasks/tasks.module';
 import { ObservabilityModule } from './observability/observability.module';
 import { IntegrationsModule } from './integrations/integrations.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 const localEnvPath = resolve(process.cwd(), '.env.local');
 if (existsSync(localEnvPath)) {
@@ -31,6 +32,7 @@ if (existsSync(localEnvPath)) {
     TasksModule,
     ObservabilityModule,
     IntegrationsModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

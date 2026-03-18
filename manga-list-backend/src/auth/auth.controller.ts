@@ -52,7 +52,7 @@ export class AuthController {
   ) {}
 
   private setAuthCookie(res: Response, token: string) {
-    const { secure, sameSite, domain } = this.getCookieOptions();
+    const { secure, sameSite, domain, partitioned } = this.getCookieOptions();
     res.cookie('auth_token', token, {
       httpOnly: true,
       secure,
@@ -60,11 +60,12 @@ export class AuthController {
       path: '/',
       maxAge: 7 * 24 * 60 * 60 * 1000,
       ...(domain ? { domain } : {}),
+      ...(partitioned ? { partitioned: true } : {}),
     });
   }
 
   private setCsrfCookie(res: Response, csrfToken: string) {
-    const { secure, sameSite, domain } = this.getCookieOptions();
+    const { secure, sameSite, domain, partitioned } = this.getCookieOptions();
     res.cookie('csrf_token', csrfToken, {
       httpOnly: false,
       secure,
@@ -72,11 +73,12 @@ export class AuthController {
       path: '/',
       maxAge: 24 * 60 * 60 * 1000,
       ...(domain ? { domain } : {}),
+      ...(partitioned ? { partitioned: true } : {}),
     });
   }
 
   private setCsrfSessionCookie(res: Response, sessionId: string) {
-    const { secure, sameSite, domain } = this.getCookieOptions();
+    const { secure, sameSite, domain, partitioned } = this.getCookieOptions();
     res.cookie('csrf_session', sessionId, {
       httpOnly: true,
       secure,
@@ -84,11 +86,12 @@ export class AuthController {
       path: '/',
       maxAge: 24 * 60 * 60 * 1000,
       ...(domain ? { domain } : {}),
+      ...(partitioned ? { partitioned: true } : {}),
     });
   }
 
   private setOAuthSessionCookie(res: Response, sessionId: string) {
-    const { secure, sameSite, domain } = this.getCookieOptions();
+    const { secure, sameSite, domain, partitioned } = this.getCookieOptions();
     res.cookie('oauth_session', sessionId, {
       httpOnly: true,
       secure,
@@ -96,6 +99,7 @@ export class AuthController {
       path: '/',
       maxAge: CACHE_TTL_MS.OAUTH_STATE,
       ...(domain ? { domain } : {}),
+      ...(partitioned ? { partitioned: true } : {}),
     });
   }
 
@@ -108,51 +112,59 @@ export class AuthController {
     const sameSite = (this.configService.get<'lax' | 'strict' | 'none'>(
       'COOKIE_SAMESITE',
     ) ?? 'lax') as 'lax' | 'strict' | 'none';
+    const partitionedSetting = this.configService.get<string>('COOKIE_PARTITIONED');
+    const partitioned =
+      partitionedSetting === 'true' ||
+      (!partitionedSetting && secure && sameSite === 'none');
 
-    return { secure, sameSite, domain };
+    return { secure, sameSite, domain, partitioned };
   }
 
   private clearAuthCookie(res: Response) {
-    const { secure, sameSite, domain } = this.getCookieOptions();
+    const { secure, sameSite, domain, partitioned } = this.getCookieOptions();
     res.clearCookie('auth_token', {
       httpOnly: true,
       secure,
       sameSite,
       path: '/',
       ...(domain ? { domain } : {}),
+      ...(partitioned ? { partitioned: true } : {}),
     });
   }
 
   private clearCsrfCookie(res: Response) {
-    const { secure, sameSite, domain } = this.getCookieOptions();
+    const { secure, sameSite, domain, partitioned } = this.getCookieOptions();
     res.clearCookie('csrf_token', {
       httpOnly: false,
       secure,
       sameSite,
       path: '/',
       ...(domain ? { domain } : {}),
+      ...(partitioned ? { partitioned: true } : {}),
     });
   }
 
   private clearCsrfSessionCookie(res: Response) {
-    const { secure, sameSite, domain } = this.getCookieOptions();
+    const { secure, sameSite, domain, partitioned } = this.getCookieOptions();
     res.clearCookie('csrf_session', {
       httpOnly: true,
       secure,
       sameSite,
       path: '/',
       ...(domain ? { domain } : {}),
+      ...(partitioned ? { partitioned: true } : {}),
     });
   }
 
   private clearOAuthSessionCookie(res: Response) {
-    const { secure, sameSite, domain } = this.getCookieOptions();
+    const { secure, sameSite, domain, partitioned } = this.getCookieOptions();
     res.clearCookie('oauth_session', {
       httpOnly: true,
       secure,
       sameSite,
       path: '/',
       ...(domain ? { domain } : {}),
+      ...(partitioned ? { partitioned: true } : {}),
     });
   }
 

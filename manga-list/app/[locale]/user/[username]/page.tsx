@@ -76,51 +76,51 @@ export default function PublicProfilePage() {
   const locale = useLocale();
   const { user: authUser, isLoading: authLoading } = useAuth();
 
-  const genreTranslations: Record<string, string> = {
-    Action: "Ação",
-    Adventure: "Aventura",
-    Comedy: "Comédia",
-    Drama: "Drama",
-    Fantasia: "Fantasia",
-    Fantasy: "Fantasia",
-    Magic: "Magia",
-    Supernatural: "Sobrenatural",
-    Horror: "Terror",
-    Mystery: "Mistério",
-    Psychological: "Psicológico",
-    Romance: "Romance",
-    "Sci-Fi": "Ficção Científica",
-    SliceOfLife: "Cotidiano",
-    "Slice of Life": "Cotidiano",
-    Sports: "Esportes",
-    Historical: "Histórico",
-    Military: "Militar",
-    School: "Escolar",
-    Seinen: "Seinen",
-    Shoujo: "Shoujo",
-    Shounen: "Shounen",
-    Josei: "Josei",
-    Ecchi: "Ecchi",
-    Harem: "Harem",
-    Mecha: "Mecha",
-    Music: "Música",
-    Parody: "Paródia",
-    Police: "Policial",
-    Space: "Espacial",
-    Suspense: "Suspense",
-    Thriller: "Thriller",
-    Vampire: "Vampiros",
-    Yaoi: "Yaoi",
-    Yuri: "Yuri",
-    Isekai: "Isekai",
+  const genreTranslationKeys: Record<string, string> = {
+    Action: "action",
+    Adventure: "adventure",
+    Comedy: "comedy",
+    Drama: "drama",
+    Fantasia: "fantasy",
+    Fantasy: "fantasy",
+    Magic: "magic",
+    Supernatural: "supernatural",
+    Horror: "horror",
+    Mystery: "mystery",
+    Psychological: "psychological",
+    Romance: "romance",
+    "Sci-Fi": "sciFi",
+    SliceOfLife: "sliceOfLife",
+    "Slice of Life": "sliceOfLife",
+    Sports: "sports",
+    Historical: "historical",
+    Military: "military",
+    School: "school",
+    Seinen: "seinen",
+    Shoujo: "shoujo",
+    Shounen: "shounen",
+    Josei: "josei",
+    Ecchi: "ecchi",
+    Harem: "harem",
+    Mecha: "mecha",
+    Music: "music",
+    Parody: "parody",
+    Police: "police",
+    Space: "space",
+    Suspense: "suspense",
+    Thriller: "thriller",
+    Vampire: "vampire",
+    Yaoi: "yaoi",
+    Yuri: "yuri",
+    Isekai: "isekai",
   };
 
   const statusTranslations: Record<string, string> = {
-    Publishing: "Em lançamento",
-    Finished: "Completo",
-    "On Hiatus": "Em hiato",
-    Discontinued: "Descontinuado",
-    "Not yet aired": "Não lançado",
+    Publishing: t("details.publicationStatusValues.publishing"),
+    Finished: t("details.publicationStatusValues.finished"),
+    "On Hiatus": t("details.publicationStatusValues.onHiatus"),
+    Discontinued: t("details.publicationStatusValues.discontinued"),
+    "Not yet aired": t("details.publicationStatusValues.notYetAired"),
   };
 
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -135,7 +135,7 @@ export default function PublicProfilePage() {
 
   useEffect(() => {
     if (!username) {
-      setError("Failed to load profile");
+      setError(t("messages.loadProfileError"));
       setIsLoading(false);
       return;
     }
@@ -148,14 +148,14 @@ export default function PublicProfilePage() {
         setUserData(data);
         setError(null);
       } catch (err: unknown) {
-        setError(getApiErrorMessage(err, "Failed to load profile"));
+        setError(getApiErrorMessage(err, t("messages.loadProfileError")));
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchUserData();
-  }, [username]);
+  }, [t, username]);
 
   useEffect(() => {
     if (!username) return;
@@ -214,7 +214,7 @@ export default function PublicProfilePage() {
         };
       });
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to toggle like"));
+      toast.error(getApiErrorMessage(error, t("messages.toggleLikeError")));
     } finally {
       setIsLikeLoading(false);
     }
@@ -231,6 +231,11 @@ export default function PublicProfilePage() {
   };
   const formatRating = (value: number) =>
     Number.isInteger(value) ? String(value) : value.toFixed(1);
+  const translateGenre = (genre: string) => {
+    if (locale !== "pt") return genre;
+    const genreKey = genreTranslationKeys[genre];
+    return genreKey ? t(`genres.${genreKey}`) : genre;
+  };
 
   if (isLoading) {
     return (
@@ -260,11 +265,11 @@ export default function PublicProfilePage() {
       {/* Banner Section */}
       <div className="relative h-64 bg-gradient-to-r from-primary/20 to-primary/5">
         {userData.user.bannerUrl && (
-          <img
-            src={userData.user.bannerUrl}
-            alt="Banner"
-            className="w-full h-full object-cover"
-          />
+            <img
+              src={userData.user.bannerUrl}
+              alt={t("details.bannerAlt")}
+              className="w-full h-full object-cover"
+            />
         )}
 
         {/* Avatar Overlay */}
@@ -434,7 +439,7 @@ export default function PublicProfilePage() {
                     {selectedManga.isFavorite && (
                       <div className="flex items-center gap-1 text-red-500">
                         <Heart className="size-4 fill-current" />
-                        <span className="text-sm font-medium">Favorito</span>
+                        <span className="text-sm font-medium">{t("details.favorite")}</span>
                       </div>
                     )}
                   </div>
@@ -443,7 +448,7 @@ export default function PublicProfilePage() {
                   {selectedManga.rating && (
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">
-                        Avaliação
+                        {t("details.rating")}
                       </p>
                       <div className="flex items-center gap-1">
                         {Array.from({ length: 5 }, (_, i) => {
@@ -476,9 +481,9 @@ export default function PublicProfilePage() {
                   {/* Progress */}
                   {selectedManga.currentChapter && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Progresso</p>
+                      <p className="text-sm text-muted-foreground">{t("details.progress")}</p>
                       <p className="font-medium">
-                        Capítulo {selectedManga.currentChapter}
+                        {t("details.chapter")} {selectedManga.currentChapter}
                         {selectedManga.manga.totalChapters &&
                           ` / ${selectedManga.manga.totalChapters}`}
                       </p>
@@ -492,14 +497,12 @@ export default function PublicProfilePage() {
                       {selectedManga.manga.publicationStatus && (
                         <div>
                           <p className="text-sm text-muted-foreground mb-0.5">
-                            Status
+                            {t("details.publicationStatus")}
                           </p>
                           <Badge variant="secondary" className="text-xs">
-                            {locale === "pt"
-                              ? statusTranslations[
-                                  selectedManga.manga.publicationStatus
-                                ] || selectedManga.manga.publicationStatus
-                              : selectedManga.manga.publicationStatus}
+                            {statusTranslations[
+                              selectedManga.manga.publicationStatus
+                            ] || selectedManga.manga.publicationStatus}
                           </Badge>
                         </div>
                       )}
@@ -510,7 +513,7 @@ export default function PublicProfilePage() {
                             {t("details.latestChapter")}
                           </p>
                           <p className="font-medium text-sm">
-                            Cap. {selectedManga.manga.lastChapter}
+                            {t("details.chapterShort")} {selectedManga.manga.lastChapter}
                           </p>
                         </div>
                       )}
@@ -522,7 +525,7 @@ export default function PublicProfilePage() {
                     selectedManga.manga.genres.length > 0 && (
                       <div>
                         <p className="text-sm text-muted-foreground mb-2">
-                          Gêneros
+                          {t("details.genres")}
                         </p>
                         <div className="flex flex-wrap gap-1">
                           {selectedManga.manga.genres.map((genre, i) => (
@@ -531,9 +534,7 @@ export default function PublicProfilePage() {
                               variant="outline"
                               className="text-xs"
                             >
-                              {locale === "pt"
-                                ? genreTranslations[genre] || genre
-                                : genre}
+                              {translateGenre(genre)}
                             </Badge>
                           ))}
                         </div>
@@ -570,7 +571,7 @@ export default function PublicProfilePage() {
               {(selectedManga.manga.descriptionPt ||
                 selectedManga.manga.description) && (
                 <div className="mt-4">
-                  <p className="text-sm text-muted-foreground mb-2">Sinopse</p>
+                  <p className="text-sm text-muted-foreground mb-2">{t("details.synopsis")}</p>
                   <p className="text-sm leading-relaxed">
                     {locale === "pt" && selectedManga.manga.descriptionPt
                       ? selectedManga.manga.descriptionPt

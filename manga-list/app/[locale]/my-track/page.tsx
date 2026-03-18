@@ -155,7 +155,7 @@ export default function MyTrackPage() {
           item.id === mangaId ? { ...item, isFavorite: currentStatus } : item,
         ),
       );
-      toast.error(getApiErrorMessage(error, "Failed to update favorite"));
+      toast.error(getApiErrorMessage(error, t("messages.updateFavoriteError")));
     }
   };
 
@@ -228,7 +228,7 @@ export default function MyTrackPage() {
         {user?.bannerUrl ? (
           <img
             src={user.bannerUrl}
-            alt="Banner"
+            alt={tProfile("details.bannerAlt")}
             className="w-full h-full object-cover object-center"
           />
         ) : (
@@ -458,14 +458,19 @@ function MangaCard({
 
         {/* Action Buttons Overlay */}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 gap-2">
-          <Button size="icon" variant="secondary" onClick={onEdit} title="Edit">
+          <Button
+            size="icon"
+            variant="secondary"
+            onClick={onEdit}
+            title={tMyTrack("actions.edit")}
+          >
             <Edit className="size-4" />
           </Button>
           <Button
             size="icon"
             variant="destructive"
             onClick={onDelete}
-            title="Delete"
+            title={tMyTrack("actions.delete")}
           >
             <Trash2 className="size-4" />
           </Button>

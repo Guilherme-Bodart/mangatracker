@@ -134,7 +134,31 @@
     "page": "Página",
     "noResults": "Nenhum resultado encontrado",
     "loading": "Carregando...",
-    "startSearching": "Comece pesquisando um mangá"
+    "startSearching": "Comece pesquisando um mangá",
+    "statusValues": {
+      "publishing": "Em lançamento",
+      "finished": "Completo",
+      "onHiatus": "Em hiato",
+      "discontinued": "Descontinuado",
+      "notYetAired": "Não lançado"
+    },
+    "unknownStatus": "Desconhecido",
+    "chaptersShort": "Caps",
+    "messages": {
+      "searchError": "Falha ao buscar mangás"
+    },
+    "genreValues": {
+      "action": "Ação",
+      "adventure": "Aventura",
+      "comedy": "Comédia",
+      "drama": "Drama",
+      "fantasy": "Fantasia",
+      "horror": "Horror",
+      "romance": "Romance",
+      "sciFi": "Ficção Científica",
+      "sliceOfLife": "Slice of Life",
+      "supernatural": "Sobrenatural"
+    }
   },
   "AddManga": {
     "title": "Adicionar à Lista",
@@ -206,7 +230,9 @@
       "save": "Salvar Alterações",
       "saving": "Salvando...",
       "integrations": "Integrações",
-      "integrationsAdmin": "Admin Integrações"
+      "integrationsAdmin": "Admin Integrações",
+      "notifications": "Notificações",
+      "notificationsAdmin": "Admin Notificações"
     },
     "messages": {
       "noChanges": "Nenhuma alteração para salvar",
@@ -354,6 +380,7 @@
     },
     "messages": {
       "loadDataError": "Falha ao carregar dados admin de integrações",
+      "forbidden": "Você não tem permissão para acessar esta página",
       "partnerCreatedSuccess": "Parceiro criado com sucesso",
       "createPartnerError": "Falha ao criar parceiro",
       "partnerStatusUpdatedSuccess": "Status do parceiro atualizado",
@@ -375,70 +402,70 @@
   },
   "HowToUseApi": {
     "title": "Como usar a API",
-    "updatedAt": "?ltima atualiza??o: 13 de mar?o de 2026",
-    "intro": "Guia final para integra??o de parceiros com foco em opera??o real, sem copiar c?digo e com troubleshooting objetivo.",
+    "updatedAt": "Última atualização: 13 de março de 2026",
+    "intro": "Guia final para integração de parceiros com foco em operação real, sem copiar código e com troubleshooting objetivo.",
     "baseUrlLabel": "Base URL atual da API neste frontend",
-    "baseUrlNote": "Em produ??o, use a URL oficial da API. Os endpoints abaixo s?o relativos a essa base.",
+    "baseUrlNote": "Em produção, use a URL oficial da API. Os endpoints abaixo são relativos a essa base.",
     "rolesTitle": "Quem participa",
-    "flowTitle": "Fluxo final do parceiro (sem copiar c?digo)",
+    "flowTitle": "Fluxo final do parceiro (sem copiar código)",
     "roles": {
       "partner": {
         "title": "Site parceiro (CLIENTE)",
-        "body": "Orquestra inscri??o, troca de c?digo por token e envio de sync a partir do backend do parceiro."
+        "body": "Orquestra inscrição, troca de código por token e envio de sync a partir do backend do parceiro."
       },
       "user": {
-        "title": "Usu?rio final",
-        "body": "Gera c?digo tempor?rio no Manga Tracker e compartilha com o parceiro."
+        "title": "Usuário final",
+        "body": "Gera código temporário no Manga Tracker e compartilha com o parceiro."
       },
       "platform": {
-        "title": "Manga Tracker (autom?tico)",
-        "body": "Valida dom?nio, credenciais, escopo, dom?nio permitido e regras de idempot?ncia/sync."
+        "title": "Manga Tracker (automático)",
+        "body": "Valida domínio, credenciais, escopo, domínio permitido e regras de idempotência/sync."
       }
     },
     "steps": {
       "application": {
-        "title": "1) Envie a inscri??o p?blica",
-        "body": "Cadastre o parceiro e guarde o id da inscri??o para acompanhamento.",
+        "title": "1) Envie a inscrição pública",
+        "body": "Cadastre o parceiro e guarde o id da inscrição para acompanhamento.",
         "endpoint": "POST /integrations/public/apply",
         "notes": {
-          "1": "Endpoint p?blico com rate limit e prote??o anti-abuso.",
-          "2": "O envio n?o ativa a integra??o automaticamente."
+          "1": "Endpoint público com rate limit e proteção anti-abuso.",
+          "2": "O envio não ativa a integração automaticamente."
         }
       },
       "domainVerification": {
-        "title": "2) Verifique posse do dom?nio",
-        "body": "Publique a prova de dom?nio e execute a verifica??o antes da aprova??o.",
+        "title": "2) Verifique posse do domínio",
+        "body": "Publique a prova de domínio e execute a verificação antes da aprovação.",
         "endpoint": "POST /integrations/public/apply/{applicationId}/verify-domain",
         "notes": {
-          "1": "DNS TXT ? o caminho recomendado; arquivo .well-known ? fallback.",
-          "2": "Aprova??o fica bloqueada at? status VERIFIED."
+          "1": "DNS TXT é o caminho recomendado; arquivo .well-known é fallback.",
+          "2": "Aprovação fica bloqueada até status VERIFIED."
         }
       },
       "applicationStatus": {
-        "title": "3) Consulte status quando necess?rio",
-        "body": "Use o applicationId para polling de progresso e pr?xima a??o.",
+        "title": "3) Consulte status quando necessário",
+        "body": "Use o applicationId para polling de progresso e próxima ação.",
         "endpoint": "GET /integrations/public/apply/{applicationId}/status"
       },
       "approval": {
-        "title": "4) Aguarde aprova??o",
-        "body": "Ap?s aprova??o, as credenciais (partnerSlug e clientSecret) s?o enviadas por e-mail."
+        "title": "4) Aguarde aprovação",
+        "body": "Após aprovação, as credenciais (partnerSlug e clientSecret) são enviadas por e-mail."
       },
       "userConnectCode": {
-        "title": "5) Usu?rio gera c?digo de conex?o",
-        "body": "O usu?rio gera c?digo tempor?rio no Manga Tracker para vincular a conta ao parceiro."
+        "title": "5) Usuário gera código de conexão",
+        "body": "O usuário gera código temporário no Manga Tracker para vincular a conta ao parceiro."
       },
       "exchange": {
-        "title": "6) Troque c?digo por token no backend do parceiro",
-        "body": "Use o endpoint de exchange com credenciais de parceiro e valide dom?nio de origem.",
+        "title": "6) Troque código por token no backend do parceiro",
+        "body": "Use o endpoint de exchange com credenciais de parceiro e valide domínio de origem.",
         "endpoint": "POST /integrations/connect/exchange",
         "notes": {
-          "1": "Rota??o: secret ativo e secret anterior s?o aceitos durante a janela de transi??o.",
-          "2": "Ap?s expira??o da janela, apenas o secret ativo autentica."
+          "1": "Rotação: secret ativo e secret anterior são aceitos durante a janela de transição.",
+          "2": "Após expiração da janela, apenas o secret ativo autentica."
         }
       },
       "sync": {
         "title": "7) Envie sync de progresso",
-        "body": "Envie eventos com idempotency key para retries seguros e resultado determin?stico.",
+        "body": "Envie eventos com idempotency key para retries seguros e resultado determinístico.",
         "endpoint": "POST /integrations/sync",
         "notes": {
           "1": "Outcomes: created, updated ou noop.",
@@ -451,19 +478,19 @@
         "endpoint": "POST/GET /integrations/admin/partners/{partnerId}/webhooks",
         "notes": {
           "1": "Assinatura HMAC SHA-256 em timestamp.body; valide antes de processar.",
-          "2": "Em falhas tempor?rias, a plataforma faz retry com backoff + jitter; no limite, evento vai para DLQ.",
-          "3": "Fa?a deduplica??o do consumidor por x-mangalist-event-id."
+          "2": "Em falhas temporárias, a plataforma faz retry com backoff + jitter; no limite, evento vai para DLQ.",
+          "3": "Faça deduplicação do consumidor por x-mangalist-event-id."
         }
       }
     },
     "security": {
-      "title": "Checklist de seguran?a",
+      "title": "Checklist de segurança",
       "items": {
         "1": "Armazene clientSecret somente no backend.",
-        "2": "Use allowlist de dom?nio e envie sourceDomain.",
+        "2": "Use allowlist de domínio e envie sourceDomain.",
         "3": "Use x-idempotency-key em todo retry.",
-        "4": "Rotacione secrets periodicamente com janela de transi??o.",
-        "5": "Use HTTPS fim a fim em produ??o."
+        "4": "Rotacione secrets periodicamente com janela de transição.",
+        "5": "Use HTTPS fim a fim em produção."
       }
     },
     "limits": {
@@ -471,30 +498,30 @@
       "items": {
         "1": "Scope exigido no MVP: manga:write.",
         "2": "chapter menor/igual ao atual retorna noop.",
-        "3": "Access token de integra??o expira em 30 dias.",
-        "4": "Rate limits e valida??es retornam erros claros por endpoint."
+        "3": "Access token de integração expira em 30 dias.",
+        "4": "Rate limits e validações retornam erros claros por endpoint."
       }
     },
     "troubleshooting": {
       "title": "Erros comuns e troubleshooting",
       "items": {
-        "1": "401 Missing partner credentials: clientSecret ausente para parceiro n?o p?blico.",
-        "2": "401 Invalid partner credentials: secret inv?lido ou janela do secret anterior expirada.",
-        "3": "401 Invalid or expired connect code: gere novo c?digo no Manga Tracker.",
+        "1": "401 Missing partner credentials: clientSecret ausente para parceiro não público.",
+        "2": "401 Invalid partner credentials: secret inválido ou janela do secret anterior expirada.",
+        "3": "401 Invalid or expired connect code: gere novo código no Manga Tracker.",
         "4": "401 Connect code domain mismatch: alinhe sourceDomain no start e no exchange.",
-        "5": "403 Missing manga:write scope: revise escopo da conex?o/token.",
+        "5": "403 Missing manga:write scope: revise escopo da conexão/token.",
         "6": "403 Source domain is not allowed for partner: ajuste allowedDomains no admin.",
         "7": "429 Too many requests: respeite Retry-After e use backoff com jitter.",
-        "8": "Sync em noop: comportamento esperado quando cap?tulo n?o avan?ou."
+        "8": "Sync em noop: comportamento esperado quando capítulo não avançou."
       }
     },
     "examples": {
       "title": "Exemplos ponta-a-ponta",
       "items": {
-        "1": "Novo v?nculo: start -> exchange -> sync(created).",
-        "2": "Progresso cont?nuo: sync(updated) com cap?tulo maior.",
-        "3": "Retry seguro: mesmo evento + mesma idempotency key mant?m resultado sem duplicidade.",
-        "4": "Rota??o sem downtime: exchange aceita secret anterior na janela e migra para o novo."
+        "1": "Novo vínculo: start -> exchange -> sync(created).",
+        "2": "Progresso contínuo: sync(updated) com capítulo maior.",
+        "3": "Retry seguro: mesmo evento + mesma idempotency key mantêm resultado sem duplicidade.",
+        "4": "Rotação sem downtime: exchange aceita secret anterior na janela e migra para o novo."
       }
     }
   },
@@ -525,6 +552,9 @@
     },
     "edit": {
       "title": "Editar Mangá"
+    },
+    "messages": {
+      "updateFavoriteError": "Erro ao atualizar favorito"
     }
   },
   "PublicProfile": {
@@ -558,9 +588,63 @@
       "addedOn": "Adicionado em",
       "added": "Adicionado",
       "showDetails": "Mostrar Detalhes",
-      "hideDetails": "Ocultar"
+      "hideDetails": "Ocultar",
+      "chapterShort": "Cap.",
+      "progress": "Progresso",
+      "favorite": "Favorito",
+      "publicationStatus": "Status",
+      "genres": "Gêneros",
+      "synopsis": "Sinopse",
+      "bannerAlt": "Banner",
+      "publicationStatusValues": {
+        "publishing": "Em lançamento",
+        "finished": "Completo",
+        "onHiatus": "Em hiato",
+        "discontinued": "Descontinuado",
+        "notYetAired": "Não lançado"
+      }
     },
-    "empty": "Nenhum mangá na lista ainda"
+    "empty": "Nenhum mangá na lista ainda",
+    "messages": {
+      "loadProfileError": "Não foi possível carregar o perfil",
+      "toggleLikeError": "Não foi possível atualizar a curtida"
+    },
+    "genres": {
+      "action": "Ação",
+      "adventure": "Aventura",
+      "comedy": "Comédia",
+      "drama": "Drama",
+      "fantasy": "Fantasia",
+      "magic": "Magia",
+      "supernatural": "Sobrenatural",
+      "horror": "Terror",
+      "mystery": "Mistério",
+      "psychological": "Psicológico",
+      "romance": "Romance",
+      "sciFi": "Ficção Científica",
+      "sliceOfLife": "Cotidiano",
+      "sports": "Esportes",
+      "historical": "Histórico",
+      "military": "Militar",
+      "school": "Escolar",
+      "seinen": "Seinen",
+      "shoujo": "Shoujo",
+      "shounen": "Shounen",
+      "josei": "Josei",
+      "ecchi": "Ecchi",
+      "harem": "Harem",
+      "mecha": "Mecha",
+      "music": "Música",
+      "parody": "Paródia",
+      "police": "Policial",
+      "space": "Espacial",
+      "suspense": "Suspense",
+      "thriller": "Thriller",
+      "vampire": "Vampiros",
+      "yaoi": "Yaoi",
+      "yuri": "Yuri",
+      "isekai": "Isekai"
+    }
   },
   "Ranking": {
     "title": "Ranking de Perfis",
@@ -580,7 +664,9 @@
     "profileMenu": "Menu do perfil",
     "profile": "Perfil",
     "publicProfile": "Perfil Público",
-    "logout": "Sair"
+    "logout": "Sair",
+    "notifications": "Notificações",
+    "notificationsAria": "Abrir notificações"
   },
   "PublicIntegrationsApply": {
     "title": "Inscrição para API de parceiros",
@@ -709,5 +795,51 @@
     "contact": "Contato",
     "howToUseApi": "Como usar API",
     "language": "Idioma"
+  },
+  "Notifications": {
+    "title": "Notificações",
+    "subtitle": "Avisos oficiais da plataforma para sua conta.",
+    "refresh": "Atualizar",
+    "loading": "Carregando notificações...",
+    "empty": "Nenhuma notificação disponível.",
+    "defaultTitle": "Aviso da equipe",
+    "unread": "Não lida",
+    "messages": {
+      "loadError": "Falha ao carregar notificações"
+    }
+  },
+  "NotificationsAdmin": {
+    "title": "Admin de notificações",
+    "subtitle": "Publique avisos globais para todos os usuários autenticados.",
+    "loading": "Carregando avisos...",
+    "form": {
+      "title": "Criar notificação global",
+      "titleLabel": "Título (opcional)",
+      "titlePlaceholder": "Ex.: Novo domínio suportado",
+      "messageLabel": "Mensagem",
+      "messagePlaceholder": "Escreva o aviso que todos os usuários devem ver.",
+      "submitting": "Publicando...",
+      "submit": "Publicar notificação"
+    },
+    "list": {
+      "title": "Notificações publicadas",
+      "empty": "Nenhuma notificação criada ainda.",
+      "defaultTitle": "Aviso da equipe",
+      "active": "Ativa",
+      "removed": "Removida",
+      "remove": "Remover",
+      "createdAt": "Criada em",
+      "readCount": "Leituras",
+      "createdBy": "Criada por"
+    },
+    "messages": {
+      "forbidden": "Você não tem permissão para acessar esta página",
+      "messageRequired": "Preencha a mensagem da notificação",
+      "loadError": "Falha ao carregar notificações",
+      "createSuccess": "Notificação publicada com sucesso",
+      "createError": "Falha ao publicar notificação",
+      "removeSuccess": "Notificação removida com sucesso",
+      "removeError": "Falha ao remover notificação"
+    }
   }
 }

@@ -15,6 +15,7 @@ import { LogOut, User } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/contexts/auth-context";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export function Header() {
   const t = useTranslations("Header");
@@ -55,46 +56,52 @@ export function Header() {
             {isLoading ? (
               <div className="size-10 rounded-full border-2 border-primary/20 animate-pulse" />
             ) : user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    aria-label={t("profileMenu")}
-                  >
-                    <Avatar className="size-10 cursor-pointer border-2 border-primary/20 hover:border-primary transition-colors">
-                      <AvatarImage
-                        src={user.avatarUrl || undefined}
-                        alt={user.username}
-                      />
-                      <AvatarFallback className="bg-primary/10 text-primary">
-                        <User className="size-5" />
-                      </AvatarFallback>
-                    </Avatar>
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>{user.username}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile">{t("profile")}</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href={`/user/${user.username}`}>{t("publicProfile")}</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onSelect={(event) => {
-                      event.preventDefault();
-                      void logout();
-                    }}
-                  >
-                    <LogOut className="size-4" />
-                    {t("logout")}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <>
+                <NotificationBell />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      aria-label={t("profileMenu")}
+                    >
+                      <Avatar className="size-10 cursor-pointer border-2 border-primary/20 hover:border-primary transition-colors">
+                        <AvatarImage
+                          src={user.avatarUrl || undefined}
+                          alt={user.username}
+                        />
+                        <AvatarFallback className="bg-primary/10 text-primary">
+                          <User className="size-5" />
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>{user.username}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile">{t("profile")}</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile/notifications">{t("notifications")}</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href={`/user/${user.username}`}>{t("publicProfile")}</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        void logout();
+                      }}
+                    >
+                      <LogOut className="size-4" />
+                      {t("logout")}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
             ) : (
               <Button asChild>
                 <Link href="/auth/login" className="flex items-center gap-2">

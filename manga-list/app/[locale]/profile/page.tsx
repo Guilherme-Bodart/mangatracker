@@ -112,11 +112,19 @@ export default function ProfilePage() {
         <h1 className="text-3xl font-bold">{t("title")}</h1>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
+            <Link href="/profile/notifications">{t("actions.notifications")}</Link>
+          </Button>
+          <Button variant="outline" asChild>
             <Link href="/profile/integrations">{t("actions.integrations")}</Link>
           </Button>
           <Button variant="outline" asChild>
             <Link href="/profile/integrations-admin">
               {t("actions.integrationsAdmin")}
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/profile/notifications-admin">
+              {t("actions.notificationsAdmin")}
             </Link>
           </Button>
           <Button variant="outline" asChild className="flex items-center gap-2">

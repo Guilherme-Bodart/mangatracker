@@ -55,6 +55,8 @@ model User {
   partnerConnections UserPartnerConnection[]
   externalMangaMaps ExternalMangaMap[]
   syncEvents    SyncEventLog[]
+  announcementsCreated Announcement[] @relation("AnnouncementCreator")
+  announcementReads AnnouncementRead[]
   likesGiven    ProfileLike[] @relation("ProfileLikesGiven")
   likesReceived ProfileLike[] @relation("ProfileLikesReceived")
   createdAt     DateTime      @default(now())
@@ -266,4 +268,30 @@ model IntegrationWebhookDeliveryLog {
   @@index([endpointId, createdAt])
   @@index([eventId, createdAt])
   @@index([status, nextRetryAt])
+}
+
+model Announcement {
+  id              String             @id @default(uuid())
+  title           String?
+  message         String             @db.Text
+  isActive        Boolean            @default(true)
+  createdByUserId String?
+  createdBy       User?              @relation("AnnouncementCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  reads           AnnouncementRead[]
+  createdAt       DateTime           @default(now())
+  removedAt       DateTime?
+
+  @@index([isActive, createdAt])
+}
+
+model AnnouncementRead {
+  id             String       @id @default(uuid())
+  announcementId String
+  userId         String
+  readAt         DateTime     @default(now())
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@index([userId, readAt])
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,16 +26,16 @@ import { buildBrowseMangaEndpoint } from "@/lib/manga-search-query";
 
 // Common manga genres (MAL genre IDs)
 const GENRES = [
-  { id: 1, name: "Ação", nameEn: "Action" },
-  { id: 2, name: "Aventura", nameEn: "Adventure" },
-  { id: 4, name: "Comédia", nameEn: "Comedy" },
-  { id: 8, name: "Drama", nameEn: "Drama" },
-  { id: 10, name: "Fantasia", nameEn: "Fantasy" },
-  { id: 14, name: "Horror", nameEn: "Horror" },
-  { id: 22, name: "Romance", nameEn: "Romance" },
-  { id: 24, name: "Ficção Científica", nameEn: "Sci-Fi" },
-  { id: 36, name: "Slice of Life", nameEn: "Slice of Life" },
-  { id: 37, name: "Sobrenatural", nameEn: "Supernatural" },
+  { id: 1, key: "action" },
+  { id: 2, key: "adventure" },
+  { id: 4, key: "comedy" },
+  { id: 8, key: "drama" },
+  { id: 10, key: "fantasy" },
+  { id: 14, key: "horror" },
+  { id: 22, key: "romance" },
+  { id: 24, key: "sciFi" },
+  { id: 36, key: "sliceOfLife" },
+  { id: 37, key: "supernatural" },
 ];
 
 interface Manga {
@@ -69,17 +69,8 @@ type UserMangaEntry = {
   };
 };
 
-const statusTranslations: Record<string, string> = {
-  Publishing: "Em lançamento",
-  Finished: "Completo",
-  "On Hiatus": "Em hiato",
-  Discontinued: "Descontinuado",
-  "Not yet aired": "Não lançado",
-};
-
 export default function BrowsePage() {
   const t = useTranslations("Browse");
-  const locale = useLocale();
   const { user } = useAuth();
   const allowNsfw = !!user?.allowNsfw;
 
@@ -100,6 +91,13 @@ export default function BrowsePage() {
   const [userMangaMalIds, setUserMangaMalIds] = useState<Set<number>>(
     () => new Set(),
   );
+  const statusTranslations: Record<string, string> = {
+    Publishing: t("statusValues.publishing"),
+    Finished: t("statusValues.finished"),
+    "On Hiatus": t("statusValues.onHiatus"),
+    Discontinued: t("statusValues.discontinued"),
+    "Not yet aired": t("statusValues.notYetAired"),
+  };
 
   useEffect(() => {
     const loadUserMangaMalIds = async () => {
@@ -147,7 +145,7 @@ export default function BrowsePage() {
           data.pagination?.has_next_page || newMangas.length === 20,
         );
       } catch (error) {
-        toast.error(getApiErrorMessage(error, "Error searching manga"));
+        toast.error(getApiErrorMessage(error, t("messages.searchError")));
       } finally {
         setIsLoading(false);
       }
@@ -249,7 +247,7 @@ export default function BrowsePage() {
                         htmlFor={`genre-${genre.id}`}
                         className="text-sm cursor-pointer"
                       >
-                        {locale === "pt" ? genre.name : genre.nameEn}
+                        {t(`genreValues.${genre.key}`)}
                       </Label>
                     </div>
                   ))}
@@ -373,14 +371,12 @@ export default function BrowsePage() {
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>
                         {manga.status
-                          ? locale === "pt"
-                            ? statusTranslations[manga.status] || manga.status
-                            : manga.status
-                          : "Unknown"}
+                          ? statusTranslations[manga.status] || manga.status
+                          : t("unknownStatus")}
                       </span>
                       {manga.chapters && (
                         <span className="font-medium">
-                          {manga.chapters} {locale === "pt" ? "Caps" : "Chs"}
+                          {manga.chapters} {t("chaptersShort")}
                         </span>
                       )}
                     </div>

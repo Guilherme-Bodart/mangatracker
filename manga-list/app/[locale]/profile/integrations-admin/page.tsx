@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { getApiErrorMessage } from "@/lib/api-client";
+import { ApiClientError, getApiErrorMessage } from "@/lib/api-client";
 import { useTranslations } from "next-intl";
 import {
   approveAdminApplication,
@@ -64,6 +64,23 @@ export default function IntegrationsAdminPage() {
       lastPreviousSecretUsedAt: null,
     };
 
+  const handleForbidden = useCallback(() => {
+    toast.error(t("messages.forbidden"));
+    router.replace("/profile");
+  }, [router, t]);
+
+  const handleApiError = useCallback(
+    (error: unknown, fallbackMessage: string) => {
+      if (error instanceof ApiClientError && error.status === 403) {
+        handleForbidden();
+        return;
+      }
+
+      toast.error(getApiErrorMessage(error, fallbackMessage));
+    },
+    [handleForbidden],
+  );
+
   useEffect(() => {
     if (!isAuthLoading && !user) {
       router.push("/auth/login");
@@ -86,17 +103,12 @@ export default function IntegrationsAdminPage() {
         setConnections(connectionsData);
         setApplications(applicationsData);
       } catch (error: unknown) {
-        toast.error(
-          getApiErrorMessage(
-            error,
-            t("messages.loadDataError"),
-          ),
-        );
+        handleApiError(error, t("messages.loadDataError"));
       } finally {
         setIsLoading(false);
       }
     },
-    [t],
+    [handleApiError, t],
   );
 
   useEffect(() => {
@@ -169,7 +181,7 @@ export default function IntegrationsAdminPage() {
         applicationStatusFilter || undefined,
       );
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, t("messages.createPartnerError")));
+      handleApiError(error, t("messages.createPartnerError"));
     }
   };
 
@@ -182,7 +194,7 @@ export default function IntegrationsAdminPage() {
         applicationStatusFilter || undefined,
       );
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, t("messages.updatePartnerError")));
+      handleApiError(error, t("messages.updatePartnerError"));
     }
   };
 
@@ -196,7 +208,7 @@ export default function IntegrationsAdminPage() {
       });
       toast.success(t("messages.secretRotatedSuccess", { slug: partner.slug }));
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, t("messages.rotateSecretError")));
+      handleApiError(error, t("messages.rotateSecretError"));
     }
   };
 
@@ -209,9 +221,7 @@ export default function IntegrationsAdminPage() {
         applicationStatusFilter || undefined,
       );
     } catch (error: unknown) {
-      toast.error(
-        getApiErrorMessage(error, t("messages.revokeConnectionError")),
-      );
+      handleApiError(error, t("messages.revokeConnectionError"));
     }
   };
 
@@ -232,9 +242,7 @@ export default function IntegrationsAdminPage() {
         applicationStatusFilter || undefined,
       );
     } catch (error: unknown) {
-      toast.error(
-        getApiErrorMessage(error, t("messages.approveApplicationError")),
-      );
+      handleApiError(error, t("messages.approveApplicationError"));
     }
   };
 
@@ -254,9 +262,7 @@ export default function IntegrationsAdminPage() {
         applicationStatusFilter || undefined,
       );
     } catch (error: unknown) {
-      toast.error(
-        getApiErrorMessage(error, t("messages.rejectApplicationError")),
-      );
+      handleApiError(error, t("messages.rejectApplicationError"));
     }
   };
 
@@ -271,9 +277,7 @@ export default function IntegrationsAdminPage() {
         applicationStatusFilter || undefined,
       );
     } catch (error: unknown) {
-      toast.error(
-        getApiErrorMessage(error, t("messages.applicationDomainVerifyError")),
-      );
+      handleApiError(error, t("messages.applicationDomainVerifyError"));
     }
   };
 
@@ -290,9 +294,7 @@ export default function IntegrationsAdminPage() {
       toast.success(t("messages.connectionStatusLoadedSuccess"));
     } catch (error: unknown) {
       setStatusResult(null);
-      toast.error(
-        getApiErrorMessage(error, t("messages.connectionStatusLoadError")),
-      );
+      handleApiError(error, t("messages.connectionStatusLoadError"));
     } finally {
       setIsCheckingStatus(false);
     }

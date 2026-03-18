@@ -134,7 +134,31 @@
     "page": "Page",
     "noResults": "No results found",
     "loading": "Loading...",
-    "startSearching": "Start searching for manga"
+    "startSearching": "Start searching for manga",
+    "statusValues": {
+      "publishing": "Publishing",
+      "finished": "Finished",
+      "onHiatus": "On Hiatus",
+      "discontinued": "Discontinued",
+      "notYetAired": "Not yet aired"
+    },
+    "unknownStatus": "Unknown",
+    "chaptersShort": "Chs",
+    "messages": {
+      "searchError": "Failed to search manga"
+    },
+    "genreValues": {
+      "action": "Action",
+      "adventure": "Adventure",
+      "comedy": "Comedy",
+      "drama": "Drama",
+      "fantasy": "Fantasy",
+      "horror": "Horror",
+      "romance": "Romance",
+      "sciFi": "Sci-Fi",
+      "sliceOfLife": "Slice of Life",
+      "supernatural": "Supernatural"
+    }
   },
   "AddManga": {
     "title": "Add to List",
@@ -205,7 +229,9 @@
       "save": "Save Changes",
       "saving": "Saving...",
       "integrations": "Integrations",
-      "integrationsAdmin": "Integrations Admin"
+      "integrationsAdmin": "Integrations Admin",
+      "notifications": "Notifications",
+      "notificationsAdmin": "Notifications Admin"
     },
     "messages": {
       "noChanges": "No changes to save",
@@ -352,6 +378,7 @@
       "empty": "No connections found."
     },
     "messages": {
+      "forbidden": "You do not have permission to access this page",
       "loadDataError": "Failed to load integrations admin data",
       "partnerCreatedSuccess": "Partner created successfully",
       "createPartnerError": "Failed to create partner",
@@ -524,6 +551,9 @@
     },
     "edit": {
       "title": "Edit Manga"
+    },
+    "messages": {
+      "updateFavoriteError": "Failed to update favorite"
     }
   },
   "PublicProfile": {
@@ -557,9 +587,63 @@
       "addedOn": "Added on",
       "added": "Added",
       "showDetails": "Show Details",
-      "hideDetails": "Hide"
+      "hideDetails": "Hide",
+      "chapterShort": "Ch.",
+      "progress": "Progress",
+      "favorite": "Favorite",
+      "publicationStatus": "Status",
+      "genres": "Genres",
+      "synopsis": "Synopsis",
+      "bannerAlt": "Banner",
+      "publicationStatusValues": {
+        "publishing": "Publishing",
+        "finished": "Finished",
+        "onHiatus": "On Hiatus",
+        "discontinued": "Discontinued",
+        "notYetAired": "Not yet aired"
+      }
     },
-    "empty": "No manga in the list yet"
+    "empty": "No manga in the list yet",
+    "messages": {
+      "loadProfileError": "Could not load profile",
+      "toggleLikeError": "Could not update like"
+    },
+    "genres": {
+      "action": "Action",
+      "adventure": "Adventure",
+      "comedy": "Comedy",
+      "drama": "Drama",
+      "fantasy": "Fantasy",
+      "magic": "Magic",
+      "supernatural": "Supernatural",
+      "horror": "Horror",
+      "mystery": "Mystery",
+      "psychological": "Psychological",
+      "romance": "Romance",
+      "sciFi": "Sci-Fi",
+      "sliceOfLife": "Slice of Life",
+      "sports": "Sports",
+      "historical": "Historical",
+      "military": "Military",
+      "school": "School",
+      "seinen": "Seinen",
+      "shoujo": "Shoujo",
+      "shounen": "Shounen",
+      "josei": "Josei",
+      "ecchi": "Ecchi",
+      "harem": "Harem",
+      "mecha": "Mecha",
+      "music": "Music",
+      "parody": "Parody",
+      "police": "Police",
+      "space": "Space",
+      "suspense": "Suspense",
+      "thriller": "Thriller",
+      "vampire": "Vampire",
+      "yaoi": "Yaoi",
+      "yuri": "Yuri",
+      "isekai": "Isekai"
+    }
   },
   "Ranking": {
     "title": "Profile Ranking",
@@ -579,7 +663,9 @@
     "profileMenu": "Profile menu",
     "profile": "Profile",
     "publicProfile": "Public Profile",
-    "logout": "Log out"
+    "logout": "Log out",
+    "notifications": "Notifications",
+    "notificationsAria": "Open notifications"
   },
   "PublicIntegrationsApply": {
     "title": "Partner API application",
@@ -708,5 +794,51 @@
     "contact": "Contact",
     "howToUseApi": "How to use API",
     "language": "Language"
+  },
+  "Notifications": {
+    "title": "Notifications",
+    "subtitle": "Official platform announcements for your account.",
+    "refresh": "Refresh",
+    "loading": "Loading notifications...",
+    "empty": "No notifications available.",
+    "defaultTitle": "Team announcement",
+    "unread": "Unread",
+    "messages": {
+      "loadError": "Failed to load notifications"
+    }
+  },
+  "NotificationsAdmin": {
+    "title": "Notifications admin",
+    "subtitle": "Publish global announcements to all authenticated users.",
+    "loading": "Loading announcements...",
+    "form": {
+      "title": "Create global notification",
+      "titleLabel": "Title (optional)",
+      "titlePlaceholder": "Ex.: New supported domain",
+      "messageLabel": "Message",
+      "messagePlaceholder": "Write the announcement all users should see.",
+      "submitting": "Publishing...",
+      "submit": "Publish notification"
+    },
+    "list": {
+      "title": "Published notifications",
+      "empty": "No notifications created yet.",
+      "defaultTitle": "Team announcement",
+      "active": "Active",
+      "removed": "Removed",
+      "remove": "Remove",
+      "createdAt": "Created at",
+      "readCount": "Reads",
+      "createdBy": "Created by"
+    },
+    "messages": {
+      "forbidden": "You do not have permission to access this page",
+      "messageRequired": "Fill in the notification message",
+      "loadError": "Failed to load notifications",
+      "createSuccess": "Notification published successfully",
+      "createError": "Failed to publish notification",
+      "removeSuccess": "Notification removed successfully",
+      "removeError": "Failed to remove notification"
+    }
   }
 }

@@ -1,0 +1,11 @@
+{
+  "extName": {
+    "message": "Manga Tracker Sync"
+  },
+  "extDescription": {
+    "message": "Sincroniza progresso de leitura de mangá com a sua conta Manga Tracker."
+  },
+  "extActionTitle": {
+    "message": "Manga Tracker Sync"
+  }
+}

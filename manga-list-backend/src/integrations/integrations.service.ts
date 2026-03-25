@@ -68,9 +68,81 @@ type IntegrationConnectPayload = {
   sourceDomain?: string;
 };
 
+type JikanSearchItem = {
+  mal_id: number;
+  title?: string | null;
+  title_english?: string | null;
+  title_japanese?: string | null;
+  title_synonyms?: string[] | null;
+  titles?: Array<{ title?: string | null }> | null;
+  images?: {
+    jpg?: {
+      large_image_url?: string | null;
+      image_url?: string | null;
+    } | null;
+  } | null;
+  genres?: Array<{ name?: string | null }> | null;
+  chapters?: number | null;
+  synopsis?: string | null;
+  status?: string | null;
+  authors?: Array<{ name?: string | null }> | null;
+};
+
+type JikanSearchResponse = {
+  data?: JikanSearchItem[];
+};
+
+type AniListSearchItem = {
+  id: number;
+  idMal?: number | null;
+  title?: {
+    romaji?: string | null;
+    english?: string | null;
+    native?: string | null;
+  } | null;
+  synonyms?: string[] | null;
+  coverImage?: {
+    large?: string | null;
+    medium?: string | null;
+  } | null;
+  genres?: string[] | null;
+  chapters?: number | null;
+  description?: string | null;
+  status?: string | null;
+  staff?: {
+    nodes?: Array<{ name?: { full?: string | null } | null }> | null;
+  } | null;
+};
+
+type AniListSearchResponse = {
+  data?: {
+    Page?: {
+      media?: AniListSearchItem[];
+    };
+  };
+};
+
+type CatalogResolvedManga = {
+  title: string;
+  malId: number | null;
+  anilistId: number | null;
+  coverImage: string | null;
+  genres: string[];
+  totalChapters: number | null;
+  description: string | null;
+  publicationStatus: string | null;
+  author: string | null;
+};
+
+type CatalogResolveCacheValue =
+  | { found: true; manga: CatalogResolvedManga }
+  | { found: false };
+
 @Injectable()
 export class IntegrationsService {
   private readonly logger = new Logger(IntegrationsService.name);
+  private readonly JIKAN_BASE_URL = 'https://api.jikan.moe/v4';
+  private readonly ANILIST_GRAPHQL_URL = 'https://graphql.anilist.co';
 
   constructor(
     private readonly prisma: PrismaService,
@@ -1177,6 +1249,10 @@ export class IntegrationsService {
       throw new ForbiddenException('Missing manga:write scope');
     }
 
+    const normalizedTitle = this.normalizeExternalTitle(dto.title);
+    const resolvedCatalogManga =
+      await this.resolveCanonicalMangaByTitle(normalizedTitle);
+
     const result: SyncResult = await this.prisma.$transaction(async (tx) => {
       const existingMap = await tx.externalMangaMap.findUnique({
         where: {
@@ -1254,7 +1330,8 @@ export class IntegrationsService {
         tx,
         partner.id,
         dto.externalMangaId,
-        this.normalizeExternalTitle(dto.title),
+        normalizedTitle,
+        resolvedCatalogManga,
       );
 
       const existingUserEntry = await tx.userManga.findFirst({
@@ -2091,7 +2168,82 @@ export class IntegrationsService {
     partnerId: string,
     externalMangaId: string,
     title: string,
+    resolvedCatalogManga?: CatalogResolvedManga | null,
   ): Promise<Manga> {
+    if (resolvedCatalogManga) {
+      const existingByAniListId =
+        resolvedCatalogManga.anilistId !== null
+          ? await tx.manga.findUnique({
+              where: { anilistId: resolvedCatalogManga.anilistId },
+            })
+          : null;
+      if (existingByAniListId) {
+        return existingByAniListId;
+      }
+
+      const preferredMalIds: number[] = [];
+      if (
+        resolvedCatalogManga.malId !== null &&
+        Number.isFinite(resolvedCatalogManga.malId)
+      ) {
+        preferredMalIds.push(resolvedCatalogManga.malId);
+      } else if (
+        resolvedCatalogManga.anilistId !== null &&
+        Number.isFinite(resolvedCatalogManga.anilistId)
+      ) {
+        for (let attempt = 0; attempt < 4; attempt++) {
+          preferredMalIds.push(
+            this.buildCatalogFallbackMalId(
+              `anilist:${resolvedCatalogManga.anilistId}`,
+              attempt,
+            ),
+          );
+        }
+      }
+
+      for (const malId of preferredMalIds) {
+        const existing = await tx.manga.findUnique({
+          where: { malId },
+        });
+        if (existing) {
+          if (!existing.anilistId && resolvedCatalogManga.anilistId !== null) {
+            return tx.manga.update({
+              where: { id: existing.id },
+              data: {
+                anilistId: resolvedCatalogManga.anilistId,
+              },
+            });
+          }
+          return existing;
+        }
+
+        try {
+          return await tx.manga.create({
+            data: {
+              malId,
+              anilistId: resolvedCatalogManga.anilistId ?? null,
+              title: resolvedCatalogManga.title,
+              coverImage: resolvedCatalogManga.coverImage,
+              author: resolvedCatalogManga.author,
+              genres: resolvedCatalogManga.genres,
+              totalChapters: resolvedCatalogManga.totalChapters,
+              description: resolvedCatalogManga.description,
+              publicationStatus: resolvedCatalogManga.publicationStatus,
+            },
+          });
+        } catch (error) {
+          if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === 'P2002'
+          ) {
+            // Try the next malId candidate when unique constraint conflicts.
+            continue;
+          }
+          throw error;
+        }
+      }
+    }
+
     const maxAttempts = 8;
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const syntheticMalId = this.buildSyntheticMalId(
@@ -2122,6 +2274,320 @@ export class IntegrationsService {
     throw new ConflictException('Could not allocate synthetic manga id');
   }
 
+  private async resolveCanonicalMangaByTitle(
+    title: string,
+  ): Promise<CatalogResolvedManga | null> {
+    const normalizedTitle = this.normalizeTitleForMatching(title);
+    if (!normalizedTitle || normalizedTitle.length < 2) {
+      return null;
+    }
+
+    const cacheKey = `integration:manga-resolve:${normalizedTitle}`;
+    const cached =
+      await this.cacheManager.get<CatalogResolveCacheValue>(cacheKey);
+    if (cached) {
+      return cached.found ? cached.manga : null;
+    }
+
+    const fromJikan = await this.resolveFromJikan(title, normalizedTitle);
+    if (fromJikan) {
+      await this.cacheManager.set(
+        cacheKey,
+        { found: true, manga: fromJikan } satisfies CatalogResolveCacheValue,
+        12 * 60 * 60 * 1000,
+      );
+      return fromJikan;
+    }
+
+    const fromAniList = await this.resolveFromAniList(title, normalizedTitle);
+    if (fromAniList) {
+      await this.cacheManager.set(
+        cacheKey,
+        { found: true, manga: fromAniList } satisfies CatalogResolveCacheValue,
+        12 * 60 * 60 * 1000,
+      );
+      return fromAniList;
+    }
+
+    await this.cacheManager.set(
+      cacheKey,
+      { found: false } satisfies CatalogResolveCacheValue,
+      60 * 60 * 1000,
+    );
+    return null;
+  }
+
+  private async resolveFromJikan(
+    title: string,
+    normalizedTitle: string,
+  ): Promise<CatalogResolvedManga | null> {
+    const url = `${this.JIKAN_BASE_URL}/manga?q=${encodeURIComponent(title)}&limit=10`;
+    let response: Response;
+    try {
+      response = await fetch(url);
+    } catch (error) {
+      this.logger.warn(
+        `Jikan lookup failed for "${title}": ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
+      return null;
+    }
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json()) as JikanSearchResponse;
+    const candidates = payload.data ?? [];
+    if (!candidates.length) {
+      return null;
+    }
+
+    let bestItem: JikanSearchItem | null = null;
+    let bestScore = 0;
+    for (const item of candidates) {
+      const labels = this.collectJikanCandidateTitles(item);
+      const score = this.computeBestTitleScore(normalizedTitle, labels);
+      if (score > bestScore) {
+        bestScore = score;
+        bestItem = item;
+      }
+    }
+
+    if (!bestItem || bestScore < 0.45) {
+      return null;
+    }
+
+    const fallbackTitle =
+      bestItem.title_english?.trim() ||
+      bestItem.title?.trim() ||
+      bestItem.title_japanese?.trim() ||
+      title;
+
+    return {
+      title: fallbackTitle,
+      malId: bestItem.mal_id,
+      anilistId: null,
+      coverImage:
+        bestItem.images?.jpg?.large_image_url?.trim() ||
+        bestItem.images?.jpg?.image_url?.trim() ||
+        null,
+      genres: (bestItem.genres ?? [])
+        .map((genre) => (genre?.name ?? '').trim())
+        .filter((genre) => genre.length > 0),
+      totalChapters:
+        typeof bestItem.chapters === 'number' ? bestItem.chapters : null,
+      description: bestItem.synopsis?.trim() || null,
+      publicationStatus: bestItem.status?.trim() || null,
+      author:
+        (bestItem.authors ?? [])
+          .map((author) => (author?.name ?? '').trim())
+          .find((author) => author.length > 0) || null,
+    };
+  }
+
+  private async resolveFromAniList(
+    title: string,
+    normalizedTitle: string,
+  ): Promise<CatalogResolvedManga | null> {
+    const query = `
+      query ($search: String!, $perPage: Int!) {
+        Page(page: 1, perPage: $perPage) {
+          media(search: $search, type: MANGA, sort: SEARCH_MATCH) {
+            id
+            idMal
+            title {
+              romaji
+              english
+              native
+            }
+            synonyms
+            coverImage {
+              large
+              medium
+            }
+            genres
+            chapters
+            description(asHtml: false)
+            status
+            staff {
+              nodes {
+                name {
+                  full
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    let response: Response;
+    try {
+      response = await fetch(this.ANILIST_GRAPHQL_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          query,
+          variables: {
+            search: title,
+            perPage: 10,
+          },
+        }),
+      });
+    } catch (error) {
+      this.logger.warn(
+        `AniList lookup failed for "${title}": ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
+      return null;
+    }
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json()) as AniListSearchResponse;
+    const candidates = payload.data?.Page?.media ?? [];
+    if (!candidates.length) {
+      return null;
+    }
+
+    let bestItem: AniListSearchItem | null = null;
+    let bestScore = 0;
+    for (const item of candidates) {
+      const labels = this.collectAniListCandidateTitles(item);
+      const score = this.computeBestTitleScore(normalizedTitle, labels);
+      if (score > bestScore) {
+        bestScore = score;
+        bestItem = item;
+      }
+    }
+
+    if (!bestItem || bestScore < 0.45) {
+      return null;
+    }
+
+    const resolvedTitle =
+      bestItem.title?.english?.trim() ||
+      bestItem.title?.romaji?.trim() ||
+      bestItem.title?.native?.trim() ||
+      title;
+
+    return {
+      title: resolvedTitle,
+      malId:
+        typeof bestItem.idMal === 'number' && bestItem.idMal > 0
+          ? bestItem.idMal
+          : null,
+      anilistId: bestItem.id,
+      coverImage:
+        bestItem.coverImage?.large?.trim() ||
+        bestItem.coverImage?.medium?.trim() ||
+        null,
+      genres: (bestItem.genres ?? [])
+        .map((genre) => (genre ?? '').trim())
+        .filter((genre) => genre.length > 0),
+      totalChapters:
+        typeof bestItem.chapters === 'number' ? bestItem.chapters : null,
+      description: bestItem.description?.trim() || null,
+      publicationStatus: this.mapAniListStatus(bestItem.status),
+      author:
+        (bestItem.staff?.nodes ?? [])
+          .map((node) => node?.name?.full?.trim() ?? '')
+          .find((author) => author.length > 0) || null,
+    };
+  }
+
+  private collectJikanCandidateTitles(item: JikanSearchItem): string[] {
+    const titles = [
+      item.title,
+      item.title_english,
+      item.title_japanese,
+      ...(item.title_synonyms ?? []),
+      ...(item.titles ?? []).map((entry) => entry?.title ?? null),
+    ];
+    return titles
+      .map((value) => (value ?? '').trim())
+      .filter((value) => value.length > 0);
+  }
+
+  private collectAniListCandidateTitles(item: AniListSearchItem): string[] {
+    const titles = [
+      item.title?.english,
+      item.title?.romaji,
+      item.title?.native,
+      ...(item.synonyms ?? []),
+    ];
+    return titles
+      .map((value) => (value ?? '').trim())
+      .filter((value) => value.length > 0);
+  }
+
+  private normalizeTitleForMatching(value: string): string {
+    return value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private computeBestTitleScore(query: string, candidates: string[]): number {
+    let best = 0;
+
+    for (const rawCandidate of candidates) {
+      const candidate = this.normalizeTitleForMatching(rawCandidate);
+      if (!candidate) continue;
+      if (candidate === query) return 1;
+      if (candidate.startsWith(query) || query.startsWith(candidate)) {
+        best = Math.max(best, 0.9);
+      } else if (candidate.includes(query) || query.includes(candidate)) {
+        best = Math.max(best, 0.82);
+      }
+
+      const tokenScore = this.computeTokenJaccard(query, candidate);
+      best = Math.max(best, tokenScore);
+    }
+
+    return best;
+  }
+
+  private computeTokenJaccard(left: string, right: string): number {
+    const leftTokens = new Set(left.split(' ').filter(Boolean));
+    const rightTokens = new Set(right.split(' ').filter(Boolean));
+    if (leftTokens.size === 0 || rightTokens.size === 0) return 0;
+
+    let intersection = 0;
+    for (const token of leftTokens) {
+      if (rightTokens.has(token)) {
+        intersection++;
+      }
+    }
+
+    const union = new Set([...leftTokens, ...rightTokens]).size;
+    return union === 0 ? 0 : intersection / union;
+  }
+
+  private mapAniListStatus(status: string | null | undefined): string | null {
+    if (!status) return null;
+    if (status === 'RELEASING') return 'Publishing';
+    if (status === 'FINISHED') return 'Finished';
+    if (status === 'HIATUS') return 'On Hiatus';
+    if (status === 'CANCELLED') return 'Discontinued';
+    return null;
+  }
+
+  private buildCatalogFallbackMalId(key: string, attempt: number): number {
+    const digest = createHash('sha256')
+      .update(`catalog:${key}:${attempt}`)
+      .digest();
+    const value = digest.readUInt32BE(0) % 2_000_000_000;
+    return -(value + 1);
+  }
+
   private buildSyntheticMalId(
     partnerId: string,
     externalMangaId: string,
@@ -2137,7 +2603,9 @@ export class IntegrationsService {
   private normalizeExternalTitle(value: string): string {
     return value
       .replace(/\s*[-|]\s*(mangalivre|manga livre)\s*$/i, '')
-      .replace(/\s*[-|]\s*cap[ií]tulo\s+\d+.*$/i, '')
+      .replace(/\s*[-|]\s*cap(?:i|\u00ed)tulo\s+\d+.*$/i, '')
+      .replace(/\s*[-|]\s*chapter\s+\d+.*$/i, '')
+      .replace(/\s*[-|]\s*ch\.?\s*\d+.*$/i, '')
       .replace(/\s+/g, ' ')
       .trim();
   }

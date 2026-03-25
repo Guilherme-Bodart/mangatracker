@@ -91,13 +91,19 @@ export class MangaSearchService {
     }
 
     try {
-      let url = `${this.JIKAN_BASE_URL}/manga?page=${page}&limit=20&order_by=members&sort=desc`;
+      const normalizedQuery = query?.trim();
+      let url = `${this.JIKAN_BASE_URL}/manga?page=${page}&limit=20`;
+      if (!normalizedQuery) {
+        // For empty queries, keep popular ordering.
+        url += '&order_by=members&sort=desc';
+      }
       if (!allowNsfw) {
         url += '&sfw=true';
       }
 
-      if (query) {
-        url += `&q=${encodeURIComponent(query)}`;
+      if (normalizedQuery) {
+        // When searching by text, let Jikan relevance rank the results.
+        url += `&q=${encodeURIComponent(normalizedQuery)}`;
       }
 
       if (type) {

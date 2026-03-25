@@ -9,6 +9,7 @@ const MAX_RETRY_DELAY_MS = 60 * 60_000;
 const MAX_ATTEMPTS = 20;
 const SYNC_REQUEST_TIMEOUT_MS = 15_000;
 const EXTERNAL_CONNECT_MESSAGE_TYPE = "MANGA_TRACKER_CONNECT_CODE";
+const DYNAMIC_CONTENT_SCRIPT_ID = "manga-tracker-dynamic-content";
 
 let drainQueuePromise = null;
 let queueLock = Promise.resolve();
@@ -141,6 +142,135 @@ function normalizeApiBaseUrl(rawValue) {
 
 function normalizeDomain(value) {
   return String(value || "").trim().toLowerCase();
+}
+
+function stripDomainInput(value) {
+  return normalizeDomain(value)
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "")
+    .replace(/:\d+$/, "")
+    .trim();
+}
+
+function buildOriginPatternsForDomain(domain) {
+  const cleaned = stripDomainInput(domain);
+  if (!cleaned) {
+    return [];
+  }
+
+  const patterns = new Set();
+
+  if (cleaned.startsWith("*.")) {
+    const base = cleaned.slice(2);
+    if (!base) return [];
+    patterns.add(`*://*.${base}/*`);
+    patterns.add(`*://${base}/*`);
+    return Array.from(patterns);
+  }
+
+  patterns.add(`*://${cleaned}/*`);
+  if (!cleaned.startsWith("www.")) {
+    patterns.add(`*://www.${cleaned}/*`);
+  }
+
+  return Array.from(patterns);
+}
+
+function buildEnabledOrigins(config) {
+  if (!config?.enabled) {
+    return [];
+  }
+
+  const enabledPartnerSlugs = Array.isArray(config.enabledPartnerSlugs)
+    ? config.enabledPartnerSlugs
+    : [];
+  const partnerDomainsMap =
+    config.partnerDomainsMap && typeof config.partnerDomainsMap === "object"
+      ? config.partnerDomainsMap
+      : {};
+
+  const origins = new Set();
+  for (const slug of enabledPartnerSlugs) {
+    const domains = Array.isArray(partnerDomainsMap[slug]) ? partnerDomainsMap[slug] : [];
+    for (const domain of domains) {
+      for (const pattern of buildOriginPatternsForDomain(domain)) {
+        origins.add(pattern);
+      }
+    }
+  }
+
+  return Array.from(origins);
+}
+
+async function filterGrantedOrigins(origins) {
+  if (!Array.isArray(origins) || origins.length === 0) {
+    return [];
+  }
+
+  if (!chrome.permissions?.contains) {
+    return origins;
+  }
+
+  const granted = [];
+  for (const origin of origins) {
+    try {
+      const has = await chrome.permissions.contains({ origins: [origin] });
+      if (has) {
+        granted.push(origin);
+      }
+    } catch {
+      // Ignore malformed/unsupported origin patterns.
+    }
+  }
+
+  return granted;
+}
+
+async function syncDynamicContentScript(trigger = "unknown") {
+  if (!chrome.scripting?.registerContentScripts) {
+    return;
+  }
+
+  const config = await chrome.storage.sync.get([
+    "enabled",
+    "enabledPartnerSlugs",
+    "partnerDomainsMap",
+  ]);
+
+  const desiredOrigins = buildEnabledOrigins(config);
+  const grantedOrigins = await filterGrantedOrigins(desiredOrigins);
+
+  const existing = await chrome.scripting
+    .getRegisteredContentScripts({ ids: [DYNAMIC_CONTENT_SCRIPT_ID] })
+    .catch(() => []);
+
+  if (grantedOrigins.length === 0) {
+    if (existing.length > 0) {
+      await chrome.scripting.unregisterContentScripts({
+        ids: [DYNAMIC_CONTENT_SCRIPT_ID],
+      });
+    }
+    return;
+  }
+
+  const scriptDefinition = {
+    id: DYNAMIC_CONTENT_SCRIPT_ID,
+    js: ["src/adapters.js", "src/content.js"],
+    matches: grantedOrigins,
+    runAt: "document_idle",
+    persistAcrossSessions: true,
+  };
+
+  if (existing.length > 0) {
+    await chrome.scripting.updateContentScripts([scriptDefinition]);
+  } else {
+    await chrome.scripting.registerContentScripts([scriptDefinition]);
+  }
+
+  console.log("Content script sync completed", {
+    trigger,
+    origins: grantedOrigins.length,
+  });
 }
 
 function toNonEmptyString(value, maxLength = 500) {
@@ -640,10 +770,12 @@ chrome.runtime.onMessageExternal.addListener((message, _sender, sendResponse) =>
 });
 
 chrome.runtime.onStartup.addListener(() => {
+  void syncDynamicContentScript("startup");
   void drainQueue("startup");
 });
 
 chrome.runtime.onInstalled.addListener(() => {
+  void syncDynamicContentScript("installed");
   void drainQueue("installed");
 });
 
@@ -652,3 +784,25 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     void drainQueue("alarm");
   }
 });
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== "sync") return;
+
+  if (
+    changes.enabled ||
+    changes.enabledPartnerSlugs ||
+    changes.partnerDomainsMap
+  ) {
+    void syncDynamicContentScript("storage-change");
+  }
+});
+
+chrome.permissions?.onAdded?.addListener(() => {
+  void syncDynamicContentScript("permission-added");
+});
+
+chrome.permissions?.onRemoved?.addListener(() => {
+  void syncDynamicContentScript("permission-removed");
+});
+
+void syncDynamicContentScript("boot");

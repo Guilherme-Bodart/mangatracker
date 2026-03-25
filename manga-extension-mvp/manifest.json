@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extName__",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "description": "__MSG_extDescription__",
   "default_locale": "pt_BR",
-  "permissions": ["storage", "alarms"],
-  "host_permissions": ["*://mangalivre.tv/*", "*://www.mangalivre.tv/*"],
+  "permissions": ["storage", "alarms", "permissions", "scripting"],
+  "optional_host_permissions": ["<all_urls>"],
   "externally_connectable": {
     "matches": [
       "https://mangastracker.vercel.app/*",
@@ -39,14 +39,7 @@
       "48": "assets/icons/icon-48.png",
       "128": "assets/icons/icon-128.png"
     }
-  },
-  "content_scripts": [
-    {
-      "matches": ["*://mangalivre.tv/*", "*://www.mangalivre.tv/*"],
-      "js": ["src/adapters.js", "src/content.js"],
-      "run_at": "document_idle"
-    }
-  ]
+  }
 }
 
 

@@ -118,22 +118,27 @@ export class TasksService {
 
     for (const manga of mangasToEnrich) {
       try {
-        const { descriptionEn, descriptionPt, publicationStatusFromMangaDex } =
-          await this.fetchDescriptionsAndStatusFromMangaDex(manga.title);
+        const {
+          descriptionEn,
+          descriptionPt,
+          publicationStatusFromMangaDex,
+          mangaDexCoverImage,
+        } = await this.fetchDescriptionsAndStatusFromMangaDex(manga.title);
         const jikan = await this.searchJikanByTitle(manga.title);
-        const anilist = jikan ? null : await this.searchAniListByTitle(manga.title);
+        const anilist = await this.searchAniListByTitle(manga.title);
 
         const nextDescription =
           manga.description ??
-          descriptionEn ??
           jikan?.synopsis ??
           anilist?.description ??
+          descriptionEn ??
           null;
         const nextDescriptionPt = manga.descriptionPt ?? descriptionPt ?? null;
         const nextCoverImage = this.selectPreferredCoverImage(
           manga.coverImage,
           jikan?.images?.jpg?.large_image_url ?? jikan?.images?.jpg?.image_url,
           anilist?.coverImage?.large ?? anilist?.coverImage?.medium,
+          mangaDexCoverImage,
         );
         const nextAuthor =
           manga.author ??
@@ -154,9 +159,9 @@ export class TasksService {
               : aniListGenres;
         const nextPublicationStatus =
           manga.publicationStatus ??
-          publicationStatusFromMangaDex ??
           jikan?.status ??
           this.mapAniListStatus(anilist?.status ?? null) ??
+          publicationStatusFromMangaDex ??
           null;
         const nextMalId = await this.resolveMalIdCandidate(
           manga.id,
@@ -284,6 +289,7 @@ export class TasksService {
     descriptionEn: string | null;
     descriptionPt: string | null;
     publicationStatusFromMangaDex: string | null;
+    mangaDexCoverImage: string | null;
   }> {
     try {
       const dexManga = await this.mangaDexService.searchMangaByTitle(title);
@@ -292,12 +298,14 @@ export class TasksService {
           descriptionEn: null,
           descriptionPt: null,
           publicationStatusFromMangaDex: null,
+          mangaDexCoverImage: null,
         };
       }
 
-      const descriptions = await this.mangaDexService.getDescriptions(
-        dexManga.id,
-      );
+      const [descriptions, mangaDexCoverImage] = await Promise.all([
+        this.mangaDexService.getDescriptions(dexManga.id),
+        this.mangaDexService.getCoverImageUrl(dexManga.id),
+      ]);
 
       return {
         descriptionEn: descriptions.en,
@@ -305,12 +313,14 @@ export class TasksService {
         publicationStatusFromMangaDex: this.mapMangaDexStatus(
           dexManga.attributes.status ?? null,
         ),
+        mangaDexCoverImage: mangaDexCoverImage?.trim() || null,
       };
     } catch {
       return {
         descriptionEn: null,
         descriptionPt: null,
         publicationStatusFromMangaDex: null,
+        mangaDexCoverImage: null,
       };
     }
   }
@@ -319,9 +329,10 @@ export class TasksService {
     existingCover: string | null | undefined,
     jikanCover: string | null | undefined,
     aniListCover: string | null | undefined,
+    mangaDexCover: string | null | undefined,
   ): string | null {
     const safeExisting = this.normalizeCoverUrl(existingCover);
-    if (safeExisting && !this.isBlockedCoverHost(safeExisting)) {
+    if (safeExisting) {
       return safeExisting;
     }
 
@@ -330,6 +341,9 @@ export class TasksService {
 
     const safeAniList = this.normalizeCoverUrl(aniListCover);
     if (safeAniList) return safeAniList;
+
+    const safeMangaDex = this.normalizeCoverUrl(mangaDexCover);
+    if (safeMangaDex) return safeMangaDex;
 
     return null;
   }
@@ -346,15 +360,6 @@ export class TasksService {
       return parsed.toString();
     } catch {
       return null;
-    }
-  }
-
-  private isBlockedCoverHost(url: string): boolean {
-    try {
-      const host = new URL(url).hostname.toLowerCase();
-      return host === 'uploads.mangadex.org' || host.endsWith('.mangadex.org');
-    } catch {
-      return false;
     }
   }
 

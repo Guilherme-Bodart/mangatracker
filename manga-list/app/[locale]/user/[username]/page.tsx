@@ -74,10 +74,7 @@ function resolveSafeCoverImage(
 
   try {
     const parsed = new URL(normalized);
-    const host = parsed.hostname.toLowerCase();
-    const isBlockedHost =
-      host === "uploads.mangadex.org" || host.endsWith(".mangadex.org");
-    return isBlockedHost ? fallback : parsed.toString();
+    return parsed.toString();
   } catch {
     return fallback;
   }
@@ -423,21 +420,21 @@ export default function PublicProfilePage() {
                       }}
                     />
 
-                    <div className="absolute inset-0 bg-black/5 transition-colors duration-200 group-hover:bg-black/35" />
-                    <button
-                      type="button"
-                      className="absolute inset-0 z-[2] flex items-center justify-center px-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        void handleCopyMangaTitle(item.manga.title);
-                      }}
-                      title={t("details.copyTitle")}
-                      aria-label={t("details.copyTitle")}
-                    >
-                      <span className="max-w-full rounded-md bg-black/80 px-3 py-2 text-center text-xs font-semibold leading-tight text-white shadow-lg ring-1 ring-white/20 backdrop-blur-sm line-clamp-3">
+                    <div className="pointer-events-none absolute inset-0 bg-black/5 transition-colors duration-200 group-hover:bg-black/35" />
+                    <div className="pointer-events-none absolute inset-0 z-[2] flex items-center justify-center px-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                      <button
+                        type="button"
+                        className="pointer-events-auto max-w-full rounded-md bg-black/80 px-3 py-2 text-center text-xs font-semibold leading-tight text-white shadow-lg ring-1 ring-white/20 backdrop-blur-sm line-clamp-3"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void handleCopyMangaTitle(item.manga.title);
+                        }}
+                        title={t("details.copyTitle")}
+                        aria-label={t("details.copyTitle")}
+                      >
                         {item.manga.title}
-                      </span>
-                    </button>
+                      </button>
+                    </div>
 
                     {/* Favorite Heart Overlay */}
                     {item.isFavorite && (

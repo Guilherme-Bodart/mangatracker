@@ -94,6 +94,12 @@ describe('IntegrationsService', () => {
     sendIntegrationApprovedEmail: jest.fn(),
   };
 
+  const mangaDexService = {
+    searchMangaByTitle: jest.fn(),
+    getDescriptions: jest.fn(),
+    getCoverImageUrl: jest.fn(),
+  };
+
   let service: IntegrationsService;
 
   beforeEach(() => {
@@ -114,6 +120,9 @@ describe('IntegrationsService', () => {
     prisma.integrationWebhookDeliveryLog.groupBy.mockResolvedValue([]);
     prisma.integrationWebhookDeliveryLog.findMany.mockResolvedValue([]);
     prisma.integrationSecretUsageLog.groupBy.mockResolvedValue([]);
+    mangaDexService.searchMangaByTitle.mockResolvedValue(null);
+    mangaDexService.getDescriptions.mockResolvedValue({ en: null, pt: null });
+    mangaDexService.getCoverImageUrl.mockResolvedValue(null);
     prisma.$transaction.mockImplementation(
       async (callback: (value: typeof tx) => Promise<unknown>) => callback(tx),
     );
@@ -123,6 +132,7 @@ describe('IntegrationsService', () => {
       configService as never,
       cacheManager as never,
       mailService as never,
+      mangaDexService as never,
     );
   });
 

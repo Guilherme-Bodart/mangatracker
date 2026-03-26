@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthModule } from '../auth/auth.module';
 import { MailModule } from '../mail/mail.module';
+import { MangaDexModule } from '../mangadex/mangadex.module';
 import { IntegrationsController } from './integrations.controller';
 import { IntegrationAdminGuard } from './guards/integration-admin.guard';
 import { IntegrationRateLimitGuard } from './guards/integration-rate-limit.guard';
@@ -13,6 +14,7 @@ import { IntegrationsService } from './integrations.service';
   imports: [
     AuthModule,
     MailModule,
+    MangaDexModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({

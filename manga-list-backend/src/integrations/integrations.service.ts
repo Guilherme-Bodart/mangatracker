@@ -27,6 +27,7 @@ import { createHash, createHmac, randomBytes } from 'crypto';
 import * as dns from 'dns/promises';
 import { CACHE_TTL_MS } from '../cache/cache-ttl.constants';
 import { MailService } from '../mail/mail.service';
+import { MangaDexService } from '../mangadex/mangadex.service';
 import {
   recordIntegrationExchangeResult,
   recordIntegrationSyncOutcome,
@@ -150,6 +151,7 @@ export class IntegrationsService {
     private readonly configService: ConfigService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly mailService: MailService,
+    private readonly mangaDexService: MangaDexService,
   ) {}
 
   async listPartners() {
@@ -2309,6 +2311,16 @@ export class IntegrationsService {
       return fromAniList;
     }
 
+    const fromMangaDex = await this.resolveFromMangaDex(title);
+    if (fromMangaDex) {
+      await this.cacheManager.set(
+        cacheKey,
+        { found: true, manga: fromMangaDex } satisfies CatalogResolveCacheValue,
+        12 * 60 * 60 * 1000,
+      );
+      return fromMangaDex;
+    }
+
     await this.cacheManager.set(
       cacheKey,
       { found: false } satisfies CatalogResolveCacheValue,
@@ -2500,6 +2512,52 @@ export class IntegrationsService {
     };
   }
 
+  private async resolveFromMangaDex(
+    title: string,
+  ): Promise<CatalogResolvedManga | null> {
+    let dexManga: Awaited<ReturnType<MangaDexService['searchMangaByTitle']>>;
+    try {
+      dexManga = await this.mangaDexService.searchMangaByTitle(title);
+    } catch (error) {
+      this.logger.warn(
+        `MangaDex lookup failed for "${title}": ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
+      return null;
+    }
+
+    if (!dexManga) {
+      return null;
+    }
+
+    const [descriptions, coverImage] = await Promise.all([
+      this.mangaDexService.getDescriptions(dexManga.id),
+      this.mangaDexService.getCoverImageUrl(dexManga.id),
+    ]);
+
+    const totalChaptersRaw = dexManga.attributes.lastChapter?.trim();
+    const parsedTotalChapters = totalChaptersRaw
+      ? Number.parseInt(totalChaptersRaw, 10)
+      : Number.NaN;
+
+    return {
+      title,
+      malId: this.buildCatalogFallbackMalId(`mangadex:${dexManga.id}`, 0),
+      anilistId: null,
+      coverImage: coverImage?.trim() || null,
+      genres: [],
+      totalChapters:
+        Number.isFinite(parsedTotalChapters) && parsedTotalChapters > 0
+          ? parsedTotalChapters
+          : null,
+      description:
+        descriptions.en?.trim() || descriptions.pt?.trim() || null,
+      publicationStatus: this.mapMangaDexStatus(
+        dexManga.attributes.status ?? null,
+      ),
+      author: null,
+    };
+  }
+
   private collectJikanCandidateTitles(item: JikanSearchItem): string[] {
     const titles = [
       item.title,
@@ -2577,6 +2635,15 @@ export class IntegrationsService {
     if (status === 'FINISHED') return 'Finished';
     if (status === 'HIATUS') return 'On Hiatus';
     if (status === 'CANCELLED') return 'Discontinued';
+    return null;
+  }
+
+  private mapMangaDexStatus(status: string | null | undefined): string | null {
+    if (!status) return null;
+    if (status === 'ongoing') return 'Publishing';
+    if (status === 'completed') return 'Finished';
+    if (status === 'hiatus') return 'On Hiatus';
+    if (status === 'cancelled') return 'Discontinued';
     return null;
   }
 

@@ -59,10 +59,7 @@ function resolveSafeCoverImage(
 
   try {
     const parsed = new URL(normalized);
-    const host = parsed.hostname.toLowerCase();
-    const isBlockedHost =
-      host === "uploads.mangadex.org" || host.endsWith(".mangadex.org");
-    return isBlockedHost ? fallback : parsed.toString();
+    return parsed.toString();
   } catch {
     return fallback;
   }

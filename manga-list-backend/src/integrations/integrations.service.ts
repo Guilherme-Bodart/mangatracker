@@ -2291,16 +2291,6 @@ export class IntegrationsService {
       return cached.found ? cached.manga : null;
     }
 
-    const fromJikan = await this.resolveFromJikan(title, normalizedTitle);
-    if (fromJikan) {
-      await this.cacheManager.set(
-        cacheKey,
-        { found: true, manga: fromJikan } satisfies CatalogResolveCacheValue,
-        12 * 60 * 60 * 1000,
-      );
-      return fromJikan;
-    }
-
     const fromAniList = await this.resolveFromAniList(title, normalizedTitle);
     if (fromAniList) {
       await this.cacheManager.set(
@@ -2309,6 +2299,16 @@ export class IntegrationsService {
         12 * 60 * 60 * 1000,
       );
       return fromAniList;
+    }
+
+    const fromJikan = await this.resolveFromJikan(title, normalizedTitle);
+    if (fromJikan) {
+      await this.cacheManager.set(
+        cacheKey,
+        { found: true, manga: fromJikan } satisfies CatalogResolveCacheValue,
+        12 * 60 * 60 * 1000,
+      );
+      return fromJikan;
     }
 
     const fromMangaDex = await this.resolveFromMangaDex(title);

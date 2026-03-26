@@ -80,7 +80,7 @@ export default function BrowsePage() {
   const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
   const [genreMode, setGenreMode] = useState<"OR" | "AND">("OR");
   const [selectedType, setSelectedType] = useState<string>("all");
-  const [provider, setProvider] = useState<"jikan" | "anilist">("jikan");
+  const [provider, setProvider] = useState<"jikan" | "anilist">("anilist");
   const [page, setPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [mangas, setMangas] = useState<Manga[]>([]);

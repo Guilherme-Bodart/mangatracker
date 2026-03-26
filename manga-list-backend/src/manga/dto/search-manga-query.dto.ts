@@ -82,5 +82,5 @@ export class SearchMangaQueryDto {
   @IsEnum(MangaSearchProvider, {
     message: 'provider must be jikan or anilist',
   })
-  provider: MangaSearchProvider = MangaSearchProvider.JIKAN;
+  provider: MangaSearchProvider = MangaSearchProvider.ANILIST;
 }

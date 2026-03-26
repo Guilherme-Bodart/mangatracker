@@ -1251,7 +1251,10 @@ export class IntegrationsService {
       throw new ForbiddenException('Missing manga:write scope');
     }
 
-    const normalizedTitle = this.normalizeExternalTitle(dto.title);
+    const normalizedTitle = this.selectPreferredSyncTitle(
+      dto.title,
+      dto.externalMangaId,
+    );
     const resolvedCatalogManga =
       await this.resolveCanonicalMangaByTitle(normalizedTitle);
 
@@ -2675,6 +2678,45 @@ export class IntegrationsService {
       .replace(/\s*[-|]\s*ch\.?\s*\d+.*$/i, '')
       .replace(/\s+/g, ' ')
       .trim();
+  }
+
+  private buildTitleFromExternalMangaId(externalMangaId: string): string {
+    return String(externalMangaId || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private selectPreferredSyncTitle(
+    rawTitle: string,
+    externalMangaId: string,
+  ): string {
+    const normalizedTitle = this.normalizeExternalTitle(rawTitle);
+    const slugBasedTitle = this.normalizeExternalTitle(
+      this.buildTitleFromExternalMangaId(externalMangaId),
+    );
+
+    if (!normalizedTitle) {
+      return slugBasedTitle;
+    }
+    if (!slugBasedTitle) {
+      return normalizedTitle;
+    }
+
+    const normalizedTitleForMatch =
+      this.normalizeTitleForMatching(normalizedTitle);
+    const slugTitleForMatch = this.normalizeTitleForMatching(slugBasedTitle);
+    const jaccard = this.computeTokenJaccard(
+      normalizedTitleForMatch,
+      slugTitleForMatch,
+    );
+    const isContains =
+      normalizedTitleForMatch.includes(slugTitleForMatch) ||
+      slugTitleForMatch.includes(normalizedTitleForMatch);
+
+    return jaccard >= 0.4 || isContains ? normalizedTitle : slugBasedTitle;
   }
 
   private async logSyncEvent(

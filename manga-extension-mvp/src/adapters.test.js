@@ -74,6 +74,31 @@ test("parseMangaLivre returns stable payload", () => {
   });
 });
 
+test("parseMangaLivre ignores mismatched metadata and trusts slug", () => {
+  const documentRef = createDocument({
+    title: "Magic - Capitulo 833",
+    selectors: {
+      "meta[property='og:title']": createNode({
+        content: "Magic - Capitulo 833",
+      }),
+      h1: createNode({ textContent: "Magic" }),
+    },
+  });
+
+  const payload = parseMangaLivre(documentRef, {
+    hostname: "mangalivre.tv",
+    pathname: "/manga/the-devil-butler/capitulo-833/",
+    protocol: "https:",
+  });
+
+  assert.deepEqual(payload, {
+    title: "The Devil Butler",
+    chapter: 833,
+    externalMangaId: "the-devil-butler",
+    sourceDomain: "mangalivre.tv",
+  });
+});
+
 test("parseGeneric extracts chapter from path when hints are missing", () => {
   const documentRef = createDocument({
     title: "My Hero Academia",

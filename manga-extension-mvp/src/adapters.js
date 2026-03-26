@@ -66,6 +66,45 @@ function parseChapterFromPath(pathname) {
   return parseChapterFromText(normalizedPath, { allowPlainNumber: false });
 }
 
+function computeTokenJaccard(left, right) {
+  const leftTokens = new Set(normalizeTextForMatching(left).split(" ").filter(Boolean));
+  const rightTokens = new Set(normalizeTextForMatching(right).split(" ").filter(Boolean));
+  if (leftTokens.size === 0 || rightTokens.size === 0) {
+    return 0;
+  }
+
+  let intersection = 0;
+  for (const token of leftTokens) {
+    if (rightTokens.has(token)) {
+      intersection += 1;
+    }
+  }
+
+  const union = new Set([...leftTokens, ...rightTokens]).size;
+  return union === 0 ? 0 : intersection / union;
+}
+
+function isLikelySameMangaTitle(left, right) {
+  const normalizedLeft = normalizeTextForMatching(left);
+  const normalizedRight = normalizeTextForMatching(right);
+  if (!normalizedLeft || !normalizedRight) {
+    return false;
+  }
+
+  if (normalizedLeft === normalizedRight) {
+    return true;
+  }
+
+  if (
+    normalizedLeft.includes(normalizedRight) ||
+    normalizedRight.includes(normalizedLeft)
+  ) {
+    return true;
+  }
+
+  return computeTokenJaccard(normalizedLeft, normalizedRight) >= 0.5;
+}
+
 function slugify(value) {
   return normalizeTextForMatching(value)
     .replace(/[^a-z0-9]+/g, "-")
@@ -162,13 +201,19 @@ function parseMangaLivre(documentRef, locationRef) {
   );
   const h1Title = readNodeText(documentRef?.querySelector?.("h1"));
   const pageTitle = normalizeWhitespace(documentRef?.title);
+  const slugTitle = titleizeSlug(mangaSlug);
 
-  const title =
-    sanitizeMangaTitle(ogTitle) ||
-    sanitizeMangaTitle(h1Title) ||
-    sanitizeMangaTitle(pageTitle) ||
-    titleizeSlug(mangaSlug);
+  const normalizedHeadingTitle = sanitizeMangaTitle(h1Title);
+  const normalizedOgTitle = sanitizeMangaTitle(ogTitle);
+  const normalizedPageTitle = sanitizeMangaTitle(pageTitle);
 
+  const trustedCandidates = [
+    normalizedHeadingTitle,
+    normalizedOgTitle,
+    normalizedPageTitle,
+  ].filter((candidate) => isLikelySameMangaTitle(candidate, slugTitle));
+
+  const title = trustedCandidates[0] || slugTitle;
   if (!title) {
     return null;
   }

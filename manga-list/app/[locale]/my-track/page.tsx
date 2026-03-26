@@ -48,6 +48,26 @@ interface UserManga {
   manga: Manga;
 }
 
+function resolveSafeCoverImage(
+  coverImage: string | null | undefined,
+  fallback: string,
+): string {
+  const normalized = String(coverImage || "").trim();
+  if (!normalized) {
+    return fallback;
+  }
+
+  try {
+    const parsed = new URL(normalized);
+    const host = parsed.hostname.toLowerCase();
+    const isBlockedHost =
+      host === "uploads.mangadex.org" || host.endsWith(".mangadex.org");
+    return isBlockedHost ? fallback : parsed.toString();
+  } catch {
+    return fallback;
+  }
+}
+
 export default function MyTrackPage() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
@@ -422,9 +442,12 @@ function MangaCard({
     <div className="group relative overflow-hidden rounded-lg border bg-card transition-all hover:shadow-lg hover:border-primary/50">
       <div className="aspect-[3/4] relative overflow-hidden">
         <img
-          src={manga.coverImage || "/placeholder-manga.png"}
+          src={resolveSafeCoverImage(manga.coverImage, "/placeholder-manga.png")}
           alt={manga.title}
           className="w-full h-full object-cover transition-transform group-hover:scale-105"
+          onError={(event) => {
+            event.currentTarget.src = "/placeholder-manga.png";
+          }}
         />
 
         {/* Favorite Toggle */}

@@ -45,6 +45,8 @@ const I18N = {
     statusDiagnosticsLoadError: "Diagnostics failed",
     statusDiagnosticsDrainOk: "Queue retry started.",
     statusDiagnosticsDrainError: "Failed to retry queue",
+    statusPermissionRequired: "Site permission is required to sync this partner.",
+    statusPermissionDenied: "Site permission denied.",
   },
   pt: {
     subtitle: "Escolha os sites que podem sincronizar leitura.",
@@ -89,6 +91,8 @@ const I18N = {
     statusDiagnosticsLoadError: "Falha no diagnóstico",
     statusDiagnosticsDrainOk: "Retry da fila iniciado.",
     statusDiagnosticsDrainError: "Falha ao reprocessar fila",
+    statusPermissionRequired: "Permissão de site necessária para sincronizar este parceiro.",
+    statusPermissionDenied: "Permissão de site negada.",
   },
 };
 
@@ -113,6 +117,70 @@ function t(key) {
 
 function normalizeDomain(value) {
   return String(value || "").trim().toLowerCase();
+}
+
+function stripDomainInput(value) {
+  return normalizeDomain(value)
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "")
+    .replace(/:\d+$/, "")
+    .trim();
+}
+
+function buildOriginPatternsForDomain(domain) {
+  const cleaned = stripDomainInput(domain);
+  if (!cleaned) {
+    return [];
+  }
+
+  const patterns = new Set();
+
+  if (cleaned.startsWith("*.")) {
+    const base = cleaned.slice(2);
+    if (!base) return [];
+    patterns.add(`*://*.${base}/*`);
+    patterns.add(`*://${base}/*`);
+    return Array.from(patterns);
+  }
+
+  patterns.add(`*://${cleaned}/*`);
+  if (!cleaned.startsWith("www.")) {
+    patterns.add(`*://www.${cleaned}/*`);
+  }
+
+  return Array.from(patterns);
+}
+
+function buildPartnerOriginPatterns(partner) {
+  if (!partner || !Array.isArray(partner.allowedDomains)) {
+    return [];
+  }
+
+  const origins = new Set();
+  for (const domain of partner.allowedDomains) {
+    for (const origin of buildOriginPatternsForDomain(domain)) {
+      origins.add(origin);
+    }
+  }
+  return Array.from(origins);
+}
+
+async function ensurePartnerOriginsPermission(partner) {
+  const origins = buildPartnerOriginPatterns(partner);
+  if (origins.length === 0) {
+    return true;
+  }
+
+  if (!chrome.permissions?.request || !chrome.permissions?.contains) {
+    return true;
+  }
+
+  const hasAll = await chrome.permissions.contains({ origins });
+  if (hasAll) {
+    return true;
+  }
+
+  return chrome.permissions.request({ origins });
 }
 
 function normalizeUrl(value) {
@@ -574,6 +642,12 @@ async function connectAccount(partners = state.partners) {
     return;
   }
 
+  const permissionGranted = await ensurePartnerOriginsPermission(partner);
+  if (!permissionGranted) {
+    setStatusFromKey("statusPermissionDenied", "err");
+    return;
+  }
+
   const saved = await persistState(partners);
   const directToken = extractBearerToken(connectCodeOrToken);
   if (directToken) {
@@ -754,6 +828,18 @@ async function init() {
   });
 
   byId("partnersList").addEventListener("change", async () => {
+    const toggles = Array.from(document.querySelectorAll("input[data-partner-slug]"));
+    for (const checkbox of toggles) {
+      if (!checkbox.checked) continue;
+      const partner = findPartner(state.partners, checkbox.dataset.partnerSlug);
+      if (!partner) continue;
+      const granted = await ensurePartnerOriginsPermission(partner);
+      if (!granted) {
+        checkbox.checked = false;
+        setStatusFromKey("statusPermissionRequired", "err");
+      }
+    }
+
     const updated = await persistState();
     const nextEnabledSet = new Set(updated.enabledPartnerSlugs);
     renderConnectSelect(state.partners, nextEnabledSet, byId("connectPartnerSlug").value);

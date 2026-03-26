@@ -596,6 +596,7 @@
       "genres": "Gêneros",
       "synopsis": "Sinopse",
       "bannerAlt": "Banner",
+      "copyTitle": "Clique para copiar o titulo do manga",
       "publicationStatusValues": {
         "publishing": "Em lançamento",
         "finished": "Completo",
@@ -607,7 +608,9 @@
     "empty": "Nenhum mangá na lista ainda",
     "messages": {
       "loadProfileError": "Não foi possível carregar o perfil",
-      "toggleLikeError": "Não foi possível atualizar a curtida"
+      "toggleLikeError": "Não foi possível atualizar a curtida",
+      "copyTitleSuccess": "Titulo do manga copiado",
+      "copyTitleError": "Nao foi possivel copiar o titulo do manga"
     },
     "genres": {
       "action": "Ação",

@@ -595,6 +595,7 @@
       "genres": "Genres",
       "synopsis": "Synopsis",
       "bannerAlt": "Banner",
+      "copyTitle": "Click to copy manga title",
       "publicationStatusValues": {
         "publishing": "Publishing",
         "finished": "Finished",
@@ -606,7 +607,9 @@
     "empty": "No manga in the list yet",
     "messages": {
       "loadProfileError": "Could not load profile",
-      "toggleLikeError": "Could not update like"
+      "toggleLikeError": "Could not update like",
+      "copyTitleSuccess": "Manga title copied",
+      "copyTitleError": "Could not copy manga title"
     },
     "genres": {
       "action": "Action",

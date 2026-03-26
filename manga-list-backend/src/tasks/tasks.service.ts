@@ -118,13 +118,8 @@ export class TasksService {
 
     for (const manga of mangasToEnrich) {
       try {
-        const {
-          descriptionEn,
-          descriptionPt,
-          coverFromMangaDex,
-          publicationStatusFromMangaDex,
-        } =
-          await this.fetchDescriptionsAndCoverFromMangaDex(manga.title);
+        const { descriptionEn, descriptionPt, publicationStatusFromMangaDex } =
+          await this.fetchDescriptionsAndStatusFromMangaDex(manga.title);
         const jikan = await this.searchJikanByTitle(manga.title);
         const anilist = jikan ? null : await this.searchAniListByTitle(manga.title);
 
@@ -135,14 +130,11 @@ export class TasksService {
           anilist?.description ??
           null;
         const nextDescriptionPt = manga.descriptionPt ?? descriptionPt ?? null;
-        const nextCoverImage =
-          manga.coverImage ??
-          jikan?.images?.jpg?.large_image_url ??
-          jikan?.images?.jpg?.image_url ??
-          anilist?.coverImage?.large ??
-          anilist?.coverImage?.medium ??
-          coverFromMangaDex ??
-          null;
+        const nextCoverImage = this.selectPreferredCoverImage(
+          manga.coverImage,
+          jikan?.images?.jpg?.large_image_url ?? jikan?.images?.jpg?.image_url,
+          anilist?.coverImage?.large ?? anilist?.coverImage?.medium,
+        );
         const nextAuthor =
           manga.author ??
           jikan?.authors?.[0]?.name?.trim() ??
@@ -286,12 +278,11 @@ export class TasksService {
     });
   }
 
-  private async fetchDescriptionsAndCoverFromMangaDex(
+  private async fetchDescriptionsAndStatusFromMangaDex(
     title: string,
   ): Promise<{
     descriptionEn: string | null;
     descriptionPt: string | null;
-    coverFromMangaDex: string | null;
     publicationStatusFromMangaDex: string | null;
   }> {
     try {
@@ -300,20 +291,17 @@ export class TasksService {
         return {
           descriptionEn: null,
           descriptionPt: null,
-          coverFromMangaDex: null,
           publicationStatusFromMangaDex: null,
         };
       }
 
-      const [descriptions, coverFromMangaDex] = await Promise.all([
-        this.mangaDexService.getDescriptions(dexManga.id),
-        this.mangaDexService.getCoverImageUrl(dexManga.id),
-      ]);
+      const descriptions = await this.mangaDexService.getDescriptions(
+        dexManga.id,
+      );
 
       return {
         descriptionEn: descriptions.en,
         descriptionPt: descriptions.pt,
-        coverFromMangaDex,
         publicationStatusFromMangaDex: this.mapMangaDexStatus(
           dexManga.attributes.status ?? null,
         ),
@@ -322,9 +310,51 @@ export class TasksService {
       return {
         descriptionEn: null,
         descriptionPt: null,
-        coverFromMangaDex: null,
         publicationStatusFromMangaDex: null,
       };
+    }
+  }
+
+  private selectPreferredCoverImage(
+    existingCover: string | null | undefined,
+    jikanCover: string | null | undefined,
+    aniListCover: string | null | undefined,
+  ): string | null {
+    const safeExisting = this.normalizeCoverUrl(existingCover);
+    if (safeExisting && !this.isBlockedCoverHost(safeExisting)) {
+      return safeExisting;
+    }
+
+    const safeJikan = this.normalizeCoverUrl(jikanCover);
+    if (safeJikan) return safeJikan;
+
+    const safeAniList = this.normalizeCoverUrl(aniListCover);
+    if (safeAniList) return safeAniList;
+
+    return null;
+  }
+
+  private normalizeCoverUrl(value: string | null | undefined): string | null {
+    const normalized = value?.trim();
+    if (!normalized) return null;
+
+    try {
+      const parsed = new URL(normalized);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return null;
+      }
+      return parsed.toString();
+    } catch {
+      return null;
+    }
+  }
+
+  private isBlockedCoverHost(url: string): boolean {
+    try {
+      const host = new URL(url).hostname.toLowerCase();
+      return host === 'uploads.mangadex.org' || host.endsWith('.mangadex.org');
+    } catch {
+      return false;
     }
   }
 

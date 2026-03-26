@@ -63,6 +63,52 @@ interface UserData {
 
 const FALLBACK_COVER_IMAGE = "/logos/logo-icon-light.svg";
 
+function resolveSafeCoverImage(
+  coverImage: string | null | undefined,
+  fallback: string,
+): string {
+  const normalized = String(coverImage || "").trim();
+  if (!normalized) {
+    return fallback;
+  }
+
+  try {
+    const parsed = new URL(normalized);
+    const host = parsed.hostname.toLowerCase();
+    const isBlockedHost =
+      host === "uploads.mangadex.org" || host.endsWith(".mangadex.org");
+    return isBlockedHost ? fallback : parsed.toString();
+  } catch {
+    return fallback;
+  }
+}
+
+async function copyTextToClipboard(text: string): Promise<void> {
+  const normalized = String(text || "").trim();
+  if (!normalized) {
+    throw new Error("empty-text");
+  }
+
+  if (navigator?.clipboard?.writeText) {
+    await navigator.clipboard.writeText(normalized);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = normalized;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  document.body.removeChild(textarea);
+
+  if (!copied) {
+    throw new Error("copy-failed");
+  }
+}
+
 export default function PublicProfilePage() {
   const pathname = usePathname();
   const username = useMemo(() => {
@@ -220,6 +266,15 @@ export default function PublicProfilePage() {
     }
   };
 
+  const handleCopyMangaTitle = async (title: string) => {
+    try {
+      await copyTextToClipboard(title);
+      toast.success(t("messages.copyTitleSuccess"));
+    } catch {
+      toast.error(t("messages.copyTitleError"));
+    }
+  };
+
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       READING: "bg-blue-500",
@@ -354,7 +409,10 @@ export default function PublicProfilePage() {
                 >
                   <div className="relative w-full overflow-hidden" style={{ aspectRatio: "2 / 3" }}>
                     <img
-                      src={item.manga.coverImage || FALLBACK_COVER_IMAGE}
+                      src={resolveSafeCoverImage(
+                        item.manga.coverImage,
+                        FALLBACK_COVER_IMAGE,
+                      )}
                       alt={item.manga.title}
                       className="w-full h-full object-cover"
                       loading="lazy"
@@ -365,15 +423,31 @@ export default function PublicProfilePage() {
                       }}
                     />
 
+                    <div className="absolute inset-0 bg-black/5 transition-colors duration-200 group-hover:bg-black/35" />
+                    <button
+                      type="button"
+                      className="absolute inset-0 z-[2] flex items-center justify-center px-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void handleCopyMangaTitle(item.manga.title);
+                      }}
+                      title={t("details.copyTitle")}
+                      aria-label={t("details.copyTitle")}
+                    >
+                      <span className="max-w-full rounded-md bg-black/80 px-3 py-2 text-center text-xs font-semibold leading-tight text-white shadow-lg ring-1 ring-white/20 backdrop-blur-sm line-clamp-3">
+                        {item.manga.title}
+                      </span>
+                    </button>
+
                     {/* Favorite Heart Overlay */}
                     {item.isFavorite && (
-                      <div className="absolute top-1 right-1">
+                      <div className="absolute top-1 right-1 z-[3]">
                         <Heart className="size-5 fill-red-500 text-red-500 drop-shadow-lg" />
                       </div>
                     )}
 
                     {/* Status Badge */}
-                    <div className="absolute bottom-1 left-1">
+                    <div className="absolute bottom-1 left-1 z-[3]">
                       <Badge
                         className={`${getStatusColor(item.status)} text-[10px] px-1 py-0`}
                       >
@@ -383,7 +457,7 @@ export default function PublicProfilePage() {
 
                     {/* Rating */}
                     {item.rating && (
-                      <div className="absolute bottom-1 right-1 bg-black/70 rounded px-1 flex items-center gap-0.5">
+                      <div className="absolute bottom-1 right-1 z-[3] bg-black/70 rounded px-1 flex items-center gap-0.5">
                         <Star className="size-3 fill-yellow-500 text-yellow-500" />
                         <span className="text-[10px] text-white font-medium">
                           {formatRating(item.rating)}
@@ -419,7 +493,10 @@ export default function PublicProfilePage() {
                 {/* Cover Image */}
                 <div className="flex justify-center">
                   <img
-                    src={selectedManga.manga.coverImage || FALLBACK_COVER_IMAGE}
+                    src={resolveSafeCoverImage(
+                      selectedManga.manga.coverImage,
+                      FALLBACK_COVER_IMAGE,
+                    )}
                     alt={selectedManga.manga.title}
                     className="w-full max-w-[200px] rounded-lg shadow-lg"
                     onError={(event) => {

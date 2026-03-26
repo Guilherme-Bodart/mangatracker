@@ -411,6 +411,7 @@ export default function PublicProfilePage() {
                         FALLBACK_COVER_IMAGE,
                       )}
                       alt={item.manga.title}
+                      referrerPolicy="no-referrer"
                       className="w-full h-full object-cover"
                       loading="lazy"
                       onError={(event) => {
@@ -495,6 +496,7 @@ export default function PublicProfilePage() {
                       FALLBACK_COVER_IMAGE,
                     )}
                     alt={selectedManga.manga.title}
+                    referrerPolicy="no-referrer"
                     className="w-full max-w-[200px] rounded-lg shadow-lg"
                     onError={(event) => {
                       event.currentTarget.src = FALLBACK_COVER_IMAGE;

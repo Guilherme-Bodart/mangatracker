@@ -441,6 +441,7 @@ function MangaCard({
         <img
           src={resolveSafeCoverImage(manga.coverImage, "/placeholder-manga.png")}
           alt={manga.title}
+          referrerPolicy="no-referrer"
           className="w-full h-full object-cover transition-transform group-hover:scale-105"
           onError={(event) => {
             event.currentTarget.src = "/placeholder-manga.png";

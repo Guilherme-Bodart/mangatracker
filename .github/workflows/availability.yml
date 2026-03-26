@@ -2,8 +2,6 @@ name: Availability Checks
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '*/15 * * * *'
 
 jobs:
   synthetic-checks:

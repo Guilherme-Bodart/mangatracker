@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { Link, usePathname } from "@/i18n/routing";
+import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,25 +17,78 @@ import {
   type UserAnnouncement,
 } from "@/lib/notifications-api";
 
-const REFRESH_INTERVAL_MS = 60_000;
+const UNREAD_CACHE_KEY = "mt:notifications:unread-count:v1";
+const UNREAD_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+
+type UnreadCountCache = {
+  count: number;
+  fetchedAt: number;
+};
+
+function readUnreadCountCache(): UnreadCountCache | null {
+  try {
+    const raw = window.localStorage.getItem(UNREAD_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<UnreadCountCache>;
+    if (
+      typeof parsed.count !== "number" ||
+      !Number.isFinite(parsed.count) ||
+      typeof parsed.fetchedAt !== "number" ||
+      !Number.isFinite(parsed.fetchedAt)
+    ) {
+      return null;
+    }
+    return {
+      count: Math.max(0, Math.floor(parsed.count)),
+      fetchedAt: parsed.fetchedAt,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeUnreadCountCache(count: number): void {
+  const safeCount = Math.max(0, Math.floor(count));
+  const payload: UnreadCountCache = {
+    count: safeCount,
+    fetchedAt: Date.now(),
+  };
+  try {
+    window.localStorage.setItem(UNREAD_CACHE_KEY, JSON.stringify(payload));
+  } catch {
+    // Ignore storage quota/private mode failures.
+  }
+}
 
 export function NotificationBell() {
   const tHeader = useTranslations("Header");
   const tNotifications = useTranslations("Notifications");
   const locale = useLocale();
-  const pathname = usePathname();
   const [count, setCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [preview, setPreview] = useState<UserAnnouncement[]>([]);
   const [previewError, setPreviewError] = useState(false);
 
-  const refreshCount = useCallback(async () => {
+  const refreshCount = useCallback(async ({ force = false }: { force?: boolean } = {}) => {
+    if (!force) {
+      const cached = readUnreadCountCache();
+      if (cached && Date.now() - cached.fetchedAt < UNREAD_CACHE_TTL_MS) {
+        setCount(cached.count);
+        return;
+      }
+    }
+
     try {
       const result = await getNotificationUnreadCount();
       setCount(result.count);
+      writeUnreadCountCache(result.count);
     } catch {
       // Silent fail to keep header responsive.
+      const cached = readUnreadCountCache();
+      if (cached) {
+        setCount(cached.count);
+      }
     }
   }, []);
 
@@ -55,35 +108,12 @@ export function NotificationBell() {
 
   useEffect(() => {
     void refreshCount();
-  }, [pathname, refreshCount]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      void refreshCount();
-    }, REFRESH_INTERVAL_MS);
-
-    const handleFocus = () => {
-      void refreshCount();
-    };
-
-    const handleNotificationsUpdated = () => {
-      void refreshCount();
-    };
-
-    window.addEventListener("focus", handleFocus);
-    window.addEventListener("notifications:updated", handleNotificationsUpdated);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("focus", handleFocus);
-      window.removeEventListener("notifications:updated", handleNotificationsUpdated);
-    };
   }, [refreshCount]);
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
     if (open) {
-      void refreshCount();
+      void refreshCount({ force: true });
       void loadPreview();
     }
   };

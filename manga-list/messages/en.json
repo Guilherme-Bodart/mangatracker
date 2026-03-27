@@ -231,7 +231,8 @@
       "integrations": "Integrations",
       "integrationsAdmin": "Integrations Admin",
       "notifications": "Notifications",
-      "notificationsAdmin": "Notifications Admin"
+      "notificationsAdmin": "Notifications Admin",
+      "mangaAdmin": "Manga Admin"
     },
     "messages": {
       "noChanges": "No changes to save",
@@ -842,6 +843,45 @@
       "createError": "Failed to publish notification",
       "removeSuccess": "Notification removed successfully",
       "removeError": "Failed to remove notification"
+    }
+  },
+  "MangaAdmin": {
+    "title": "Manga admin",
+    "subtitle": "Review potential duplicates, merge records, and repair cover images.",
+    "loading": "Loading duplicate groups...",
+    "empty": "No duplicate groups found.",
+    "summary": {
+      "title": "Overview",
+      "groups": "Groups: {count}",
+      "items": "Items: {count}"
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "refreshing": "Refreshing...",
+      "mergeGroup": "Merge group",
+      "merging": "Merging...",
+      "repairCover": "Repair cover",
+      "repairingCover": "Repairing..."
+    },
+    "group": {
+      "title": "Normalized title: {normalizedTitle}",
+      "totalItems": "Items: {count}",
+      "totalRefs": "References: {count}",
+      "userEntries": "User entries: {count}",
+      "externalMaps": "External maps: {count}",
+      "canonical": "Canonical",
+      "duplicate": "Duplicate",
+      "selectCanonical": "Select canonical manga"
+    },
+    "messages": {
+      "forbidden": "You do not have permission to access this page",
+      "loadError": "Failed to load duplicate groups",
+      "nothingToMerge": "Nothing to merge in this group",
+      "mergeSuccess": "Merge complete. Deleted: {deleted}. Moved entries: {moved}.",
+      "mergeError": "Failed to merge duplicate group",
+      "repairCoverChanged": "Cover updated from {source}",
+      "repairCoverNoChange": "No better cover found",
+      "repairCoverError": "Failed to repair cover"
     }
   }
 }

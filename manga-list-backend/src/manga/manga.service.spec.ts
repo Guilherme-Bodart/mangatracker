@@ -6,6 +6,7 @@ import { MangaListService } from './manga-list.service';
 import { MangaProfileService } from './manga-profile.service';
 import { MangaChaptersService } from './manga-chapters.service';
 import { ExternalApiHttpClient } from '../common/http/external-api-client';
+import { MangaAdminService } from './manga-admin.service';
 
 describe('MangaService', () => {
   let service: MangaService;
@@ -13,6 +14,7 @@ describe('MangaService', () => {
   let mangaListService: MangaListService;
   let mangaProfileService: MangaProfileService;
   let mangaChaptersService: MangaChaptersService;
+  let mangaAdminService: MangaAdminService;
   let externalApiClient: ExternalApiHttpClient;
 
   const prisma = {
@@ -46,6 +48,11 @@ describe('MangaService', () => {
   const mangaUpdatesService = {
     getLatestChaptersByTitle: jest.fn(),
   };
+  const mangaAdminServiceMock = {
+    listDuplicateGroups: jest.fn(),
+    mergeDuplicateGroup: jest.fn(),
+    repairCoverByMangaId: jest.fn(),
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -73,11 +80,13 @@ describe('MangaService', () => {
       mangaDexService as never,
       mangaUpdatesService as never,
     );
+    mangaAdminService = mangaAdminServiceMock as never;
     service = new MangaService(
       mangaSearchService,
       mangaListService,
       mangaProfileService,
       mangaChaptersService,
+      mangaAdminService,
     );
   });
 
@@ -276,11 +285,13 @@ describe('MangaService', () => {
         mangaDexService as never,
         mangaUpdatesService as never,
       );
+      mangaAdminService = mangaAdminServiceMock as never;
       service = new MangaService(
         mangaSearchService,
         mangaListService,
         mangaProfileService,
         mangaChaptersService,
+        mangaAdminService,
       );
 
       prisma.userManga.findMany.mockResolvedValue([

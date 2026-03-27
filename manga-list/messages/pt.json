@@ -232,7 +232,8 @@
       "integrations": "Integrações",
       "integrationsAdmin": "Admin Integrações",
       "notifications": "Notificações",
-      "notificationsAdmin": "Admin Notificações"
+      "notificationsAdmin": "Admin Notificações",
+      "mangaAdmin": "Admin Mangás"
     },
     "messages": {
       "noChanges": "Nenhuma alteração para salvar",
@@ -843,6 +844,45 @@
       "createError": "Falha ao publicar notificação",
       "removeSuccess": "Notificação removida com sucesso",
       "removeError": "Falha ao remover notificação"
+    }
+  },
+  "MangaAdmin": {
+    "title": "Admin de mang?s",
+    "subtitle": "Revise poss?veis duplicados, mescle registros e repare capas.",
+    "loading": "Carregando grupos duplicados...",
+    "empty": "Nenhum grupo duplicado encontrado.",
+    "summary": {
+      "title": "Resumo",
+      "groups": "Grupos: {count}",
+      "items": "Itens: {count}"
+    },
+    "actions": {
+      "refresh": "Atualizar",
+      "refreshing": "Atualizando...",
+      "mergeGroup": "Mesclar grupo",
+      "merging": "Mesclando...",
+      "repairCover": "Reparar capa",
+      "repairingCover": "Reparando..."
+    },
+    "group": {
+      "title": "T?tulo normalizado: {normalizedTitle}",
+      "totalItems": "Itens: {count}",
+      "totalRefs": "Refer?ncias: {count}",
+      "userEntries": "Entradas de usu?rio: {count}",
+      "externalMaps": "Mapeamentos externos: {count}",
+      "canonical": "Can?nico",
+      "duplicate": "Duplicado",
+      "selectCanonical": "Selecionar mang? can?nico"
+    },
+    "messages": {
+      "forbidden": "Voc? n?o tem permiss?o para acessar esta p?gina",
+      "loadError": "Falha ao carregar duplicados",
+      "nothingToMerge": "Nada para mesclar neste grupo",
+      "mergeSuccess": "Mesclagem conclu?da. Removidos: {deleted}. Entradas movidas: {moved}.",
+      "mergeError": "Falha ao mesclar grupo duplicado",
+      "repairCoverChanged": "Capa atualizada usando {source}",
+      "repairCoverNoChange": "Nenhuma capa melhor foi encontrada",
+      "repairCoverError": "Falha ao reparar capa"
     }
   }
 }

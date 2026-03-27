@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import { Manga } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MangaDexService } from '../mangadex/mangadex.service';
@@ -59,8 +58,7 @@ export class TasksService {
     private readonly externalApiClient: ExternalApiHttpClient,
   ) {}
 
-  // Enrich metadata for newly created mangas missing key fields.
-  @Cron(CronExpression.EVERY_10_MINUTES)
+  // Manual task: enrich metadata for newly created mangas missing key fields.
   async handleNewMangaMetadataEnrichment() {
     const retryWindowHours = 6;
     const createdWithinDays = 7;
@@ -193,8 +191,7 @@ export class TasksService {
     }
   }
 
-  // Run every hour to check for updates
-  @Cron(CronExpression.EVERY_HOUR)
+  // Manual task: check for updates
   async handleMangaUpdates() {
     this.logger.log('Checking for manga updates...');
 

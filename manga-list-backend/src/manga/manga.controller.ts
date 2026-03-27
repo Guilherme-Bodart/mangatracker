@@ -19,6 +19,8 @@ import { AddMangaToListDto, UpdateMangaListDto } from './dto/manga.dto';
 import { SearchMangaQueryDto } from './dto/search-manga-query.dto';
 import { TopMangaQueryDto } from './dto/top-manga-query.dto';
 import { ProfileRankingQueryDto } from './dto/profile-ranking-query.dto';
+import { MergeMangaDuplicatesDto } from './dto/merge-manga-duplicates.dto';
+import { MangaAdminGuard } from './guards/manga-admin.guard';
 
 type AuthenticatedRequest = ExpressRequest & {
   user?: {
@@ -146,6 +148,41 @@ export class MangaController {
     return this.mangaService.getLatestChaptersForUserList(
       this.requireUserId(req),
     );
+  }
+
+  /**
+   * List potential duplicate manga groups (admin)
+   * GET /manga/admin/duplicates?limit=30
+   */
+  @UseGuards(JwtAuthGuard, MangaAdminGuard)
+  @Get('admin/duplicates')
+  async listDuplicateGroups(@Query('limit') limit?: string) {
+    const parsed = Number.parseInt(String(limit ?? '30'), 10);
+    const safeLimit = Number.isFinite(parsed) ? parsed : 30;
+    return this.mangaService.listDuplicateGroups(safeLimit);
+  }
+
+  /**
+   * Merge duplicate mangas into a canonical manga (admin)
+   * POST /manga/admin/duplicates/merge
+   */
+  @UseGuards(JwtAuthGuard, CsrfGuard, MangaAdminGuard)
+  @Post('admin/duplicates/merge')
+  async mergeDuplicateGroup(@Body() dto: MergeMangaDuplicatesDto) {
+    return this.mangaService.mergeDuplicateGroup(
+      dto.canonicalMangaId,
+      dto.duplicateMangaIds,
+    );
+  }
+
+  /**
+   * Repair manga cover by forcing provider refresh (admin)
+   * POST /manga/admin/:id/repair-cover
+   */
+  @UseGuards(JwtAuthGuard, CsrfGuard, MangaAdminGuard)
+  @Post('admin/:id/repair-cover')
+  async repairCoverByMangaId(@Param('id') id: string) {
+    return this.mangaService.repairCoverByMangaId(id);
   }
 
   /**

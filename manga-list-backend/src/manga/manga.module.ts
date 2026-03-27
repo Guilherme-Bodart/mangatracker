@@ -10,6 +10,8 @@ import { MangaListService } from './manga-list.service';
 import { MangaChaptersService } from './manga-chapters.service';
 import { ExternalApiHttpModule } from '../common/http/external-api-http.module';
 import { MangaUpdatesModule } from '../mangaupdates/mangaupdates.module';
+import { MangaAdminService } from './manga-admin.service';
+import { MangaAdminGuard } from './guards/manga-admin.guard';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { MangaUpdatesModule } from '../mangaupdates/mangaupdates.module';
     MangaListService,
     MangaProfileService,
     MangaChaptersService,
+    MangaAdminService,
+    MangaAdminGuard,
   ],
   exports: [MangaService],
 })

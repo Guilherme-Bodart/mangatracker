@@ -12,6 +12,7 @@ import {
   LatestChapterDto,
   MangaChaptersService,
 } from './manga-chapters.service';
+import { MangaAdminService } from './manga-admin.service';
 
 type JikanMangaDetails = {
   mal_id: number;
@@ -35,6 +36,7 @@ export class MangaService {
     private readonly mangaListService: MangaListService,
     private readonly mangaProfileService: MangaProfileService,
     private readonly mangaChaptersService: MangaChaptersService,
+    private readonly mangaAdminService: MangaAdminService,
   ) {}
 
   async searchManga(
@@ -119,5 +121,20 @@ export class MangaService {
     userId: string,
   ): Promise<Record<string, LatestChapterDto[]>> {
     return this.mangaChaptersService.getLatestChaptersForUserList(userId);
+  }
+
+  async listDuplicateGroups(limit = 30) {
+    return this.mangaAdminService.listDuplicateGroups(limit);
+  }
+
+  async mergeDuplicateGroup(canonicalMangaId: string, duplicateMangaIds: string[]) {
+    return this.mangaAdminService.mergeDuplicateGroup(
+      canonicalMangaId,
+      duplicateMangaIds,
+    );
+  }
+
+  async repairCoverByMangaId(mangaId: string) {
+    return this.mangaAdminService.repairCoverByMangaId(mangaId);
   }
 }

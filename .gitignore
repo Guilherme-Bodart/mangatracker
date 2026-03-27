@@ -10,3 +10,7 @@ secretAuth.json
 
 # pnpm local store/cache
 .pnpm-store/
+
+# Local build artifacts / temp files
+manga-extension-mvp/dist/
+tmp_*.jpg

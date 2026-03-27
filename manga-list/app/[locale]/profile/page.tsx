@@ -127,6 +127,9 @@ export default function ProfilePage() {
               {t("actions.notificationsAdmin")}
             </Link>
           </Button>
+          <Button variant="outline" asChild>
+            <Link href="/profile/manga-admin">{t("actions.mangaAdmin")}</Link>
+          </Button>
           <Button variant="outline" asChild className="flex items-center gap-2">
             <a
               href={`/user/${user.username}`}

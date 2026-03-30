@@ -589,7 +589,9 @@
       "pageLabel": "Página {page} de {total}",
       "previousPage": "Anterior",
       "nextPage": "Próxima",
-      "noSearchResults": "Nenhum mangá encontrado com esse filtro"
+      "noSearchResults": "Nenhum mangá encontrado com esse filtro",
+      "showFiltersAria": "Mostrar filtros",
+      "hideFiltersAria": "Ocultar filtros"
     },
     "stats": {
       "totalManga": "Total de Mangás",

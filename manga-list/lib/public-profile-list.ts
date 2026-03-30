@@ -1,7 +1,14 @@
-import type { MangaListItem } from "@/lib/public-profile-types";
-
 export type PublicProfileSortBy = "name" | "type" | "rating";
 export type PublicProfileSortDirection = "asc" | "desc";
+
+export type MangaListLikeItem = {
+  isFavorite: boolean;
+  rating: number | null;
+  manga: {
+    title: string;
+    genres: string[];
+  };
+};
 
 export const PUBLIC_PROFILE_PAGE_SIZE_OPTIONS = [40, 80, 120] as const;
 export const PUBLIC_PROFILE_DEFAULT_PAGE_SIZE = 40;
@@ -19,11 +26,11 @@ function compareTextAsc(left: string, right: string): number {
   return left.localeCompare(right, undefined, { sensitivity: "base" });
 }
 
-function getTitle(item: MangaListItem): string {
+function getTitle(item: MangaListLikeItem): string {
   return item.manga.title ?? "";
 }
 
-function getPrimaryType(item: MangaListItem): string {
+function getPrimaryType(item: MangaListLikeItem): string {
   const genres = Array.isArray(item.manga.genres) ? item.manga.genres : [];
   if (genres.length === 0) {
     return "";
@@ -70,10 +77,10 @@ function compareNullableRating(
   return compareWithDirection(left, right, direction);
 }
 
-export function filterPublicProfileManga(
-  mangaList: MangaListItem[],
+export function filterPublicProfileManga<T extends MangaListLikeItem>(
+  mangaList: T[],
   rawQuery: string,
-): MangaListItem[] {
+): T[] {
   const query = normalizeText(rawQuery || "");
   if (!query) {
     return mangaList;
@@ -84,11 +91,11 @@ export function filterPublicProfileManga(
   );
 }
 
-export function sortPublicProfileManga(
-  mangaList: MangaListItem[],
+export function sortPublicProfileManga<T extends MangaListLikeItem>(
+  mangaList: T[],
   sortBy: PublicProfileSortBy,
   direction: PublicProfileSortDirection,
-): MangaListItem[] {
+): T[] {
   const sorted = [...mangaList];
 
   sorted.sort((left, right) => {
@@ -132,8 +139,8 @@ export function sortPublicProfileManga(
   return sorted;
 }
 
-export function paginatePublicProfileManga(
-  mangaList: MangaListItem[],
+export function paginatePublicProfileManga<T extends MangaListLikeItem>(
+  mangaList: T[],
   page: number,
   pageSize: number,
 ) {

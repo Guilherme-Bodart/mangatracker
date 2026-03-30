@@ -1,10 +1,10 @@
 ﻿"use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "@/i18n/routing";
 import { useLocale, useTranslations } from "next-intl";
-import { Loader2, Plus, User } from "lucide-react";
+import { Filter, Loader2, Plus, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "@/i18n/routing";
@@ -22,6 +22,18 @@ import { toast } from "sonner";
 import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
 import { logger } from "@/lib/logger";
 import type { LatestChapter, UserManga } from "@/lib/my-track-types";
+import { PublicProfileMangaControls } from "@/components/profile/public-profile/public-profile-manga-controls";
+import { PublicProfileMangaPagination } from "@/components/profile/public-profile/public-profile-manga-pagination";
+import {
+  PUBLIC_PROFILE_DEFAULT_PAGE_SIZE,
+  PUBLIC_PROFILE_PAGE_SIZE_OPTIONS,
+  PUBLIC_PROFILE_SEARCH_DEBOUNCE_MS,
+  type PublicProfileSortBy,
+  type PublicProfileSortDirection,
+  filterPublicProfileManga,
+  paginatePublicProfileManga,
+  sortPublicProfileManga,
+} from "@/lib/public-profile-list";
 
 export default function MyTrackPage() {
   const { user, isLoading: isAuthLoading } = useAuth();
@@ -40,6 +52,14 @@ export default function MyTrackPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearchInput, setDebouncedSearchInput] = useState("");
+  const [sortBy, setSortBy] = useState<PublicProfileSortBy>("rating");
+  const [sortDirection, setSortDirection] =
+    useState<PublicProfileSortDirection>("desc");
+  const [pageSize, setPageSize] = useState<number>(PUBLIC_PROFILE_DEFAULT_PAGE_SIZE);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isUpdatingChapterByManga, setIsUpdatingChapterByManga] = useState<
     Record<string, boolean>
   >({});
@@ -72,6 +92,42 @@ export default function MyTrackPage() {
 
     fetchMangaList();
   }, [user, isAuthLoading, router, fetchMangaList]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearchInput(searchInput);
+    }, PUBLIC_PROFILE_SEARCH_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [searchInput]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchInput, sortBy, sortDirection, pageSize]);
+
+  const filteredAndSortedMangaList = useMemo(() => {
+    const filtered = filterPublicProfileManga(mangaList, debouncedSearchInput);
+    return sortPublicProfileManga(filtered, sortBy, sortDirection);
+  }, [debouncedSearchInput, mangaList, sortBy, sortDirection]);
+
+  const pagination = useMemo(
+    () => paginatePublicProfileManga(filteredAndSortedMangaList, currentPage, pageSize),
+    [currentPage, filteredAndSortedMangaList, pageSize],
+  );
+
+  useEffect(() => {
+    if (pagination.page !== currentPage) {
+      setCurrentPage(pagination.page);
+    }
+  }, [currentPage, pagination.page]);
+
+  const handlePageSizeChange = useCallback((value: string) => {
+    const parsed = Number.parseInt(value, 10);
+    const isSupported = PUBLIC_PROFILE_PAGE_SIZE_OPTIONS.includes(
+      parsed as (typeof PUBLIC_PROFILE_PAGE_SIZE_OPTIONS)[number],
+    );
+    setPageSize(isSupported ? parsed : PUBLIC_PROFILE_DEFAULT_PAGE_SIZE);
+  }, []);
 
   const handleEditClick = (manga: UserManga) => {
     setSelectedManga(manga);
@@ -254,12 +310,28 @@ export default function MyTrackPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-semibold">{t("heading")}</h2>
-            <Button asChild>
-              <Link href="/manga">
-                <Plus className="mr-2 h-4 w-4" />
-                {t("browseManga")}
-              </Link>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button asChild>
+                <Link href="/manga">
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t("browseManga")}
+                </Link>
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="cursor-pointer"
+                onClick={() => setIsFiltersOpen((prev) => !prev)}
+                aria-label={
+                  isFiltersOpen
+                    ? tProfile("controls.hideFiltersAria")
+                    : tProfile("controls.showFiltersAria")
+                }
+              >
+                <Filter className="size-4" />
+              </Button>
+            </div>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
             {t("syncDisclaimer")}
@@ -282,24 +354,64 @@ export default function MyTrackPage() {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-            {mangaList.map((item) => (
-              <MyTrackCard
-                key={item.id}
-                userManga={item}
-                latestChapters={latestChaptersByManga[item.manga.id] || []}
-                locale={locale}
-                isUpdatingChapter={!!isUpdatingChapterByManga[item.id]}
-                onEdit={() => handleEditClick(item)}
-                onDelete={() => handleDeleteClick(item)}
-                onMarkLatestChaptersAsRead={(chapter) =>
-                  handleMarkLatestChaptersAsRead(item.id, chapter)
-                }
-                onToggleFavorite={() =>
-                  handleToggleFavorite(item.id, item.isFavorite)
-                }
+          <div className="space-y-4">
+            {isFiltersOpen ? (
+              <PublicProfileMangaControls
+                t={tProfile}
+                searchInput={searchInput}
+                sortBy={sortBy}
+                sortDirection={sortDirection}
+                pageSize={pageSize}
+                totalFilteredItems={pagination.totalItems}
+                pageSizeOptions={PUBLIC_PROFILE_PAGE_SIZE_OPTIONS}
+                onSearchChange={setSearchInput}
+                onSortByChange={setSortBy}
+                onSortDirectionChange={setSortDirection}
+                onPageSizeChange={handlePageSizeChange}
               />
-            ))}
+            ) : null}
+
+            <PublicProfileMangaPagination
+              t={tProfile}
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              align="right"
+              onPageChange={setCurrentPage}
+            />
+
+            {pagination.items.length === 0 ? (
+              <div className="rounded-lg border border-border/60 py-12 text-center text-muted-foreground">
+                {tProfile("controls.noSearchResults")}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-6 md:grid-cols-4 lg:grid-cols-6">
+                {pagination.items.map((item) => (
+                  <MyTrackCard
+                    key={item.id}
+                    userManga={item}
+                    latestChapters={latestChaptersByManga[item.manga.id] || []}
+                    locale={locale}
+                    isUpdatingChapter={!!isUpdatingChapterByManga[item.id]}
+                    onEdit={() => handleEditClick(item)}
+                    onDelete={() => handleDeleteClick(item)}
+                    onMarkLatestChaptersAsRead={(chapter) =>
+                      handleMarkLatestChaptersAsRead(item.id, chapter)
+                    }
+                    onToggleFavorite={() =>
+                      handleToggleFavorite(item.id, item.isFavorite)
+                    }
+                  />
+                ))}
+              </div>
+            )}
+
+            <PublicProfileMangaPagination
+              t={tProfile}
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              align="center"
+              onPageChange={setCurrentPage}
+            />
           </div>
         )}
       </div>

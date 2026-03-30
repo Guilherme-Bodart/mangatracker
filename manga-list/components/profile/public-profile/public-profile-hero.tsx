@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import type { UserData } from "@/lib/public-profile-types";
 import { BookOpen, Heart, User } from "lucide-react";
 import { Link } from "@/i18n/routing";
+import type { ReactNode } from "react";
 
 type TranslatorFn = (
   key: string,
@@ -20,6 +21,7 @@ type PublicProfileHeroProps = {
   isLikedByMe: boolean;
   isLikeLoading: boolean;
   onToggleLike: () => Promise<void>;
+  filtersToggleButton?: ReactNode;
 };
 
 export function PublicProfileHero({
@@ -31,6 +33,7 @@ export function PublicProfileHero({
   isLikedByMe,
   isLikeLoading,
   onToggleLike,
+  filtersToggleButton,
 }: PublicProfileHeroProps) {
   return (
     <>
@@ -84,19 +87,24 @@ export function PublicProfileHero({
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-4 mt-4">
-            <div className="flex items-center gap-2">
-              <BookOpen className="size-4 text-muted-foreground" />
-              <span className="text-sm">
-                <strong>{userData.mangaList?.length || 0}</strong> {t("stats.total")}
-              </span>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center gap-2">
+                <BookOpen className="size-4 text-muted-foreground" />
+                <span className="text-sm">
+                  <strong>{userData.mangaList?.length || 0}</strong> {t("stats.total")}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Heart className="size-4 text-red-500 fill-red-500" />
+                <span className="text-sm">
+                  <strong>{userData.stats?.favorites || 0}</strong> {t("stats.favorites")}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Heart className="size-4 text-red-500 fill-red-500" />
-              <span className="text-sm">
-                <strong>{userData.stats?.favorites || 0}</strong> {t("stats.favorites")}
-              </span>
-            </div>
+            {filtersToggleButton ? (
+              <div className="self-start sm:self-auto">{filtersToggleButton}</div>
+            ) : null}
           </div>
         </div>
       </div>

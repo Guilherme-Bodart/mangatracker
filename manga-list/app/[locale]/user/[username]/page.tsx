@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname } from "@/i18n/routing";
-import { User } from "lucide-react";
+import { Filter, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { usePublicProfilePage } from "@/hooks/use-public-profile-page";
 import { PublicProfileHero } from "@/components/profile/public-profile/public-profile-hero";
 import { PublicProfileMangaControls } from "@/components/profile/public-profile/public-profile-manga-controls";
@@ -16,6 +18,7 @@ export default function PublicProfilePage() {
   const t = useTranslations("PublicProfile");
   const locale = useLocale();
   const { user: authUser, isLoading: authLoading } = useAuth();
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   const {
     userData,
@@ -86,22 +89,40 @@ export default function PublicProfilePage() {
         isLikedByMe={isLikedByMe}
         isLikeLoading={isLikeLoading}
         onToggleLike={handleToggleLike}
+        filtersToggleButton={
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="cursor-pointer"
+            onClick={() => setIsFiltersOpen((prev) => !prev)}
+            aria-label={
+              isFiltersOpen
+                ? t("controls.hideFiltersAria")
+                : t("controls.showFiltersAria")
+            }
+          >
+            <Filter className="size-4" />
+          </Button>
+        }
       />
 
       <div className="container mx-auto px-4 space-y-4">
-        <PublicProfileMangaControls
-          t={t}
-          searchInput={searchInput}
-          sortBy={sortBy}
-          sortDirection={sortDirection}
-          pageSize={pageSize}
-          totalFilteredItems={totalFilteredItems}
-          pageSizeOptions={pageSizeOptions}
-          onSearchChange={setSearchInput}
-          onSortByChange={setSortBy}
-          onSortDirectionChange={setSortDirection}
-          onPageSizeChange={handlePageSizeChange}
-        />
+        {isFiltersOpen ? (
+          <PublicProfileMangaControls
+            t={t}
+            searchInput={searchInput}
+            sortBy={sortBy}
+            sortDirection={sortDirection}
+            pageSize={pageSize}
+            totalFilteredItems={totalFilteredItems}
+            pageSizeOptions={pageSizeOptions}
+            onSearchChange={setSearchInput}
+            onSortByChange={setSortBy}
+            onSortDirectionChange={setSortDirection}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        ) : null}
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-2xl font-bold">{t("mangaList")}</h2>

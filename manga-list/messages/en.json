@@ -588,7 +588,9 @@
       "pageLabel": "Page {page} of {total}",
       "previousPage": "Previous",
       "nextPage": "Next",
-      "noSearchResults": "No manga found for this filter"
+      "noSearchResults": "No manga found for this filter",
+      "showFiltersAria": "Show filters",
+      "hideFiltersAria": "Hide filters"
     },
     "stats": {
       "totalManga": "Total Manga",

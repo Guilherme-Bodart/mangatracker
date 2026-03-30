@@ -20,6 +20,7 @@ import {
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/contexts/auth-context";
 import { getApiUrl } from "@/lib/api-client";
+import { trackSignUp } from "@/components/analytics/google-analytics-events";
 
 export function RegisterForm() {
   const t = useTranslations("Auth.register");
@@ -50,6 +51,7 @@ export function RegisterForm() {
 
     try {
       await register(username, email, password);
+      trackSignUp("email_password");
       toast.success(t("success"), {
         description: t("successDescription"),
       });

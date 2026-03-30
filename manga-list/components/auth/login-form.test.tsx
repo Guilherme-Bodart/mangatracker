@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   loginMock: vi.fn(),
   toastSuccessMock: vi.fn(),
   toastErrorMock: vi.fn(),
+  trackLoginMock: vi.fn(),
 }));
 
 vi.mock("next-intl", () => ({
@@ -40,6 +41,10 @@ vi.mock("sonner", () => ({
   },
 }));
 
+vi.mock("@/components/analytics/google-analytics-events", () => ({
+  trackLogin: mocks.trackLoginMock,
+}));
+
 import { LoginForm } from "@/components/auth/login-form";
 
 describe("LoginForm", () => {
@@ -69,6 +74,7 @@ describe("LoginForm", () => {
     expect(mocks.toastSuccessMock).toHaveBeenCalledWith("success", {
       description: "successDescription",
     });
+    expect(mocks.trackLoginMock).toHaveBeenCalledWith("email_password");
     expect(mocks.pushMock).toHaveBeenCalledWith("/my-track");
   });
 
@@ -90,6 +96,7 @@ describe("LoginForm", () => {
         description: "Invalid credentials",
       }),
     );
+    expect(mocks.trackLoginMock).not.toHaveBeenCalled();
     expect(mocks.pushMock).not.toHaveBeenCalled();
   });
 });

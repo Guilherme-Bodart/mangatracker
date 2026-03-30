@@ -4,6 +4,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Manga Tracker",
   description: "Track your manga collection",
+  other: {
+    "admaven-placement": "Bqjs9rHk5",
+  },
   verification: {
     google: "0U3RXoZImZOpd6NaZ6Uz_m_rD5HG82J4LXNQeDQ9U34",
   },

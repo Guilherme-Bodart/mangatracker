@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   registerMock: vi.fn(),
   toastSuccessMock: vi.fn(),
   toastErrorMock: vi.fn(),
+  trackSignUpMock: vi.fn(),
 }));
 
 vi.mock("next-intl", () => ({
@@ -40,6 +41,10 @@ vi.mock("sonner", () => ({
   },
 }));
 
+vi.mock("@/components/analytics/google-analytics-events", () => ({
+  trackSignUp: mocks.trackSignUpMock,
+}));
+
 import { RegisterForm } from "@/components/auth/register-form";
 
 describe("RegisterForm", () => {
@@ -69,6 +74,7 @@ describe("RegisterForm", () => {
         description: "passwordMismatch",
       }),
     );
+    expect(mocks.trackSignUpMock).not.toHaveBeenCalled();
     expect(mocks.registerMock).not.toHaveBeenCalled();
     expect(mocks.pushMock).not.toHaveBeenCalled();
   });
@@ -102,6 +108,7 @@ describe("RegisterForm", () => {
     expect(mocks.toastSuccessMock).toHaveBeenCalledWith("success", {
       description: "successDescription",
     });
+    expect(mocks.trackSignUpMock).toHaveBeenCalledWith("email_password");
     expect(mocks.pushMock).toHaveBeenCalledWith("/my-track");
   });
 });

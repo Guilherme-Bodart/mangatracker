@@ -23,6 +23,7 @@ import { StarRating } from "@/components/ui/star-rating";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
+import { trackAddToList } from "@/components/analytics/google-analytics-events";
 
 type MangaListStatus = "READING" | "COMPLETED" | "PLAN_TO_READ" | "DROPPED";
 
@@ -152,6 +153,18 @@ export function AddMangaModal({
         body: payload,
         signal: controller.signal,
       });
+      if (mode === "add") {
+        trackAddToList({
+          source:
+            typeof window === "undefined"
+              ? "unknown"
+              : window.location.pathname,
+          status: formData.status,
+          mal_id: manga.mal_id,
+          anilist_id: manga.anilist_id,
+          manga_title: manga.title,
+        });
+      }
 
       toast.success(
         mode === "add" ? t("success") : "Manga updated successfully!",

@@ -7,6 +7,7 @@ import { getMessages } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { LangAndFontProvider } from "@/components/providers/lang-and-font-provider";
 import { Providers } from "@/components/providers/providers";
+import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,6 +42,7 @@ export default async function LocaleLayout({
       locale={effectiveLocale}
       fonts={`${geistSans.variable} ${geistMono.variable}`}
     >
+      <GoogleAnalytics />
       <Providers messages={messages} locale={effectiveLocale}>
         <div className="min-h-screen flex flex-col">
           <Header />

@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
 import { useRouter } from "@/i18n/routing";
+import { trackLogin } from "@/components/analytics/google-analytics-events";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -38,6 +39,7 @@ export default function AuthCallbackPage() {
         toast.success("Login successful!", {
           description: "Welcome back!",
         });
+        trackLogin("google");
 
         router.push("/my-track");
       } catch (error: unknown) {

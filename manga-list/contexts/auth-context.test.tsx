@@ -25,6 +25,8 @@ import { apiRequest } from "@/lib/api-client";
 import { setCsrfToken } from "@/lib/csrf";
 import { AuthProvider, useAuth } from "@/contexts/auth-context";
 
+const AUTH_SESSION_HINT_KEY = "mt:auth:session-hint:v1";
+
 type User = {
   id: string;
   username: string;
@@ -74,9 +76,12 @@ describe("AuthProvider", () => {
     vi.restoreAllMocks();
     vi.clearAllMocks();
     vi.spyOn(console, "error").mockImplementation(() => undefined);
+    window.localStorage.clear();
   });
 
   it("bootstraps user state from /auth/me", async () => {
+    window.localStorage.setItem(AUTH_SESSION_HINT_KEY, "1");
+
     apiRequestMock.mockImplementation(async (path: string) => {
       if (path === "/auth/me") {
         return {
@@ -100,6 +105,8 @@ describe("AuthProvider", () => {
   });
 
   it("updates user after login", async () => {
+    window.localStorage.setItem(AUTH_SESSION_HINT_KEY, "1");
+
     apiRequestMock.mockImplementation(async (path: string) => {
       if (path === "/auth/me") {
         return {
@@ -145,6 +152,8 @@ describe("AuthProvider", () => {
   });
 
   it("updates user after register", async () => {
+    window.localStorage.setItem(AUTH_SESSION_HINT_KEY, "1");
+
     apiRequestMock.mockImplementation(async (path: string) => {
       if (path === "/auth/me") {
         return {
@@ -191,6 +200,8 @@ describe("AuthProvider", () => {
   });
 
   it("clears state and redirects after logout failure", async () => {
+    window.localStorage.setItem(AUTH_SESSION_HINT_KEY, "1");
+
     apiRequestMock.mockImplementation(async (path: string) => {
       if (path === "/auth/me") {
         return {
@@ -220,6 +231,20 @@ describe("AuthProvider", () => {
     );
     expect(setCsrfTokenMock).toHaveBeenCalledWith(null);
     expect(replaceMock).toHaveBeenCalledWith("/auth/login");
+    expect(window.localStorage.getItem(AUTH_SESSION_HINT_KEY)).toBeNull();
+  });
+
+  it("skips /auth/me on public routes when no session hint exists", async () => {
+    apiRequestMock.mockResolvedValue({});
+
+    renderAuthProvider();
+
+    await waitFor(() =>
+      expect(screen.getByTestId("loading")).toHaveTextContent("ready"),
+    );
+
+    expect(screen.getByTestId("username")).toHaveTextContent("none");
+    expect(apiRequestMock).not.toHaveBeenCalledWith("/auth/me");
   });
 
   it("throws when useAuth is used outside provider", () => {

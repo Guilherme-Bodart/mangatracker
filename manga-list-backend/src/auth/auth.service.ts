@@ -9,6 +9,7 @@ import {
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { Cache } from 'cache-manager';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
@@ -47,12 +48,21 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto) {
-    const { username, email, password } = registerDto;
+    const username = this.normalizeUsername(registerDto.username);
+    const { email, password } = registerDto;
 
     // Check if user already exists
     const existingUser = await this.prisma.user.findFirst({
       where: {
-        OR: [{ email }, { username }],
+        OR: [
+          { email },
+          {
+            username: {
+              equals: username,
+              mode: 'insensitive',
+            },
+          },
+        ],
       },
     });
 
@@ -60,7 +70,7 @@ export class AuthService {
       if (existingUser.email === email) {
         throw new ConflictException('Email already in use');
       }
-      if (existingUser.username === username) {
+      if (existingUser.username.toLowerCase() === username.toLowerCase()) {
         throw new ConflictException('Username already taken');
       }
     }
@@ -68,25 +78,49 @@ export class AuthService {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, this.passwordHashRounds);
 
-    // Create user
-    const user = await this.prisma.user.create({
-      data: {
-        username,
-        email,
-        password: hashedPassword,
-      },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        tokenVersion: true,
-        allowNsfw: true,
-        avatarUrl: true,
-        bannerUrl: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    let user: {
+      id: string;
+      username: string;
+      email: string;
+      tokenVersion: number;
+      allowNsfw: boolean;
+      avatarUrl: string | null;
+      bannerUrl: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+    };
+
+    try {
+      // Create user
+      user = await this.prisma.user.create({
+        data: {
+          username,
+          email,
+          password: hashedPassword,
+        },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          tokenVersion: true,
+          allowNsfw: true,
+          avatarUrl: true,
+          bannerUrl: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+    } catch (error) {
+      if (this.isUniqueConstraintError(error, 'email')) {
+        throw new ConflictException('Email already in use');
+      }
+
+      if (this.isUniqueConstraintError(error, 'username')) {
+        throw new ConflictException('Username already taken');
+      }
+
+      throw error;
+    }
 
     // Generate JWT
     const token = this.signToken(user.id, user.tokenVersion);
@@ -230,14 +264,11 @@ export class AuthService {
    * Update user profile
    */
   async updateProfile(userId: string, updateData: UpdateProfileDto) {
-    const {
-      username,
-      password,
-      currentPassword,
-      avatarUrl,
-      bannerUrl,
-      allowNsfw,
-    } = updateData;
+    const normalizedUsername = updateData.username
+      ? this.normalizeUsername(updateData.username)
+      : undefined;
+    const { password, currentPassword, avatarUrl, bannerUrl, allowNsfw } =
+      updateData;
 
     const currentUser = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -252,9 +283,14 @@ export class AuthService {
     }
 
     // Check if username is taken by another user
-    if (username) {
-      const existingUser = await this.prisma.user.findUnique({
-        where: { username },
+    if (normalizedUsername) {
+      const existingUser = await this.prisma.user.findFirst({
+        where: {
+          username: {
+            equals: normalizedUsername,
+            mode: 'insensitive',
+          },
+        },
       });
 
       if (existingUser && existingUser.id !== userId) {
@@ -283,28 +319,47 @@ export class AuthService {
       hashedPassword = await bcrypt.hash(password, this.passwordHashRounds);
     }
 
-    // Update user
-    const updatedUser = await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        ...(username && { username }),
-        ...(hashedPassword && { password: hashedPassword }),
-        ...(hashedPassword && { tokenVersion: { increment: 1 } }),
-        ...(avatarUrl !== undefined && { avatarUrl }),
-        ...(bannerUrl !== undefined && { bannerUrl }),
-        ...(allowNsfw !== undefined && { allowNsfw }),
-      },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        allowNsfw: true,
-        avatarUrl: true,
-        bannerUrl: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    let updatedUser: {
+      id: string;
+      username: string;
+      email: string;
+      allowNsfw: boolean;
+      avatarUrl: string | null;
+      bannerUrl: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+    };
+
+    try {
+      // Update user
+      updatedUser = await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          ...(normalizedUsername && { username: normalizedUsername }),
+          ...(hashedPassword && { password: hashedPassword }),
+          ...(hashedPassword && { tokenVersion: { increment: 1 } }),
+          ...(avatarUrl !== undefined && { avatarUrl }),
+          ...(bannerUrl !== undefined && { bannerUrl }),
+          ...(allowNsfw !== undefined && { allowNsfw }),
+        },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          allowNsfw: true,
+          avatarUrl: true,
+          bannerUrl: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+    } catch (error) {
+      if (this.isUniqueConstraintError(error, 'username')) {
+        throw new ConflictException('Username already taken');
+      }
+
+      throw error;
+    }
 
     return updatedUser;
   }
@@ -374,8 +429,13 @@ export class AuthService {
     // Ensure username is unique
     let attempts = 0;
     while (attempts < 10) {
-      const existingUser = await this.prisma.user.findUnique({
-        where: { username },
+      const existingUser = await this.prisma.user.findFirst({
+        where: {
+          username: {
+            equals: username,
+            mode: 'insensitive',
+          },
+        },
       });
 
       if (!existingUser) break;
@@ -391,15 +451,23 @@ export class AuthService {
     }
 
     // Create new user
-    user = await this.prisma.user.create({
-      data: {
-        email: profile.email,
-        username,
-        googleId: profile.googleId,
-        provider: 'google',
-        password: null, // No password for OAuth users
-      },
-    });
+    try {
+      user = await this.prisma.user.create({
+        data: {
+          email: profile.email,
+          username,
+          googleId: profile.googleId,
+          provider: 'google',
+          password: null, // No password for OAuth users
+        },
+      });
+    } catch (error) {
+      if (this.isUniqueConstraintError(error, 'username')) {
+        throw new ConflictException('Username already taken');
+      }
+
+      throw error;
+    }
 
     const token = this.signToken(user.id, user.tokenVersion);
 
@@ -424,7 +492,9 @@ export class AuthService {
   }
 
   buildUserAgentHash(userAgent?: string): string {
-    return createHash('sha256').update(this.normalizeUserAgent(userAgent)).digest('hex');
+    return createHash('sha256')
+      .update(this.normalizeUserAgent(userAgent))
+      .digest('hex');
   }
 
   async createOAuthState(contextHash: string): Promise<string> {
@@ -760,5 +830,29 @@ export class AuthService {
 
   private normalizeUserAgent(userAgent?: string): string {
     return (userAgent ?? 'unknown').trim().toLowerCase();
+  }
+
+  private normalizeUsername(username: string): string {
+    return username.trim();
+  }
+
+  private isUniqueConstraintError(error: unknown, field?: string): boolean {
+    if (
+      !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+      error.code !== 'P2002'
+    ) {
+      return false;
+    }
+
+    if (!field) {
+      return true;
+    }
+
+    const rawTargets = error.meta?.target;
+    const targets = Array.isArray(rawTargets)
+      ? rawTargets.map((item) => String(item).toLowerCase())
+      : [String(rawTargets ?? '').toLowerCase()];
+
+    return targets.some((target) => target.includes(field.toLowerCase()));
   }
 }

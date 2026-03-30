@@ -12,6 +12,7 @@ import { ApplyPasswordPolicy } from './password-policy';
 export class UpdateProfileDto {
   @IsOptional()
   @IsString()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @MinLength(3)
   username?: string;
 

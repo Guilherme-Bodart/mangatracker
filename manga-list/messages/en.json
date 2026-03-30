@@ -568,6 +568,28 @@
     "unlikeProfile": "Remove like",
     "mangaList": "Manga Tracker",
     "emptyList": "No manga in this list yet",
+    "controls": {
+      "search": "Search",
+      "searchPlaceholder": "Search by manga title",
+      "sortBy": "Sort by",
+      "sortByOptions": {
+        "name": "Name",
+        "type": "Type",
+        "rating": "Rating"
+      },
+      "direction": "Direction",
+      "directionOptions": {
+        "asc": "Ascending",
+        "desc": "Descending"
+      },
+      "pageSize": "Items per page",
+      "pageSizeItem": "{value} per page",
+      "results": "{count} result(s)",
+      "pageLabel": "Page {page} of {total}",
+      "previousPage": "Previous",
+      "nextPage": "Next",
+      "noSearchResults": "No manga found for this filter"
+    },
     "stats": {
       "totalManga": "Total Manga",
       "total": "total",

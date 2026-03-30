@@ -125,7 +125,12 @@ describe('AuthService', () => {
     const state = await service.createOAuthState(contextHash);
 
     await expect(
-      service.exchangeOAuthCode('invalid-code', state, contextHash, userAgentHash),
+      service.exchangeOAuthCode(
+        'invalid-code',
+        state,
+        contextHash,
+        userAgentHash,
+      ),
     ).rejects.toThrow(UnauthorizedException);
     expect(cacheManager.del).not.toHaveBeenCalled();
   });
@@ -197,7 +202,12 @@ describe('AuthService', () => {
     });
 
     await expect(
-      service.exchangeOAuthCode('valid-code', state, wrongContextHash, userAgentHash),
+      service.exchangeOAuthCode(
+        'valid-code',
+        state,
+        wrongContextHash,
+        userAgentHash,
+      ),
     ).rejects.toThrow('OAuth exchange context mismatch');
   });
 
@@ -248,5 +258,38 @@ describe('AuthService', () => {
     await expect(
       service.resetPassword('bad-token', 'new-password'),
     ).rejects.toThrow('Invalid or expired reset token');
+  });
+
+  it('should block registration when username exists with different casing', async () => {
+    prisma.user.findFirst.mockResolvedValue({
+      id: 'u-existing',
+      username: 'Outrigger',
+      email: 'existing@example.com',
+    });
+
+    await expect(
+      service.register({
+        username: 'outrigger',
+        email: 'new@example.com',
+        password: 'StrongPassword123',
+      }),
+    ).rejects.toThrow('Username already taken');
+  });
+
+  it('should block profile update when target username differs only by casing', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'u-current',
+      password: null,
+    });
+    prisma.user.findFirst.mockResolvedValue({
+      id: 'u-other',
+      username: 'Outrigger',
+      email: 'other@example.com',
+    });
+
+    await expect(
+      service.updateProfile('u-current', { username: 'outrigger' }),
+    ).rejects.toThrow('Username already taken');
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 });

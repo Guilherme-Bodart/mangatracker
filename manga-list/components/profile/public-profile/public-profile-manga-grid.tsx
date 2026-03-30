@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import type { MangaListItem, UserData } from "@/lib/public-profile-types";
+import type { MangaListItem } from "@/lib/public-profile-types";
 import {
   FALLBACK_COVER_IMAGE,
   formatRating,
@@ -18,14 +18,16 @@ type TranslatorFn = (
 
 type PublicProfileMangaGridProps = {
   t: TranslatorFn;
-  userData: UserData;
+  mangaList: MangaListItem[];
+  hasAnyManga: boolean;
   onSelectManga: (item: MangaListItem) => void;
   onCopyMangaTitle: (title: string) => Promise<void>;
 };
 
 export function PublicProfileMangaGrid({
   t,
-  userData,
+  mangaList,
+  hasAnyManga,
   onSelectManga,
   onCopyMangaTitle,
 }: PublicProfileMangaGridProps) {
@@ -33,15 +35,21 @@ export function PublicProfileMangaGrid({
     <div className="space-y-4">
       <h2 className="text-2xl font-bold">{t("mangaList")}</h2>
 
-      {!userData.mangaList || userData.mangaList.length === 0 ? (
+      {!hasAnyManga ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             {t("emptyList")}
           </CardContent>
         </Card>
+      ) : mangaList.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            {t("controls.noSearchResults")}
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3 auto-rows-fr">
-          {userData.mangaList.map((item) => (
+          {mangaList.map((item) => (
             <Card
               key={item.id}
               className="overflow-hidden group hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer p-0 py-0 gap-0 h-full"
@@ -105,4 +113,3 @@ export function PublicProfileMangaGrid({
     </div>
   );
 }
-

@@ -569,6 +569,28 @@
     "unlikeProfile": "Remover curtida",
     "mangaList": "Lista de Mangás",
     "emptyList": "Nenhum mangá nesta lista ainda",
+    "controls": {
+      "search": "Pesquisar",
+      "searchPlaceholder": "Pesquisar por título do mangá",
+      "sortBy": "Ordenar por",
+      "sortByOptions": {
+        "name": "Nome",
+        "type": "Tipo",
+        "rating": "Nota"
+      },
+      "direction": "Direção",
+      "directionOptions": {
+        "asc": "Crescente",
+        "desc": "Decrescente"
+      },
+      "pageSize": "Itens por página",
+      "pageSizeItem": "{value} por página",
+      "results": "{count} resultado(s)",
+      "pageLabel": "Página {page} de {total}",
+      "previousPage": "Anterior",
+      "nextPage": "Próxima",
+      "noSearchResults": "Nenhum mangá encontrado com esse filtro"
+    },
     "stats": {
       "totalManga": "Total de Mangás",
       "total": "total",

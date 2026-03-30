@@ -41,13 +41,19 @@ export function Header() {
         {/* Navegação */}
         <nav className="flex items-center gap-4">
           <Button variant="ghost" asChild>
-            <Link href="/manga">{t("explore")}</Link>
+            <Link href="/manga" prefetch={false}>
+              {t("explore")}
+            </Link>
           </Button>
           <Button variant="ghost" asChild>
-            <Link href="/ranking">{t("ranking")}</Link>
+            <Link href="/ranking" prefetch={false}>
+              {t("ranking")}
+            </Link>
           </Button>
           <Button variant="ghost" asChild>
-            <Link href="/my-track">{t("myTrack")}</Link>
+            <Link href="/my-track" prefetch={false}>
+              {t("myTrack")}
+            </Link>
           </Button>
 
           {/* Theme Toggle + Auth */}
@@ -80,13 +86,19 @@ export function Header() {
                     <DropdownMenuLabel>{user.username}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link href="/profile">{t("profile")}</Link>
+                      <Link href="/profile" prefetch={false}>
+                        {t("profile")}
+                      </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/profile/notifications">{t("notifications")}</Link>
+                      <Link href="/profile/notifications" prefetch={false}>
+                        {t("notifications")}
+                      </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href={`/user/${user.username}`}>{t("publicProfile")}</Link>
+                      <Link href={`/user/${user.username}`} prefetch={false}>
+                        {t("publicProfile")}
+                      </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
@@ -104,7 +116,7 @@ export function Header() {
               </>
             ) : (
               <Button asChild>
-                <Link href="/auth/login" className="flex items-center gap-2">
+                <Link href="/auth/login" className="flex items-center gap-2" prefetch={false}>
                   <User className="size-4" />
                   {t("login")}
                 </Link>

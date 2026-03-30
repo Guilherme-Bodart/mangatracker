@@ -6,6 +6,7 @@ import { usePathname } from "@/i18n/routing";
 import { User } from "lucide-react";
 import { usePublicProfilePage } from "@/hooks/use-public-profile-page";
 import { PublicProfileHero } from "@/components/profile/public-profile/public-profile-hero";
+import { PublicProfileMangaControls } from "@/components/profile/public-profile/public-profile-manga-controls";
 import { PublicProfileMangaGrid } from "@/components/profile/public-profile/public-profile-manga-grid";
 import { PublicProfileMangaDetailsDialog } from "@/components/profile/public-profile/public-profile-manga-details-dialog";
 
@@ -28,6 +29,20 @@ export default function PublicProfilePage() {
     handleToggleLike,
     handleCopyMangaTitle,
     translateGenre,
+    searchInput,
+    sortBy,
+    sortDirection,
+    pageSize,
+    currentPage,
+    totalPages,
+    totalFilteredItems,
+    paginatedMangaList,
+    pageSizeOptions,
+    setSearchInput,
+    setSortBy,
+    setSortDirection,
+    setCurrentPage,
+    handlePageSizeChange,
   } = usePublicProfilePage({
     pathname,
     locale,
@@ -72,10 +87,28 @@ export default function PublicProfilePage() {
         onToggleLike={handleToggleLike}
       />
 
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 space-y-4">
+        <PublicProfileMangaControls
+          t={t}
+          searchInput={searchInput}
+          sortBy={sortBy}
+          sortDirection={sortDirection}
+          pageSize={pageSize}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalFilteredItems={totalFilteredItems}
+          pageSizeOptions={pageSizeOptions}
+          onSearchChange={setSearchInput}
+          onSortByChange={setSortBy}
+          onSortDirectionChange={setSortDirection}
+          onPageSizeChange={handlePageSizeChange}
+          onPageChange={setCurrentPage}
+        />
+
         <PublicProfileMangaGrid
           t={t}
-          userData={userData}
+          mangaList={paginatedMangaList}
+          hasAnyManga={userData.mangaList.length > 0}
           onSelectManga={setSelectedManga}
           onCopyMangaTitle={handleCopyMangaTitle}
         />

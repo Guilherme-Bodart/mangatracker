@@ -7,8 +7,13 @@ export class MangaProfileService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getUserListByUsername(username: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { username },
+    const user = await this.prisma.user.findFirst({
+      where: {
+        username: {
+          equals: username,
+          mode: 'insensitive',
+        },
+      },
       select: {
         id: true,
         username: true,
@@ -61,8 +66,13 @@ export class MangaProfileService {
   }
 
   async getProfileLikeState(username: string, currentUserId: string) {
-    const targetUser = await this.prisma.user.findUnique({
-      where: { username },
+    const targetUser = await this.prisma.user.findFirst({
+      where: {
+        username: {
+          equals: username,
+          mode: 'insensitive',
+        },
+      },
       select: {
         id: true,
         _count: {
@@ -103,8 +113,13 @@ export class MangaProfileService {
   }
 
   async toggleProfileLike(username: string, currentUserId: string) {
-    const targetUser = await this.prisma.user.findUnique({
-      where: { username },
+    const targetUser = await this.prisma.user.findFirst({
+      where: {
+        username: {
+          equals: username,
+          mode: 'insensitive',
+        },
+      },
       select: { id: true },
     });
 

@@ -19,8 +19,10 @@ export function GoogleAnalytics() {
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           window.gtag = gtag;
+          window.__mtGaLastPagePath = window.location.pathname + window.location.search;
           gtag('js', new Date());
           gtag('config', '${measurementId}', { send_page_view: false });
+          gtag('event', 'page_view', { page_path: window.__mtGaLastPagePath });
         `}
       </Script>
       <GoogleAnalyticsPageView measurementId={measurementId} />

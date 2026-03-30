@@ -94,6 +94,7 @@ export default function RankingPage() {
                     <div>
                       <Link
                         href={`/user/${profile.username}`}
+                        prefetch={false}
                         className="font-semibold hover:underline"
                       >
                         @{profile.username}

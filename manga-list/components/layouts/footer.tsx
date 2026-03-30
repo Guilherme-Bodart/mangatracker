@@ -42,24 +42,28 @@ export function Footer() {
           <div className="flex items-center justify-center gap-4">
             <Link
               href="/terms"
+              prefetch={false}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               {t("terms")}
             </Link>
             <Link
               href="/privacy"
+              prefetch={false}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               {t("privacy")}
             </Link>
             <Link
               href="/contact"
+              prefetch={false}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               {t("contact")}
             </Link>
             <Link
               href="/how-to-use-api"
+              prefetch={false}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               {t("howToUseApi")}

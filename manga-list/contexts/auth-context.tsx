@@ -5,6 +5,7 @@ import { setCsrfToken } from "@/lib/csrf";
 import { ApiClientError, apiRequest, getApiErrorMessage } from "@/lib/api-client";
 import { useRouter } from "@/i18n/routing";
 import { logger } from "@/lib/logger";
+import { usePathname } from "next/navigation";
 
 interface User {
   id: string;
@@ -31,12 +32,67 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const AUTH_SESSION_HINT_KEY = "mt:auth:session-hint:v1";
+const SUPPORTED_LOCALES = new Set(["pt", "en"]);
+const PROTECTED_ROOT_SEGMENTS = new Set(["my-track", "profile"]);
+
+function getNormalizedPathname(pathname: string): string {
+  const segments = pathname.split("/").filter(Boolean);
+  if (segments.length === 0) {
+    return "/";
+  }
+
+  const maybeLocale = segments[0]?.toLowerCase();
+  const withoutLocale = SUPPORTED_LOCALES.has(maybeLocale)
+    ? segments.slice(1)
+    : segments;
+
+  if (withoutLocale.length === 0) {
+    return "/";
+  }
+
+  return `/${withoutLocale.join("/")}`;
+}
+
+function isProtectedPath(pathname: string): boolean {
+  const normalized = getNormalizedPathname(pathname);
+  const firstSegment = normalized.split("/").filter(Boolean)[0];
+  return firstSegment ? PROTECTED_ROOT_SEGMENTS.has(firstSegment) : false;
+}
+
+function readSessionHint(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  try {
+    return window.localStorage.getItem(AUTH_SESSION_HINT_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeSessionHint(value: boolean): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  try {
+    if (value) {
+      window.localStorage.setItem(AUTH_SESSION_HINT_KEY, "1");
+    } else {
+      window.localStorage.removeItem(AUTH_SESSION_HINT_KEY);
+    }
+  } catch {
+    // Ignore storage failures (private mode/quota).
+  }
+}
+
 export function AuthProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -46,10 +102,14 @@ export function AuthProvider({
         "/auth/me",
       );
       setUser(data.user);
+      writeSessionHint(true);
       return data.user;
     } catch (error) {
       if (error instanceof ApiClientError && error.status !== 401) {
         logger.error("Failed to fetch user", error);
+      }
+      if (error instanceof ApiClientError && error.status === 401) {
+        writeSessionHint(false);
       }
       setUser(null);
       return null;
@@ -58,11 +118,18 @@ export function AuthProvider({
 
   useEffect(() => {
     const load = async () => {
-      await refreshUser();
+      const shouldBootstrapAuth =
+        readSessionHint() || isProtectedPath(pathname || "/");
+
+      if (shouldBootstrapAuth) {
+        await refreshUser();
+      } else {
+        setUser(null);
+      }
       setIsLoading(false);
     };
     load();
-  }, [refreshUser]);
+  }, [pathname, refreshUser]);
 
   const login = React.useCallback(
     async (email: string, password: string) => {
@@ -75,6 +142,7 @@ export function AuthProvider({
         },
       );
       setUser(data.user);
+      writeSessionHint(true);
     },
     [],
   );
@@ -90,6 +158,7 @@ export function AuthProvider({
         },
       );
       setUser(data.user);
+      writeSessionHint(true);
     },
     [],
   );
@@ -105,6 +174,7 @@ export function AuthProvider({
     } finally {
       setCsrfToken(null);
       setUser(null);
+      writeSessionHint(false);
       router.replace("/auth/login");
     }
   }, [router]);

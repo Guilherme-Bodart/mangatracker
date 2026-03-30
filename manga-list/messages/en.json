@@ -809,7 +809,8 @@
     "unread": "Unread",
     "messages": {
       "loadError": "Failed to load notifications"
-    }
+    },
+    "previewContinue": "Text is longer than 300 characters. Click Notifications to read the full message."
   },
   "NotificationsAdmin": {
     "title": "Notifications admin",

@@ -19,6 +19,7 @@ import {
 
 const UNREAD_CACHE_KEY = "mt:notifications:unread-count:v1";
 const UNREAD_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const PREVIEW_MESSAGE_LIMIT = 300;
 
 type UnreadCountCache = {
   count: number;
@@ -34,6 +35,16 @@ function getLocalizedAnnouncementContent(item: UserAnnouncement, locale: string)
     ? item.messagePt || item.messageEn || item.message
     : item.messageEn || item.messagePt || item.message;
   return { title, message };
+}
+
+function truncatePreviewMessage(message: string) {
+  if (message.length <= PREVIEW_MESSAGE_LIMIT) {
+    return { text: message, truncated: false };
+  }
+  return {
+    text: `${message.slice(0, PREVIEW_MESSAGE_LIMIT).trimEnd()}...`,
+    truncated: true,
+  };
 }
 
 function readUnreadCountCache(): UnreadCountCache | null {
@@ -162,6 +173,7 @@ export function NotificationBell() {
           <div className="max-h-[50vh] space-y-3 overflow-y-auto p-4">
             {preview.map((item) => {
               const localized = getLocalizedAnnouncementContent(item, locale);
+              const truncated = truncatePreviewMessage(localized.message);
               return (
                 <div key={item.id} className="rounded-md border p-3 space-y-2">
                 <div className="flex items-center gap-2">
@@ -172,7 +184,12 @@ export function NotificationBell() {
                     <Badge variant="secondary">{tNotifications("unread")}</Badge>
                   ) : null}
                 </div>
-                <p className="text-sm whitespace-pre-wrap">{localized.message}</p>
+                <p className="text-sm whitespace-pre-wrap">{truncated.text}</p>
+                {truncated.truncated ? (
+                  <p className="text-xs text-muted-foreground">
+                    {tNotifications("previewContinue")}
+                  </p>
+                ) : null}
                 <p className="text-xs text-muted-foreground">
                   {new Date(item.createdAt).toLocaleString(
                     locale === "pt" ? "pt-BR" : "en-US",

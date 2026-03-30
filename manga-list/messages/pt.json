@@ -810,7 +810,8 @@
     "unread": "Não lida",
     "messages": {
       "loadError": "Falha ao carregar notificações"
-    }
+    },
+    "previewContinue": "Texto maior que 300 caracteres. Clique em Notificacoes para ler completo."
   },
   "NotificationsAdmin": {
     "title": "Admin de notificações",

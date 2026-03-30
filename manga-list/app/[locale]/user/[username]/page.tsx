@@ -8,6 +8,7 @@ import { usePublicProfilePage } from "@/hooks/use-public-profile-page";
 import { PublicProfileHero } from "@/components/profile/public-profile/public-profile-hero";
 import { PublicProfileMangaControls } from "@/components/profile/public-profile/public-profile-manga-controls";
 import { PublicProfileMangaGrid } from "@/components/profile/public-profile/public-profile-manga-grid";
+import { PublicProfileMangaPagination } from "@/components/profile/public-profile/public-profile-manga-pagination";
 import { PublicProfileMangaDetailsDialog } from "@/components/profile/public-profile/public-profile-manga-details-dialog";
 
 export default function PublicProfilePage() {
@@ -75,7 +76,7 @@ export default function PublicProfilePage() {
   }
 
   return (
-    <div className="min-h-screen pb-8">
+    <div className="min-h-screen overflow-x-hidden pb-8">
       <PublicProfileHero
         t={t}
         userData={userData}
@@ -94,16 +95,24 @@ export default function PublicProfilePage() {
           sortBy={sortBy}
           sortDirection={sortDirection}
           pageSize={pageSize}
-          currentPage={currentPage}
-          totalPages={totalPages}
           totalFilteredItems={totalFilteredItems}
           pageSizeOptions={pageSizeOptions}
           onSearchChange={setSearchInput}
           onSortByChange={setSortBy}
           onSortDirectionChange={setSortDirection}
           onPageSizeChange={handlePageSizeChange}
-          onPageChange={setCurrentPage}
         />
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-2xl font-bold">{t("mangaList")}</h2>
+          <PublicProfileMangaPagination
+            t={t}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            align="right"
+            onPageChange={setCurrentPage}
+          />
+        </div>
 
         <PublicProfileMangaGrid
           t={t}
@@ -111,6 +120,14 @@ export default function PublicProfilePage() {
           hasAnyManga={userData.mangaList.length > 0}
           onSelectManga={setSelectedManga}
           onCopyMangaTitle={handleCopyMangaTitle}
+        />
+
+        <PublicProfileMangaPagination
+          t={t}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          align="center"
+          onPageChange={setCurrentPage}
         />
       </div>
 

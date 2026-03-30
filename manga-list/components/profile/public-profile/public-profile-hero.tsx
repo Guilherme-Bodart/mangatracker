@@ -34,7 +34,7 @@ export function PublicProfileHero({
 }: PublicProfileHeroProps) {
   return (
     <>
-      <div className="relative h-64 bg-gradient-to-r from-primary/20 to-primary/5">
+      <div className="relative h-52 bg-gradient-to-r from-primary/20 to-primary/5 sm:h-64">
         {userData.user.bannerUrl && (
           <img
             src={userData.user.bannerUrl}
@@ -43,17 +43,17 @@ export function PublicProfileHero({
           />
         )}
 
-        <div className="absolute -bottom-16 left-8">
-          <Avatar className="size-32 border-4 border-background">
+        <div className="absolute -bottom-12 left-4 sm:-bottom-16 sm:left-8">
+          <Avatar className="size-24 border-4 border-background sm:size-32">
             <AvatarImage src={userData.user.avatarUrl || undefined} />
             <AvatarFallback className="bg-primary/10 text-primary text-3xl">
-              <User className="size-16" />
+              <User className="size-12 sm:size-16" />
             </AvatarFallback>
           </Avatar>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 mt-20">
+      <div className="container mx-auto mt-16 px-4 sm:mt-20">
         <div className="mb-6">
           <div className="mb-2 flex flex-wrap items-center gap-3">
             <h1 className="text-3xl font-bold">@{userData.user.username}</h1>
@@ -103,4 +103,3 @@ export function PublicProfileHero({
     </>
   );
 }
-

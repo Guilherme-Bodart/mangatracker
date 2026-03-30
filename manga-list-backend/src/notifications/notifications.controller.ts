@@ -2,6 +2,7 @@ import {
   Controller,
   Delete,
   Get,
+  Patch,
   Post,
   Query,
   Request,
@@ -14,6 +15,7 @@ import { Request as ExpressRequest } from 'express';
 import { CsrfGuard } from '../auth/guards/csrf.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
+import { UpdateAnnouncementDto } from './dto/update-announcement.dto';
 import { NotificationAdminGuard } from './guards/notification-admin.guard';
 import { NotificationsService } from './notifications.service';
 
@@ -78,5 +80,13 @@ export class NotificationsController {
   async removeAdminNotification(@Param('id') id: string) {
     return this.notificationsService.removeAnnouncement(id);
   }
-}
 
+  @UseGuards(JwtAuthGuard, CsrfGuard, NotificationAdminGuard)
+  @Patch('admin/:id')
+  async updateAdminNotification(
+    @Param('id') id: string,
+    @Body() dto: UpdateAnnouncementDto,
+  ) {
+    return this.notificationsService.updateAnnouncement(id, dto);
+  }
+}

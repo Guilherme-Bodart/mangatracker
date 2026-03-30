@@ -15,6 +15,17 @@ import {
   type UserAnnouncement,
 } from "@/lib/notifications-api";
 
+function getLocalizedAnnouncementContent(item: UserAnnouncement, locale: string) {
+  const usePt = locale === "pt";
+  const title = usePt
+    ? item.titlePt || item.titleEn || item.title
+    : item.titleEn || item.titlePt || item.title;
+  const message = usePt
+    ? item.messagePt || item.messageEn || item.message
+    : item.messageEn || item.messagePt || item.message;
+  return { title, message };
+}
+
 export default function NotificationsPage() {
   const t = useTranslations("Notifications");
   const locale = useLocale();
@@ -79,12 +90,14 @@ export default function NotificationsPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {notifications.map((item) => (
-            <Card key={item.id}>
+          {notifications.map((item) => {
+            const localized = getLocalizedAnnouncementContent(item, locale);
+            return (
+              <Card key={item.id}>
               <CardHeader className="pb-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <CardTitle className="text-base">
-                    {item.title || t("defaultTitle")}
+                    {localized.title || t("defaultTitle")}
                   </CardTitle>
                   {!item.isRead ? (
                     <Badge variant="secondary">{t("unread")}</Badge>
@@ -93,7 +106,7 @@ export default function NotificationsPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {item.message}
+                  {localized.message}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {new Date(item.createdAt).toLocaleString(
@@ -101,11 +114,11 @@ export default function NotificationsPage() {
                   )}
                 </p>
               </CardContent>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
-

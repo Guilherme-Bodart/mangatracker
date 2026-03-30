@@ -3,7 +3,11 @@ import { apiRequest } from "@/lib/api-client";
 export type UserAnnouncement = {
   id: string;
   title: string | null;
+  titlePt: string | null;
+  titleEn: string | null;
   message: string;
+  messagePt: string | null;
+  messageEn: string | null;
   createdAt: string;
   isRead: boolean;
   readAt: string | null;
@@ -12,7 +16,11 @@ export type UserAnnouncement = {
 export type AdminAnnouncement = {
   id: string;
   title: string | null;
+  titlePt: string | null;
+  titleEn: string | null;
   message: string;
+  messagePt: string | null;
+  messageEn: string | null;
   isActive: boolean;
   createdAt: string;
   removedAt: string | null;
@@ -49,16 +57,53 @@ export async function listAdminNotifications(includeInactive = true) {
 
 export async function createAdminNotification(input: {
   title?: string;
-  message: string;
+  titlePt?: string;
+  titleEn?: string;
+  message?: string;
+  messagePt?: string;
+  messageEn?: string;
 }) {
   return apiRequest<{
     id: string;
     title: string | null;
+    titlePt: string | null;
+    titleEn: string | null;
     message: string;
+    messagePt: string | null;
+    messageEn: string | null;
     isActive: boolean;
     createdAt: string;
   }>("/notifications/admin", {
     method: "POST",
+    csrf: "authenticated-required",
+    body: input,
+  });
+}
+
+export async function updateAdminNotification(
+  id: string,
+  input: {
+    title?: string;
+    titlePt?: string;
+    titleEn?: string;
+    message?: string;
+    messagePt?: string;
+    messageEn?: string;
+  },
+) {
+  return apiRequest<{
+    id: string;
+    title: string | null;
+    titlePt: string | null;
+    titleEn: string | null;
+    message: string;
+    messagePt: string | null;
+    messageEn: string | null;
+    isActive: boolean;
+    createdAt: string;
+    removedAt: string | null;
+  }>(`/notifications/admin/${encodeURIComponent(id)}`, {
+    method: "PATCH",
     csrf: "authenticated-required",
     body: input,
   });
@@ -73,4 +118,3 @@ export async function deleteAdminNotification(id: string) {
     },
   );
 }
-

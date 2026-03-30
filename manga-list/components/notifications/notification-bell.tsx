@@ -25,6 +25,17 @@ type UnreadCountCache = {
   fetchedAt: number;
 };
 
+function getLocalizedAnnouncementContent(item: UserAnnouncement, locale: string) {
+  const usePt = locale === "pt";
+  const title = usePt
+    ? item.titlePt || item.titleEn || item.title
+    : item.titleEn || item.titlePt || item.title;
+  const message = usePt
+    ? item.messagePt || item.messageEn || item.message
+    : item.messageEn || item.messagePt || item.message;
+  return { title, message };
+}
+
 function readUnreadCountCache(): UnreadCountCache | null {
   try {
     const raw = window.localStorage.getItem(UNREAD_CACHE_KEY);
@@ -149,24 +160,27 @@ export function NotificationBell() {
           <p className="p-4 text-sm text-muted-foreground">{tNotifications("empty")}</p>
         ) : (
           <div className="max-h-[50vh] space-y-3 overflow-y-auto p-4">
-            {preview.map((item) => (
-              <div key={item.id} className="rounded-md border p-3 space-y-2">
+            {preview.map((item) => {
+              const localized = getLocalizedAnnouncementContent(item, locale);
+              return (
+                <div key={item.id} className="rounded-md border p-3 space-y-2">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-semibold">
-                    {item.title || tNotifications("defaultTitle")}
+                    {localized.title || tNotifications("defaultTitle")}
                   </p>
                   {!item.isRead ? (
                     <Badge variant="secondary">{tNotifications("unread")}</Badge>
                   ) : null}
                 </div>
-                <p className="text-sm whitespace-pre-wrap">{item.message}</p>
+                <p className="text-sm whitespace-pre-wrap">{localized.message}</p>
                 <p className="text-xs text-muted-foreground">
                   {new Date(item.createdAt).toLocaleString(
                     locale === "pt" ? "pt-BR" : "en-US",
                   )}
                 </p>
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         )}
 

@@ -274,6 +274,10 @@ model Announcement {
   id              String             @id @default(uuid())
   title           String?
   message         String             @db.Text
+  titlePt         String?
+  titleEn         String?
+  messagePt       String?            @db.Text
+  messageEn       String?            @db.Text
   isActive        Boolean            @default(true)
   createdByUserId String?
   createdBy       User?              @relation("AnnouncementCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)

@@ -10,6 +10,7 @@ import {
   createAdminNotification,
   deleteAdminNotification,
   listAdminNotifications,
+  updateAdminNotification,
   type AdminAnnouncement,
 } from "@/lib/notifications-api";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,29 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 
+type AnnouncementFormState = {
+  titlePt: string;
+  titleEn: string;
+  messagePt: string;
+  messageEn: string;
+};
+
+const EMPTY_FORM: AnnouncementFormState = {
+  titlePt: "",
+  titleEn: "",
+  messagePt: "",
+  messageEn: "",
+};
+
+function toFormState(announcement: AdminAnnouncement): AnnouncementFormState {
+  return {
+    titlePt: announcement.titlePt ?? "",
+    titleEn: announcement.titleEn ?? "",
+    messagePt: announcement.messagePt ?? "",
+    messageEn: announcement.messageEn ?? "",
+  };
+}
+
 export default function NotificationsAdminPage() {
   const t = useTranslations("NotificationsAdmin");
   const locale = useLocale();
@@ -27,8 +51,8 @@ export default function NotificationsAdminPage() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [announcements, setAnnouncements] = useState<AdminAnnouncement[]>([]);
-  const [title, setTitle] = useState("");
-  const [message, setMessage] = useState("");
+  const [form, setForm] = useState<AnnouncementFormState>(EMPTY_FORM);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleForbidden = useCallback(() => {
@@ -67,22 +91,37 @@ export default function NotificationsAdminPage() {
     return null;
   }
 
+  const resetForm = () => {
+    setForm(EMPTY_FORM);
+    setEditingId(null);
+  };
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!message.trim()) {
-      toast.error(t("messages.messageRequired"));
+
+    if (!form.messagePt.trim() && !form.messageEn.trim()) {
+      toast.error(t("messages.messageLocaleRequired"));
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await createAdminNotification({
-        title: title.trim() || undefined,
-        message: message.trim(),
-      });
-      setTitle("");
-      setMessage("");
-      toast.success(t("messages.createSuccess"));
+      const payload = {
+        titlePt: form.titlePt.trim() || undefined,
+        titleEn: form.titleEn.trim() || undefined,
+        messagePt: form.messagePt.trim() || undefined,
+        messageEn: form.messageEn.trim() || undefined,
+      };
+
+      if (editingId) {
+        await updateAdminNotification(editingId, payload);
+        toast.success(t("messages.updateSuccess"));
+      } else {
+        await createAdminNotification(payload);
+        toast.success(t("messages.createSuccess"));
+      }
+
+      resetForm();
       await loadAnnouncements();
       window.dispatchEvent(new Event("notifications:updated"));
     } catch (error: unknown) {
@@ -90,10 +129,21 @@ export default function NotificationsAdminPage() {
         handleForbidden();
         return;
       }
-      toast.error(getApiErrorMessage(error, t("messages.createError")));
+
+      toast.error(
+        getApiErrorMessage(
+          error,
+          editingId ? t("messages.updateError") : t("messages.createError"),
+        ),
+      );
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleEdit = (announcement: AdminAnnouncement) => {
+    setEditingId(announcement.id);
+    setForm(toFormState(announcement));
   };
 
   const handleRemove = async (id: string) => {
@@ -102,6 +152,9 @@ export default function NotificationsAdminPage() {
       toast.success(t("messages.removeSuccess"));
       await loadAnnouncements();
       window.dispatchEvent(new Event("notifications:updated"));
+      if (editingId === id) {
+        resetForm();
+      }
     } catch (error: unknown) {
       if (error instanceof ApiClientError && error.status === 403) {
         handleForbidden();
@@ -120,34 +173,89 @@ export default function NotificationsAdminPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t("form.title")}</CardTitle>
+          <CardTitle>
+            {editingId ? t("form.editTitle") : t("form.title")}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="space-y-2">
-              <Label htmlFor="announcement-title">{t("form.titleLabel")}</Label>
-              <Input
-                id="announcement-title"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                placeholder={t("form.titlePlaceholder")}
-                maxLength={120}
-              />
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="announcement-title-pt">{t("form.titlePtLabel")}</Label>
+                <Input
+                  id="announcement-title-pt"
+                  value={form.titlePt}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, titlePt: event.target.value }))
+                  }
+                  placeholder={t("form.titlePtPlaceholder")}
+                  maxLength={120}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="announcement-title-en">{t("form.titleEnLabel")}</Label>
+                <Input
+                  id="announcement-title-en"
+                  value={form.titleEn}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, titleEn: event.target.value }))
+                  }
+                  placeholder={t("form.titleEnPlaceholder")}
+                  maxLength={120}
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="announcement-message">{t("form.messageLabel")}</Label>
-              <Textarea
-                id="announcement-message"
-                value={message}
-                onChange={(event) => setMessage(event.target.value)}
-                placeholder={t("form.messagePlaceholder")}
-                rows={5}
-                maxLength={2000}
-              />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="announcement-message-pt">{t("form.messagePtLabel")}</Label>
+                <Textarea
+                  id="announcement-message-pt"
+                  value={form.messagePt}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, messagePt: event.target.value }))
+                  }
+                  placeholder={t("form.messagePtPlaceholder")}
+                  rows={5}
+                  maxLength={2000}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="announcement-message-en">{t("form.messageEnLabel")}</Label>
+                <Textarea
+                  id="announcement-message-en"
+                  value={form.messageEn}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, messageEn: event.target.value }))
+                  }
+                  placeholder={t("form.messageEnPlaceholder")}
+                  rows={5}
+                  maxLength={2000}
+                />
+              </div>
             </div>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? t("form.submitting") : t("form.submit")}
-            </Button>
+
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting
+                  ? editingId
+                    ? t("form.updating")
+                    : t("form.submitting")
+                  : editingId
+                    ? t("form.update")
+                    : t("form.submit")}
+              </Button>
+              {editingId ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={resetForm}
+                  disabled={isSubmitting}
+                >
+                  {t("form.cancelEdit")}
+                </Button>
+              ) : null}
+            </div>
           </form>
         </CardContent>
       </Card>
@@ -163,7 +271,7 @@ export default function NotificationsAdminPage() {
             <p className="text-sm text-muted-foreground">{t("list.empty")}</p>
           ) : (
             announcements.map((announcement) => (
-              <div key={announcement.id} className="rounded-lg border p-4 space-y-2">
+              <div key={announcement.id} className="rounded-lg border p-4 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-semibold">
@@ -173,17 +281,47 @@ export default function NotificationsAdminPage() {
                       {announcement.isActive ? t("list.active") : t("list.removed")}
                     </Badge>
                   </div>
-                  {announcement.isActive ? (
+                  <div className="flex flex-wrap gap-2">
                     <Button
-                      variant="destructive"
+                      variant="outline"
                       size="sm"
-                      onClick={() => void handleRemove(announcement.id)}
+                      onClick={() => handleEdit(announcement)}
                     >
-                      {t("list.remove")}
+                      {t("list.edit")}
                     </Button>
-                  ) : null}
+                    {announcement.isActive ? (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => void handleRemove(announcement.id)}
+                      >
+                        {t("list.remove")}
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
-                <p className="text-sm whitespace-pre-wrap">{announcement.message}</p>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="rounded-md border p-3 space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">{t("list.ptSection")}</p>
+                    <p className="text-sm font-semibold">
+                      {announcement.titlePt || t("list.defaultTitle")}
+                    </p>
+                    <p className="text-sm whitespace-pre-wrap">
+                      {announcement.messagePt || t("list.localeEmpty")}
+                    </p>
+                  </div>
+                  <div className="rounded-md border p-3 space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">{t("list.enSection")}</p>
+                    <p className="text-sm font-semibold">
+                      {announcement.titleEn || t("list.defaultTitle")}
+                    </p>
+                    <p className="text-sm whitespace-pre-wrap">
+                      {announcement.messageEn || t("list.localeEmpty")}
+                    </p>
+                  </div>
+                </div>
+
                 <div className="text-xs text-muted-foreground flex flex-wrap gap-3">
                   <span>
                     {t("list.createdAt")}:{" "}

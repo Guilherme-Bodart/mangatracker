@@ -818,12 +818,20 @@
     "loading": "Carregando avisos...",
     "form": {
       "title": "Criar notificação global",
-      "titleLabel": "Título (opcional)",
-      "titlePlaceholder": "Ex.: Novo domínio suportado",
-      "messageLabel": "Mensagem",
-      "messagePlaceholder": "Escreva o aviso que todos os usuários devem ver.",
+      "editTitle": "Editar notificação global",
+      "titlePtLabel": "Título (PT, opcional)",
+      "titlePtPlaceholder": "Ex.: Novo domínio suportado",
+      "titleEnLabel": "Title (EN, optional)",
+      "titleEnPlaceholder": "Ex.: New supported domain",
+      "messagePtLabel": "Mensagem (PT)",
+      "messagePtPlaceholder": "Escreva o aviso em português.",
+      "messageEnLabel": "Message (EN)",
+      "messageEnPlaceholder": "Write the announcement in English.",
       "submitting": "Publicando...",
-      "submit": "Publicar notificação"
+      "updating": "Atualizando...",
+      "submit": "Publicar notificação",
+      "update": "Salvar edição",
+      "cancelEdit": "Cancelar edição"
     },
     "list": {
       "title": "Notificações publicadas",
@@ -831,7 +839,11 @@
       "defaultTitle": "Aviso da equipe",
       "active": "Ativa",
       "removed": "Removida",
+      "edit": "Editar",
       "remove": "Remover",
+      "ptSection": "Conteúdo em português",
+      "enSection": "Content in English",
+      "localeEmpty": "Sem conteúdo para este idioma.",
       "createdAt": "Criada em",
       "readCount": "Leituras",
       "createdBy": "Criada por"
@@ -839,9 +851,12 @@
     "messages": {
       "forbidden": "Você não tem permissão para acessar esta página",
       "messageRequired": "Preencha a mensagem da notificação",
+      "messageLocaleRequired": "Preencha pelo menos uma mensagem (PT ou EN)",
       "loadError": "Falha ao carregar notificações",
       "createSuccess": "Notificação publicada com sucesso",
       "createError": "Falha ao publicar notificação",
+      "updateSuccess": "Notificação atualizada com sucesso",
+      "updateError": "Falha ao atualizar notificação",
       "removeSuccess": "Notificação removida com sucesso",
       "removeError": "Falha ao remover notificação"
     }

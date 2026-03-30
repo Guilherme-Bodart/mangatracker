@@ -817,12 +817,20 @@
     "loading": "Loading announcements...",
     "form": {
       "title": "Create global notification",
-      "titleLabel": "Title (optional)",
-      "titlePlaceholder": "Ex.: New supported domain",
-      "messageLabel": "Message",
-      "messagePlaceholder": "Write the announcement all users should see.",
+      "editTitle": "Edit global notification",
+      "titlePtLabel": "Title (PT, optional)",
+      "titlePtPlaceholder": "Ex.: Novo dominio suportado",
+      "titleEnLabel": "Title (EN, optional)",
+      "titleEnPlaceholder": "Ex.: New supported domain",
+      "messagePtLabel": "Message (PT)",
+      "messagePtPlaceholder": "Write the announcement in Portuguese.",
+      "messageEnLabel": "Message (EN)",
+      "messageEnPlaceholder": "Write the announcement in English.",
       "submitting": "Publishing...",
-      "submit": "Publish notification"
+      "updating": "Updating...",
+      "submit": "Publish notification",
+      "update": "Save changes",
+      "cancelEdit": "Cancel editing"
     },
     "list": {
       "title": "Published notifications",
@@ -830,7 +838,11 @@
       "defaultTitle": "Team announcement",
       "active": "Active",
       "removed": "Removed",
+      "edit": "Edit",
       "remove": "Remove",
+      "ptSection": "Content in Portuguese",
+      "enSection": "Content in English",
+      "localeEmpty": "No content for this locale.",
       "createdAt": "Created at",
       "readCount": "Reads",
       "createdBy": "Created by"
@@ -838,9 +850,12 @@
     "messages": {
       "forbidden": "You do not have permission to access this page",
       "messageRequired": "Fill in the notification message",
+      "messageLocaleRequired": "Fill at least one message (PT or EN)",
       "loadError": "Failed to load notifications",
       "createSuccess": "Notification published successfully",
       "createError": "Failed to publish notification",
+      "updateSuccess": "Notification updated successfully",
+      "updateError": "Failed to update notification",
       "removeSuccess": "Notification removed successfully",
       "removeError": "Failed to remove notification"
     }

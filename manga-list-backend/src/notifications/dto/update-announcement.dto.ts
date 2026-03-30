@@ -1,6 +1,6 @@
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 
-export class CreateAnnouncementDto {
+export class UpdateAnnouncementDto {
   @IsOptional()
   @IsString()
   @MaxLength(120)
@@ -16,8 +16,8 @@ export class CreateAnnouncementDto {
   @MaxLength(120)
   titleEn?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   @MaxLength(2000)
   message?: string;
 

@@ -39,6 +39,10 @@ export function PublicProfileMangaDetailsDialog({
   translateGenre,
   onOpenChange,
 }: PublicProfileMangaDetailsDialogProps) {
+  const selectedMangaStarRating = selectedManga?.rating
+    ? Math.max(0, Math.min(5, selectedManga.rating / 2))
+    : 0;
+
   return (
     <Dialog open={!!selectedManga} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -87,10 +91,10 @@ export function PublicProfileMangaDetailsDialog({
                     <div className="flex items-center gap-1">
                       {Array.from({ length: 5 }, (_, i) => {
                         const starValue = i + 1;
-                        const isFilled = selectedManga.rating! >= starValue;
+                        const isFilled = selectedMangaStarRating >= starValue;
                         const isHalf =
-                          selectedManga.rating! >= starValue - 0.5 &&
-                          selectedManga.rating! < starValue;
+                          selectedMangaStarRating >= starValue - 0.5 &&
+                          selectedMangaStarRating < starValue;
 
                         return (
                           <Star
@@ -197,4 +201,3 @@ export function PublicProfileMangaDetailsDialog({
     </Dialog>
   );
 }
-

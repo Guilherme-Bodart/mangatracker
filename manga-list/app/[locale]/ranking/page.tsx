@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
+import { AdsterraResponsiveBanner } from "@/components/ads/adsterra-responsive-banner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,10 @@ export default function RankingPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold">{t("title")}</h1>
         <p className="text-muted-foreground">{t("subtitle")}</p>
+      </div>
+
+      <div className="mb-6 flex justify-center">
+        <AdsterraResponsiveBanner />
       </div>
 
       {isLoading && (

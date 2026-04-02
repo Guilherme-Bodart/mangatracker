@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname } from "@/i18n/routing";
 import { Filter, User } from "lucide-react";
+import { AdsterraResponsiveBanner } from "@/components/ads/adsterra-responsive-banner";
 import { Button } from "@/components/ui/button";
 import { usePublicProfilePage } from "@/hooks/use-public-profile-page";
 import { PublicProfileHero } from "@/components/profile/public-profile/public-profile-hero";
@@ -108,6 +109,10 @@ export default function PublicProfilePage() {
       />
 
       <div className="container mx-auto px-4 space-y-4">
+        <div className="flex justify-center">
+          <AdsterraResponsiveBanner />
+        </div>
+
         {isFiltersOpen ? (
           <PublicProfileMangaControls
             t={t}

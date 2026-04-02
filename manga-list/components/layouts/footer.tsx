@@ -39,7 +39,7 @@ export function Footer() {
         {/* Links + Language Switcher */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
           {/* Nav Links */}
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-4">
             <Link
               href="/terms"
               prefetch={false}
@@ -71,7 +71,7 @@ export function Footer() {
           </div>
 
           {/* Language Switcher */}
-          <div className="flex items-center justify-center gap-2 border-l pl-4">
+          <div className="flex items-center justify-center gap-2 border-t pt-4 sm:border-t-0 sm:border-l sm:pl-4 sm:pt-0">
             <Languages className="size-4 text-muted-foreground" />
             <div className="flex gap-1">
               <Button

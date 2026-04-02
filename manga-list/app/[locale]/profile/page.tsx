@@ -62,6 +62,8 @@ export default function ProfilePage() {
   // Redirecting or waiting auth bootstrap
   if (isAuthLoading || !user) return null;
 
+  const topActionButtonClassName = "w-full justify-center sm:w-auto";
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -108,29 +110,33 @@ export default function ProfilePage() {
   return (
     <div className="container mx-auto max-w-4xl py-8 px-4">
       {/* Header with Public Profile Button */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <h1 className="text-3xl font-bold">{t("title")}</h1>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap md:w-auto">
+          <Button variant="outline" asChild className={topActionButtonClassName}>
             <Link href="/profile/notifications">{t("actions.notifications")}</Link>
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className={topActionButtonClassName}>
             <Link href="/profile/integrations">{t("actions.integrations")}</Link>
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className={topActionButtonClassName}>
             <Link href="/profile/integrations-admin">
               {t("actions.integrationsAdmin")}
             </Link>
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className={topActionButtonClassName}>
             <Link href="/profile/notifications-admin">
               {t("actions.notificationsAdmin")}
             </Link>
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className={topActionButtonClassName}>
             <Link href="/profile/manga-admin">{t("actions.mangaAdmin")}</Link>
           </Button>
-          <Button variant="outline" asChild className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            asChild
+            className={`${topActionButtonClassName} flex items-center gap-2`}
+          >
             <a
               href={`/user/${user.username}`}
               target="_blank"

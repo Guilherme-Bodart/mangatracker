@@ -66,12 +66,16 @@ export default function NotificationsPage() {
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold">{t("title")}</h1>
           <p className="text-muted-foreground mt-2">{t("subtitle")}</p>
         </div>
-        <Button variant="outline" onClick={() => void loadNotifications()}>
+        <Button
+          variant="outline"
+          onClick={() => void loadNotifications()}
+          className="w-full sm:w-auto"
+        >
           {t("refresh")}
         </Button>
       </div>

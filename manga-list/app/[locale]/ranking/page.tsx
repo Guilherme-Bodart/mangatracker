@@ -72,7 +72,10 @@ export default function RankingPage() {
       {!isLoading && !error && profiles.length > 0 && (
         <div className="space-y-3">
           {profiles.map((profile) => (
-            <Card key={profile.username} className="relative overflow-hidden">
+            <Card
+              key={profile.username}
+              className="relative gap-3 overflow-hidden p-8 md:min-h-[240px] md:justify-between"
+            >
               {profile.bannerUrl && (
                 <img
                   src={profile.bannerUrl}
@@ -81,45 +84,47 @@ export default function RankingPage() {
                 />
               )}
               <div className="absolute inset-0 bg-slate-950/70" />
-              <CardHeader className="relative pb-3">
-                <CardTitle className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <Badge variant="secondary">#{profile.rank}</Badge>
-                    <Avatar className="size-11">
+              <CardHeader className="relative p-0 pb-3">
+                <CardTitle className="flex items-start justify-between gap-3 sm:items-center">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <Badge variant="secondary" className="text-sm">
+                      #{profile.rank}
+                    </Badge>
+                    <Avatar className="size-16">
                       <AvatarImage src={profile.avatarUrl ?? undefined} />
                       <AvatarFallback>
-                        <User className="size-5" />
+                        <User className="size-7" />
                       </AvatarFallback>
                     </Avatar>
-                    <div>
+                    <div className="min-w-0">
                       <Link
                         href={`/user/${profile.username}`}
                         prefetch={false}
-                        className="font-semibold hover:underline"
+                        className="block truncate text-2xl font-semibold hover:underline"
                       >
                         @{profile.username}
                       </Link>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 text-red-500 text-sm">
-                    <Heart className="size-4 fill-current" />
-                    <span className="font-medium">{profile.likes}</span>
+                  <div className="flex shrink-0 items-center gap-1.5 text-lg text-red-500">
+                    <Heart className="size-5 fill-current" />
+                    <span className="font-semibold">{profile.likes}</span>
                   </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="relative pt-0">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+              <CardContent className="relative p-0">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-lg md:grid-cols-3">
                   <div>
                     <span className="text-muted-foreground">{t("likes")}:</span>{" "}
-                    <strong>{profile.likes}</strong>
+                    <strong className="text-xl">{profile.likes}</strong>
                   </div>
                   <div>
                     <span className="text-muted-foreground">{t("completed")}:</span>{" "}
-                    <strong>{profile.completed}</strong>
+                    <strong className="text-xl">{profile.completed}</strong>
                   </div>
                   <div>
                     <span className="text-muted-foreground">{t("reading")}:</span>{" "}
-                    <strong>{profile.reading}</strong>
+                    <strong className="text-xl">{profile.reading}</strong>
                   </div>
                 </div>
               </CardContent>

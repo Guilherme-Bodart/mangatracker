@@ -155,7 +155,11 @@ export function NotificationBell() {
         ) : null}
       </div>
 
-      <DropdownMenuContent align="end" sideOffset={8} className="w-[380px] p-0">
+      <DropdownMenuContent
+        align="end"
+        sideOffset={8}
+        className="w-[calc(100vw-1rem)] max-w-[380px] p-0"
+      >
         <div className="border-b p-4">
           <p className="text-lg font-semibold">{tHeader("notifications")}</p>
           <p className="text-sm text-muted-foreground">{tNotifications("subtitle")}</p>

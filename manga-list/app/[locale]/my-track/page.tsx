@@ -255,15 +255,15 @@ export default function MyTrackPage() {
   return (
     <div className="min-h-screen">
       {/* Banner Section */}
-      <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-background">
+      <div className="relative w-full overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-background">
         {user?.bannerUrl ? (
           <img
             src={user.bannerUrl}
             alt={tProfile("details.bannerAlt")}
-            className="w-full h-full object-cover object-center"
+            className="block h-52 w-full object-cover object-center sm:h-64 md:h-auto md:max-h-[50vh]"
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-orange-500/20" />
+          <div className="h-52 w-full bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-orange-500/20 sm:h-64 md:h-[50vh] md:max-h-[50vh]" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
 
@@ -308,10 +308,10 @@ export default function MyTrackPage() {
       {/* Manga List */}
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-2xl font-semibold">{t("heading")}</h2>
-            <div className="flex items-center gap-2">
-              <Button asChild>
+            <div className="flex w-full items-center gap-2 sm:w-auto sm:justify-end">
+              <Button asChild className="flex-1 sm:flex-none">
                 <Link href="/manga">
                   <Plus className="mr-2 h-4 w-4" />
                   {t("browseManga")}

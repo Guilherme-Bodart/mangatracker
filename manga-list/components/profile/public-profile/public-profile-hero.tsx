@@ -36,78 +36,85 @@ export function PublicProfileHero({
   filtersToggleButton,
 }: PublicProfileHeroProps) {
   return (
-    <>
-      <div className="relative aspect-video overflow-hidden bg-gradient-to-r from-primary/20 to-primary/5">
-        {userData.user.bannerUrl && (
-          <img
-            src={userData.user.bannerUrl}
-            alt={t("details.bannerAlt")}
-            className="w-full h-full object-cover"
-          />
-        )}
+    <div className="relative mb-6 overflow-hidden bg-gradient-to-r from-primary/20 to-primary/5">
+      {userData.user.bannerUrl ? (
+        <img
+          src={userData.user.bannerUrl}
+          alt={t("details.bannerAlt")}
+          className="block h-52 w-full object-cover sm:h-64 md:h-auto md:max-h-[50vh]"
+        />
+      ) : (
+        <div className="h-52 w-full bg-gradient-to-r from-primary/20 to-primary/5 sm:h-64 md:h-[50vh] md:max-h-[50vh]" />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/20" />
 
-        <div className="absolute -bottom-12 left-4 sm:-bottom-16 sm:left-8">
-          <Avatar className="size-24 border-4 border-background sm:size-32">
-            <AvatarImage src={userData.user.avatarUrl || undefined} />
-            <AvatarFallback className="bg-primary/10 text-primary text-3xl">
-              <User className="size-12 sm:size-16" />
-            </AvatarFallback>
-          </Avatar>
-        </div>
-      </div>
+      <div className="absolute inset-x-0 bottom-0">
+        <div className="container mx-auto px-4 pb-4 sm:px-6 sm:pb-6 lg:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex items-end gap-4">
+              <Avatar className="size-20 border-4 border-background shadow-lg sm:size-24">
+                <AvatarImage src={userData.user.avatarUrl || undefined} />
+                <AvatarFallback className="bg-primary/10 text-primary text-3xl">
+                  <User className="size-10 sm:size-12" />
+                </AvatarFallback>
+              </Avatar>
 
-      <div className="container mx-auto mt-16 px-4 sm:mt-20">
-        <div className="mb-6">
-          <div className="mb-2 flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-bold">@{userData.user.username}</h1>
-            {!authLoading && !authUser && (
-              <Button asChild size="sm" variant="outline">
-                <Link href="/auth/login">{t("likeToLogin")}</Link>
-              </Button>
-            )}
-            {!authLoading && authUser && !isOwnProfile && (
-              <Button
-                size="sm"
-                variant={isLikedByMe ? "default" : "outline"}
-                onClick={() => void onToggleLike()}
-                disabled={isLikeLoading}
-                className="gap-2"
-              >
-                <Heart className={`size-4 ${isLikedByMe ? "fill-current" : ""}`} />
-                {isLikedByMe ? t("unlikeProfile") : t("likeProfile")}
-              </Button>
-            )}
-          </div>
+              <div className="pb-1">
+                <div className="mb-2 flex flex-wrap items-center gap-3">
+                  <h1 className="text-3xl font-bold">@{userData.user.username}</h1>
+                  {!authLoading && !authUser && (
+                    <Button asChild size="sm" variant="outline">
+                      <Link href="/auth/login">{t("likeToLogin")}</Link>
+                    </Button>
+                  )}
+                  {!authLoading && authUser && !isOwnProfile && (
+                    <Button
+                      size="sm"
+                      variant={isLikedByMe ? "default" : "outline"}
+                      onClick={() => void onToggleLike()}
+                      disabled={isLikeLoading}
+                      className="gap-2"
+                    >
+                      <Heart className={`size-4 ${isLikedByMe ? "fill-current" : ""}`} />
+                      {isLikedByMe ? t("unlikeProfile") : t("likeProfile")}
+                    </Button>
+                  )}
+                </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Heart className="size-4 text-red-500" />
-              <strong className="text-foreground">{userData.user.totalLikes}</strong>
-              <span>{t("likes")}</span>
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center gap-2">
-                <BookOpen className="size-4 text-muted-foreground" />
-                <span className="text-sm">
-                  <strong>{userData.mangaList?.length || 0}</strong> {t("stats.total")}
-                </span>
+                <div className="flex flex-wrap items-center gap-3 text-sm">
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <Heart className="size-4 text-red-500" />
+                    <strong className="text-foreground">{userData.user.totalLikes}</strong>
+                    <span>{t("likes")}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <BookOpen className="size-4" />
+                    <span>
+                      <strong className="text-foreground">
+                        {userData.mangaList?.length || 0}
+                      </strong>{" "}
+                      {t("stats.total")}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Heart className="size-4 fill-red-500 text-red-500" />
+                    <span>
+                      <strong className="text-foreground">
+                        {userData.stats?.favorites || 0}
+                      </strong>{" "}
+                      {t("stats.favorites")}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Heart className="size-4 text-red-500 fill-red-500" />
-                <span className="text-sm">
-                  <strong>{userData.stats?.favorites || 0}</strong> {t("stats.favorites")}
-                </span>
-              </div>
             </div>
+
             {filtersToggleButton ? (
-              <div className="self-start sm:self-auto">{filtersToggleButton}</div>
+              <div className="self-start pb-1 sm:self-auto">{filtersToggleButton}</div>
             ) : null}
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

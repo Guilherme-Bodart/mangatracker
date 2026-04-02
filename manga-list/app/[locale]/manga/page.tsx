@@ -187,7 +187,7 @@ export default function BrowsePage() {
       </div>
 
       {/* Search Bar */}
-      <div className="flex gap-2 mb-6">
+      <div className="mb-6 flex flex-col gap-2 sm:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
@@ -197,14 +197,18 @@ export default function BrowsePage() {
             className="pl-9"
           />
         </div>
-        <Button disabled={isLoading}>
+        <Button disabled={isLoading} className="w-full sm:w-auto">
           {isLoading ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
             t("search")
           )}
         </Button>
-        <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
+        <Button
+          variant="outline"
+          onClick={() => setShowFilters(!showFilters)}
+          className="w-full sm:w-auto"
+        >
           <Filter className="size-4 mr-2" />
           {t("filters")}
         </Button>

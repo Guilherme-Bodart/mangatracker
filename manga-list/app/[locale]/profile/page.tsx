@@ -155,7 +155,7 @@ export default function ProfilePage() {
             {/* Banner Preview */}
             <div className="space-y-2">
               <Label>{t("images.bannerUrl.label")}</Label>
-              <div className="relative h-32 rounded-lg border bg-muted overflow-hidden">
+              <div className="relative aspect-video overflow-hidden rounded-lg border bg-muted">
                 {formData.bannerUrl ? (
                   <img
                     src={formData.bannerUrl}
@@ -175,6 +175,9 @@ export default function ProfilePage() {
                   setFormData({ ...formData, bannerUrl: e.target.value })
                 }
               />
+              <p className="text-sm text-muted-foreground">
+                {t("images.bannerUrl.description")}
+              </p>
             </div>
 
             {/* Avatar Preview */}

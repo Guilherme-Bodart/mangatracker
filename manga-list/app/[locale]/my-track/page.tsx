@@ -255,7 +255,7 @@ export default function MyTrackPage() {
   return (
     <div className="min-h-screen">
       {/* Banner Section */}
-      <div className="relative h-64 md:h-80 bg-gradient-to-br from-primary/20 via-primary/10 to-background overflow-hidden">
+      <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-background">
         {user?.bannerUrl ? (
           <img
             src={user.bannerUrl}

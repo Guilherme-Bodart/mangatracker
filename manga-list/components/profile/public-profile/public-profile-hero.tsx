@@ -37,7 +37,7 @@ export function PublicProfileHero({
 }: PublicProfileHeroProps) {
   return (
     <>
-      <div className="relative h-52 bg-gradient-to-r from-primary/20 to-primary/5 sm:h-64">
+      <div className="relative aspect-video overflow-hidden bg-gradient-to-r from-primary/20 to-primary/5">
         {userData.user.bannerUrl && (
           <img
             src={userData.user.bannerUrl}

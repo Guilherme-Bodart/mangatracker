@@ -199,7 +199,7 @@
       "bannerUrl": {
         "label": "Imagem de Banner",
         "placeholder": "https://exemplo.com/banner.jpg",
-        "description": "Recomendado: 1500x500px"
+        "description": "Recomendado: 1920x1080px (16:9)"
       },
       "avatar": "Foto de Perfil",
       "avatarPlaceholder": "https://exemplo.com/avatar.jpg"

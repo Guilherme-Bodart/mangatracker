@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname } from "@/i18n/routing";
 import { Filter, User } from "lucide-react";
+import { AdsterraDesktopSideRailsLayout } from "@/components/ads/adsterra-desktop-side-rails-layout";
 import { AdsterraResponsiveBanner } from "@/components/ads/adsterra-responsive-banner";
 import { Button } from "@/components/ui/button";
 import { usePublicProfilePage } from "@/hooks/use-public-profile-page";
@@ -108,54 +109,56 @@ export default function PublicProfilePage() {
         }
       />
 
-      <div className="container mx-auto px-4 space-y-4">
-        <div className="flex justify-center">
-          <AdsterraResponsiveBanner />
-        </div>
+      <AdsterraDesktopSideRailsLayout className="pb-8">
+        <div className="container mx-auto space-y-4 px-4">
+          <div className="flex justify-center md:hidden">
+            <AdsterraResponsiveBanner />
+          </div>
 
-        {isFiltersOpen ? (
-          <PublicProfileMangaControls
+          {isFiltersOpen ? (
+            <PublicProfileMangaControls
+              t={t}
+              searchInput={searchInput}
+              sortBy={sortBy}
+              sortDirection={sortDirection}
+              pageSize={pageSize}
+              totalFilteredItems={totalFilteredItems}
+              pageSizeOptions={pageSizeOptions}
+              onSearchChange={setSearchInput}
+              onSortByChange={setSortBy}
+              onSortDirectionChange={setSortDirection}
+              onPageSizeChange={handlePageSizeChange}
+            />
+          ) : null}
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-2xl font-bold">{t("mangaList")}</h2>
+            <PublicProfileMangaPagination
+              t={t}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              align="right"
+              onPageChange={setCurrentPage}
+            />
+          </div>
+
+          <PublicProfileMangaGrid
             t={t}
-            searchInput={searchInput}
-            sortBy={sortBy}
-            sortDirection={sortDirection}
-            pageSize={pageSize}
-            totalFilteredItems={totalFilteredItems}
-            pageSizeOptions={pageSizeOptions}
-            onSearchChange={setSearchInput}
-            onSortByChange={setSortBy}
-            onSortDirectionChange={setSortDirection}
-            onPageSizeChange={handlePageSizeChange}
+            mangaList={paginatedMangaList}
+            hasAnyManga={userData.mangaList.length > 0}
+            onSelectManga={setSelectedManga}
+            onCopyMangaTitle={handleCopyMangaTitle}
           />
-        ) : null}
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-2xl font-bold">{t("mangaList")}</h2>
           <PublicProfileMangaPagination
             t={t}
             currentPage={currentPage}
             totalPages={totalPages}
-            align="right"
+            align="center"
             onPageChange={setCurrentPage}
           />
         </div>
-
-        <PublicProfileMangaGrid
-          t={t}
-          mangaList={paginatedMangaList}
-          hasAnyManga={userData.mangaList.length > 0}
-          onSelectManga={setSelectedManga}
-          onCopyMangaTitle={handleCopyMangaTitle}
-        />
-
-        <PublicProfileMangaPagination
-          t={t}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          align="center"
-          onPageChange={setCurrentPage}
-        />
-      </div>
+      </AdsterraDesktopSideRailsLayout>
 
       <PublicProfileMangaDetailsDialog
         t={t}

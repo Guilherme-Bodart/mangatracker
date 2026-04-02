@@ -5,6 +5,8 @@ import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "@/i18n/routing";
 import { useLocale, useTranslations } from "next-intl";
 import { Filter, Loader2, Plus, User } from "lucide-react";
+import { AdsterraDesktopSideRailsLayout } from "@/components/ads/adsterra-desktop-side-rails-layout";
+import { AdsterraResponsiveBanner } from "@/components/ads/adsterra-responsive-banner";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "@/i18n/routing";
@@ -306,115 +308,121 @@ export default function MyTrackPage() {
       </div>
 
       {/* Manga List */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-2xl font-semibold">{t("heading")}</h2>
-            <div className="flex w-full items-center gap-2 sm:w-auto sm:justify-end">
-              <Button asChild className="flex-1 sm:flex-none">
+      <AdsterraDesktopSideRailsLayout className="py-8">
+        <div className="container mx-auto px-4">
+          <div className="mb-6 flex justify-center md:hidden">
+            <AdsterraResponsiveBanner />
+          </div>
+
+          <div className="mb-8">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-2xl font-semibold">{t("heading")}</h2>
+              <div className="flex w-full items-center gap-2 sm:w-auto sm:justify-end">
+                <Button asChild className="flex-1 sm:flex-none">
+                  <Link href="/manga">
+                    <Plus className="mr-2 h-4 w-4" />
+                    {t("browseManga")}
+                  </Link>
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="cursor-pointer"
+                  onClick={() => setIsFiltersOpen((prev) => !prev)}
+                  aria-label={
+                    isFiltersOpen
+                      ? tProfile("controls.hideFiltersAria")
+                      : tProfile("controls.showFiltersAria")
+                  }
+                >
+                  <Filter className="size-4" />
+                </Button>
+              </div>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {t("syncDisclaimer")}
+            </p>
+          </div>
+
+          {isLoading ? (
+            <div className="flex min-h-[240px] items-center justify-center">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            </div>
+          ) : mangaList.length === 0 ? (
+            <div className="py-16 text-center">
+              <p className="mb-2 text-xl font-semibold">{t("empty")}</p>
+              <p className="mb-6 text-muted-foreground">{t("addFirst")}</p>
+              <Button asChild>
                 <Link href="/manga">
                   <Plus className="mr-2 h-4 w-4" />
-                  {t("browseManga")}
+                  {t("title")}
                 </Link>
               </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="cursor-pointer"
-                onClick={() => setIsFiltersOpen((prev) => !prev)}
-                aria-label={
-                  isFiltersOpen
-                    ? tProfile("controls.hideFiltersAria")
-                    : tProfile("controls.showFiltersAria")
-                }
-              >
-                <Filter className="size-4" />
-              </Button>
             </div>
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            {t("syncDisclaimer")}
-          </p>
-        </div>
+          ) : (
+            <div className="space-y-4">
+              {isFiltersOpen ? (
+                <PublicProfileMangaControls
+                  t={tProfile}
+                  searchInput={searchInput}
+                  sortBy={sortBy}
+                  sortDirection={sortDirection}
+                  pageSize={pageSize}
+                  totalFilteredItems={pagination.totalItems}
+                  pageSizeOptions={PUBLIC_PROFILE_PAGE_SIZE_OPTIONS}
+                  onSearchChange={setSearchInput}
+                  onSortByChange={setSortBy}
+                  onSortDirectionChange={setSortDirection}
+                  onPageSizeChange={handlePageSizeChange}
+                />
+              ) : null}
 
-        {isLoading ? (
-          <div className="flex min-h-[240px] items-center justify-center">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          </div>
-        ) : mangaList.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-xl font-semibold mb-2">{t("empty")}</p>
-            <p className="text-muted-foreground mb-6">{t("addFirst")}</p>
-            <Button asChild>
-              <Link href="/manga">
-                <Plus className="mr-2 h-4 w-4" />
-                {t("title")}
-              </Link>
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {isFiltersOpen ? (
-              <PublicProfileMangaControls
+              <PublicProfileMangaPagination
                 t={tProfile}
-                searchInput={searchInput}
-                sortBy={sortBy}
-                sortDirection={sortDirection}
-                pageSize={pageSize}
-                totalFilteredItems={pagination.totalItems}
-                pageSizeOptions={PUBLIC_PROFILE_PAGE_SIZE_OPTIONS}
-                onSearchChange={setSearchInput}
-                onSortByChange={setSortBy}
-                onSortDirectionChange={setSortDirection}
-                onPageSizeChange={handlePageSizeChange}
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                align="right"
+                onPageChange={setCurrentPage}
               />
-            ) : null}
 
-            <PublicProfileMangaPagination
-              t={tProfile}
-              currentPage={pagination.page}
-              totalPages={pagination.totalPages}
-              align="right"
-              onPageChange={setCurrentPage}
-            />
+              {pagination.items.length === 0 ? (
+                <div className="rounded-lg border border-border/60 py-12 text-center text-muted-foreground">
+                  {tProfile("controls.noSearchResults")}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-6 md:grid-cols-4 lg:grid-cols-6">
+                  {pagination.items.map((item) => (
+                    <MyTrackCard
+                      key={item.id}
+                      userManga={item}
+                      latestChapters={latestChaptersByManga[item.manga.id] || []}
+                      locale={locale}
+                      isUpdatingChapter={!!isUpdatingChapterByManga[item.id]}
+                      onEdit={() => handleEditClick(item)}
+                      onDelete={() => handleDeleteClick(item)}
+                      onMarkLatestChaptersAsRead={(chapter) =>
+                        handleMarkLatestChaptersAsRead(item.id, chapter)
+                      }
+                      onToggleFavorite={() =>
+                        handleToggleFavorite(item.id, item.isFavorite)
+                      }
+                    />
+                  ))}
+                </div>
+              )}
 
-            {pagination.items.length === 0 ? (
-              <div className="rounded-lg border border-border/60 py-12 text-center text-muted-foreground">
-                {tProfile("controls.noSearchResults")}
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-6 md:grid-cols-4 lg:grid-cols-6">
-                {pagination.items.map((item) => (
-                  <MyTrackCard
-                    key={item.id}
-                    userManga={item}
-                    latestChapters={latestChaptersByManga[item.manga.id] || []}
-                    locale={locale}
-                    isUpdatingChapter={!!isUpdatingChapterByManga[item.id]}
-                    onEdit={() => handleEditClick(item)}
-                    onDelete={() => handleDeleteClick(item)}
-                    onMarkLatestChaptersAsRead={(chapter) =>
-                      handleMarkLatestChaptersAsRead(item.id, chapter)
-                    }
-                    onToggleFavorite={() =>
-                      handleToggleFavorite(item.id, item.isFavorite)
-                    }
-                  />
-                ))}
-              </div>
-            )}
-
-            <PublicProfileMangaPagination
-              t={tProfile}
-              currentPage={pagination.page}
-              totalPages={pagination.totalPages}
-              align="center"
-              onPageChange={setCurrentPage}
-            />
-          </div>
-        )}
-      </div>
+              <PublicProfileMangaPagination
+                t={tProfile}
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                align="center"
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
+        </div>
+      </AdsterraDesktopSideRailsLayout>
 
       {/* Edit Modal */}
       {selectedManga && (

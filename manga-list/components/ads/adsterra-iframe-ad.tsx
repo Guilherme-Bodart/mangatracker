@@ -1,13 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useMemo } from "react";
 import { cn } from "@/lib/utils";
-
-declare global {
-  interface Window {
-    atOptions?: unknown;
-  }
-}
 
 type AdsterraIframeAdProps = {
   adKey: string;
@@ -24,44 +18,56 @@ export function AdsterraIframeAd({
   height,
   className,
 }: AdsterraIframeAdProps) {
-  const hostRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const host = hostRef.current;
-    if (!host) return;
-
-    host.innerHTML = "";
-
-    const optionsScript = document.createElement("script");
-    optionsScript.type = "text/javascript";
-    optionsScript.text = `atOptions = ${JSON.stringify({
-      key: adKey,
-      format: "iframe",
-      height,
-      width,
-      params: {},
-    })};`;
-
-    const invokeScript = document.createElement("script");
-    invokeScript.type = "text/javascript";
-    invokeScript.async = false;
-    invokeScript.src = `${ADSTERRA_IFRAME_SCRIPT_BASE_URL}/${adKey}/invoke.js`;
-
-    host.append(optionsScript, invokeScript);
-
-    return () => {
-      host.innerHTML = "";
-      delete window.atOptions;
-    };
-  }, [adKey, height, width]);
+  const srcDoc = useMemo(
+    () => `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: transparent;
+      }
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      atOptions = ${JSON.stringify({
+        key: adKey,
+        format: "iframe",
+        height,
+        width,
+        params: {},
+      })};
+    </script>
+    <script src="${ADSTERRA_IFRAME_SCRIPT_BASE_URL}/${adKey}/invoke.js"></script>
+  </body>
+</html>`,
+    [adKey, height, width],
+  );
 
   return (
     <div className={cn("w-full overflow-hidden", className)}>
-      <div
-        ref={hostRef}
-        className="flex justify-center"
-        style={{ minHeight: `${height}px` }}
-      />
+      <div className="flex justify-center">
+        <iframe
+          title={`Adsterra ad ${adKey}`}
+          srcDoc={srcDoc}
+          width={width}
+          height={height}
+          scrolling="no"
+          className="block border-0 bg-transparent"
+        />
+      </div>
     </div>
   );
 }

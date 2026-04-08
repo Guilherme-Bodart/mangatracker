@@ -75,7 +75,7 @@ export function MyTrackCard({
             event.stopPropagation();
             onToggleFavorite();
           }}
-          className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 hover:bg-black/70 transition-colors z-10"
+          className="absolute top-2 right-2 z-10 cursor-pointer rounded-full bg-black/50 p-1.5 transition-colors hover:bg-black/70"
         >
           <Heart
             className={cn(
@@ -179,4 +179,3 @@ export function MyTrackCard({
     </div>
   );
 }
-

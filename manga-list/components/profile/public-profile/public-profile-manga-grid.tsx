@@ -78,7 +78,7 @@ export function PublicProfileMangaGrid({
                 <div className="flex max-w-full flex-col items-center gap-2">
                   <button
                     type="button"
-                    className="pointer-events-auto max-w-full rounded-md bg-black/80 px-3 py-2 text-center text-xs font-semibold leading-tight text-white shadow-lg ring-1 ring-white/20 backdrop-blur-sm line-clamp-3"
+                    className="pointer-events-auto max-w-full cursor-pointer rounded-md bg-black/80 px-3 py-2 text-center text-xs font-semibold leading-tight text-white shadow-lg ring-1 ring-white/20 backdrop-blur-sm line-clamp-3"
                     onClick={(event) => {
                       event.stopPropagation();
                       void onCopyMangaTitle(item.manga.title);

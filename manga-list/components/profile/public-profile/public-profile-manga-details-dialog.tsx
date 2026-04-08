@@ -57,7 +57,7 @@ export function PublicProfileMangaDetailsDialog({
           <>
             <DialogHeader>
               <DialogTitle className="text-2xl">{selectedManga.manga.title}</DialogTitle>
-              <div className="flex flex-wrap items-center justify-between gap-3 pr-8">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <DialogDescription className="text-sm text-muted-foreground">
                   {selectedManga.manga.author}
                 </DialogDescription>

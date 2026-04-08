@@ -79,7 +79,7 @@ export function Header() {
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       aria-label={t("profileMenu")}
                     >
                       <Avatar className="size-10 cursor-pointer border-2 border-primary/20 transition-colors hover:border-primary">

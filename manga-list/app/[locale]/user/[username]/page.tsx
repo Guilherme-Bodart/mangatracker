@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname } from "@/i18n/routing";
@@ -14,6 +14,13 @@ import { PublicProfileMangaControls } from "@/components/profile/public-profile/
 import { PublicProfileMangaGrid } from "@/components/profile/public-profile/public-profile-manga-grid";
 import { PublicProfileMangaPagination } from "@/components/profile/public-profile/public-profile-manga-pagination";
 import { PublicProfileMangaDetailsDialog } from "@/components/profile/public-profile/public-profile-manga-details-dialog";
+import { apiRequest } from "@/lib/api-client";
+
+type UserMangaEntry = {
+  manga: {
+    malId: number;
+  };
+};
 
 export default function PublicProfilePage() {
   const pathname = usePathname();
@@ -21,6 +28,9 @@ export default function PublicProfilePage() {
   const locale = useLocale();
   const { user: authUser, isLoading: authLoading } = useAuth();
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [userMangaMalIds, setUserMangaMalIds] = useState<Set<number>>(
+    () => new Set(),
+  );
 
   const {
     userData,
@@ -56,6 +66,24 @@ export default function PublicProfilePage() {
     authUser,
     authLoading,
   });
+
+  useEffect(() => {
+    const loadUserMangaMalIds = async () => {
+      if (!authUser || isOwnProfile) {
+        setUserMangaMalIds(new Set());
+        return;
+      }
+
+      try {
+        const data = await apiRequest<UserMangaEntry[]>("/manga/list");
+        setUserMangaMalIds(new Set(data.map((entry) => entry.manga.malId)));
+      } catch {
+        // Keep public profile usable even if the personal list fetch fails.
+      }
+    };
+
+    void loadUserMangaMalIds();
+  }, [authUser, isOwnProfile]);
 
   if (isLoading) {
     return (
@@ -146,7 +174,16 @@ export default function PublicProfilePage() {
             t={t}
             mangaList={paginatedMangaList}
             hasAnyManga={userData.mangaList.length > 0}
+            canAddToOwnList={!!authUser && !isOwnProfile}
+            userMangaMalIds={userMangaMalIds}
             onSelectManga={setSelectedManga}
+            onAddedToOwnList={(malId) => {
+              setUserMangaMalIds((prev) => {
+                const next = new Set(prev);
+                next.add(malId);
+                return next;
+              });
+            }}
             onCopyMangaTitle={handleCopyMangaTitle}
           />
 
@@ -164,8 +201,17 @@ export default function PublicProfilePage() {
         t={t}
         locale={locale}
         selectedManga={selectedManga}
+        canAddToOwnList={!!authUser && !isOwnProfile}
+        userMangaMalIds={userMangaMalIds}
         statusTranslations={statusTranslations}
         translateGenre={translateGenre}
+        onAddedToOwnList={(malId) => {
+          setUserMangaMalIds((prev) => {
+            const next = new Set(prev);
+            next.add(malId);
+            return next;
+          });
+        }}
         onOpenChange={() => setSelectedManga(null)}
       />
     </div>

@@ -17,8 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter, Plus, Loader2, Check } from "lucide-react";
-import { AddMangaModal } from "@/components/manga/add-manga-modal";
+import { Search, Filter, Loader2 } from "lucide-react";
+import { AddToListAction } from "@/components/manga/add-to-list-action";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useAuth } from "@/contexts/auth-context";
@@ -87,8 +87,6 @@ export default function BrowsePage() {
   const [mangas, setMangas] = useState<Manga[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedManga, setSelectedManga] = useState<Manga | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [userMangaMalIds, setUserMangaMalIds] = useState<Set<number>>(
     () => new Set(),
   );
@@ -171,11 +169,6 @@ export default function BrowsePage() {
   const handleNextPage = () => {
     setPage((p) => p + 1);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const handleAddToList = (manga: Manga) => {
-    setSelectedManga(manga);
-    setIsModalOpen(true);
   };
 
   const showInitialSkeleton = isLoading && mangas.length === 0;
@@ -340,21 +333,18 @@ export default function BrowsePage() {
                     className="object-cover w-full h-full group-hover:scale-105 transition-transform"
                   />
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    {isInList ? (
-                      <Button size="sm" variant="secondary" disabled className="gap-1">
-                        <Check className="size-4" />
-                        {t("alreadyInList")}
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        onClick={() => handleAddToList(manga)}
-                        className="gap-1 cursor-pointer"
-                      >
-                        <Plus className="size-4" />
-                        {t("addToList")}
-                      </Button>
-                    )}
+                    <AddToListAction
+                      manga={manga}
+                      isInList={isInList}
+                      className="cursor-pointer gap-1"
+                      onSuccess={() => {
+                        setUserMangaMalIds((prev) => {
+                          const next = new Set(prev);
+                          next.add(manga.mal_id);
+                          return next;
+                        });
+                      }}
+                    />
                   </div>
                 </div>
                 <CardContent className="p-3">
@@ -451,21 +441,6 @@ export default function BrowsePage() {
         </div>
       )}
 
-      {/* Add to List Modal */}
-      {selectedManga && (
-        <AddMangaModal
-          manga={selectedManga}
-          open={isModalOpen}
-          onOpenChange={setIsModalOpen}
-          onSuccess={() => {
-            setUserMangaMalIds((prev) => {
-              const next = new Set(prev);
-              next.add(selectedManga.mal_id);
-              return next;
-            });
-          }}
-        />
-      )}
     </div>
   );
 }

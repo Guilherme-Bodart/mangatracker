@@ -1,5 +1,6 @@
 "use client";
 
+import { AddToListAction } from "@/components/manga/add-to-list-action";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { MangaListItem } from "@/lib/public-profile-types";
@@ -20,7 +21,10 @@ type PublicProfileMangaGridProps = {
   t: TranslatorFn;
   mangaList: MangaListItem[];
   hasAnyManga: boolean;
+  canAddToOwnList?: boolean;
+  userMangaMalIds?: Set<number>;
   onSelectManga: (item: MangaListItem) => void;
+  onAddedToOwnList?: (malId: number) => void;
   onCopyMangaTitle: (title: string) => Promise<void>;
 };
 
@@ -28,7 +32,10 @@ export function PublicProfileMangaGrid({
   t,
   mangaList,
   hasAnyManga,
+  canAddToOwnList = false,
+  userMangaMalIds,
   onSelectManga,
+  onAddedToOwnList,
   onCopyMangaTitle,
 }: PublicProfileMangaGridProps) {
   return (
@@ -68,18 +75,40 @@ export function PublicProfileMangaGrid({
 
               <div className="pointer-events-none absolute inset-0 bg-black/5 transition-colors duration-200 group-hover:bg-black/35" />
               <div className="pointer-events-none absolute inset-0 z-[2] flex items-center justify-center px-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                <button
-                  type="button"
-                  className="pointer-events-auto max-w-full rounded-md bg-black/80 px-3 py-2 text-center text-xs font-semibold leading-tight text-white shadow-lg ring-1 ring-white/20 backdrop-blur-sm line-clamp-3"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    void onCopyMangaTitle(item.manga.title);
-                  }}
-                  title={t("details.copyTitle")}
-                  aria-label={t("details.copyTitle")}
-                >
-                  {item.manga.title}
-                </button>
+                <div className="flex max-w-full flex-col items-center gap-2">
+                  <button
+                    type="button"
+                    className="pointer-events-auto max-w-full rounded-md bg-black/80 px-3 py-2 text-center text-xs font-semibold leading-tight text-white shadow-lg ring-1 ring-white/20 backdrop-blur-sm line-clamp-3"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void onCopyMangaTitle(item.manga.title);
+                    }}
+                    title={t("details.copyTitle")}
+                    aria-label={t("details.copyTitle")}
+                  >
+                    {item.manga.title}
+                  </button>
+                  {canAddToOwnList ? (
+                    <AddToListAction
+                      manga={{
+                        mal_id: item.manga.malId,
+                        title: item.manga.title,
+                        images: {
+                          jpg: {
+                            large_image_url:
+                              resolveSafeCoverImage(
+                                item.manga.coverImage,
+                                FALLBACK_COVER_IMAGE,
+                              ),
+                          },
+                        },
+                      }}
+                      isInList={userMangaMalIds?.has(item.manga.malId) ?? false}
+                      className="pointer-events-auto gap-1"
+                      onSuccess={() => onAddedToOwnList?.(item.manga.malId)}
+                    />
+                  ) : null}
+                </div>
               </div>
 
               {item.isFavorite && (

@@ -1,5 +1,6 @@
 "use client";
 
+import { AddToListAction } from "@/components/manga/add-to-list-action";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -26,8 +27,11 @@ type PublicProfileMangaDetailsDialogProps = {
   t: TranslatorFn;
   locale: string;
   selectedManga: MangaListItem | null;
+  canAddToOwnList?: boolean;
+  userMangaMalIds?: Set<number>;
   statusTranslations: Record<string, string>;
   translateGenre: (genre: string) => string;
+  onAddedToOwnList?: (malId: number) => void;
   onOpenChange: (open: boolean) => void;
 };
 
@@ -35,8 +39,11 @@ export function PublicProfileMangaDetailsDialog({
   t,
   locale,
   selectedManga,
+  canAddToOwnList = false,
+  userMangaMalIds,
   statusTranslations,
   translateGenre,
+  onAddedToOwnList,
   onOpenChange,
 }: PublicProfileMangaDetailsDialogProps) {
   const selectedMangaStarRating = selectedManga?.rating
@@ -50,9 +57,30 @@ export function PublicProfileMangaDetailsDialog({
           <>
             <DialogHeader>
               <DialogTitle className="text-2xl">{selectedManga.manga.title}</DialogTitle>
-              <DialogDescription className="text-sm text-muted-foreground">
-                {selectedManga.manga.author}
-              </DialogDescription>
+              <div className="flex flex-wrap items-center justify-between gap-3 pr-8">
+                <DialogDescription className="text-sm text-muted-foreground">
+                  {selectedManga.manga.author}
+                </DialogDescription>
+                {canAddToOwnList ? (
+                  <AddToListAction
+                    manga={{
+                      mal_id: selectedManga.manga.malId,
+                      title: selectedManga.manga.title,
+                      images: {
+                        jpg: {
+                          large_image_url: resolveSafeCoverImage(
+                            selectedManga.manga.coverImage,
+                            FALLBACK_COVER_IMAGE,
+                          ),
+                        },
+                      },
+                    }}
+                    isInList={userMangaMalIds?.has(selectedManga.manga.malId) ?? false}
+                    className="gap-1"
+                    onSuccess={() => onAddedToOwnList?.(selectedManga.manga.malId)}
+                  />
+                ) : null}
+              </div>
             </DialogHeader>
 
             <div className="grid md:grid-cols-[200px_1fr] gap-6 items-start">

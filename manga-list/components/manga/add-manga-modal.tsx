@@ -27,7 +27,7 @@ import { trackAddToList } from "@/components/analytics/google-analytics-events";
 
 type MangaListStatus = "READING" | "COMPLETED" | "PLAN_TO_READ" | "DROPPED";
 
-interface Manga {
+export interface AddToListManga {
   mal_id: number;
   anilist_id?: number;
   title: string;
@@ -40,7 +40,7 @@ interface Manga {
 }
 
 interface AddMangaModalProps {
-  manga: Manga;
+  manga: AddToListManga;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode?: "add" | "edit";

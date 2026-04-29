@@ -888,8 +888,8 @@
     }
   },
   "MangaAdmin": {
-    "title": "Admin de mang?s",
-    "subtitle": "Revise poss?veis duplicados, mescle registros e repare capas.",
+    "title": "Administração de mangás",
+    "subtitle": "Revise possíveis duplicados, mescle registros e repare capas.",
     "loading": "Carregando grupos duplicados...",
     "empty": "Nenhum grupo duplicado encontrado.",
     "summary": {
@@ -906,20 +906,20 @@
       "repairingCover": "Reparando..."
     },
     "group": {
-      "title": "T?tulo normalizado: {normalizedTitle}",
+      "title": "Título normalizado: {normalizedTitle}",
       "totalItems": "Itens: {count}",
-      "totalRefs": "Refer?ncias: {count}",
-      "userEntries": "Entradas de usu?rio: {count}",
+      "totalRefs": "Referências: {count}",
+      "userEntries": "Entradas de usuário: {count}",
       "externalMaps": "Mapeamentos externos: {count}",
-      "canonical": "Can?nico",
+      "canonical": "Canônico",
       "duplicate": "Duplicado",
-      "selectCanonical": "Selecionar mang? can?nico"
+      "selectCanonical": "Selecionar mangá canônico"
     },
     "messages": {
-      "forbidden": "Voc? n?o tem permiss?o para acessar esta p?gina",
+      "forbidden": "Você não tem permissão para acessar esta página",
       "loadError": "Falha ao carregar duplicados",
       "nothingToMerge": "Nada para mesclar neste grupo",
-      "mergeSuccess": "Mesclagem conclu?da. Removidos: {deleted}. Entradas movidas: {moved}.",
+      "mergeSuccess": "Mesclagem concluída. Removidos: {deleted}. Entradas movidas: {moved}.",
       "mergeError": "Falha ao mesclar grupo duplicado",
       "repairCoverChanged": "Capa atualizada usando {source}",
       "repairCoverNoChange": "Nenhuma capa melhor foi encontrada",

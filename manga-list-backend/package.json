@@ -24,6 +24,7 @@
     "typecheck:strict:manga": "tsc -p tsconfig.strict-manga.json",
     "typecheck:strict:core": "tsc -p tsconfig.strict-core.json",
     "tasks:run": "ts-node -r tsconfig-paths/register src/tasks/run-manual.ts",
+    "tasks:backfill-missing-covers": "ts-node -r tsconfig-paths/register src/tasks/backfill-missing-covers.ts",
     "tasks:repair-covers": "ts-node -r tsconfig-paths/register src/tasks/repair-mangadex-covers.ts",
     "security:audit": "pnpm audit --audit-level=critical",
     "security:audit:high": "pnpm audit --audit-level=high"

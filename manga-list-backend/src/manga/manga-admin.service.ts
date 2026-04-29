@@ -16,6 +16,15 @@ type AdminDuplicateItem = {
   updatedAt: string;
 };
 
+type CoverRepairResult = {
+  mangaId: string;
+  title: string;
+  previousCoverImage: string | null;
+  coverImage: string | null;
+  changed: boolean;
+  source: 'anilist' | 'jikan' | 'mangadex' | 'unchanged';
+};
+
 type JikanSearchItem = {
   title?: string | null;
   title_english?: string | null;
@@ -286,46 +295,51 @@ export class MangaAdminService {
       throw new NotFoundException('Manga not found');
     }
 
-    const [aniListCover, jikanCover, mangaDexCover] = await Promise.all([
-      this.findAniListCover(manga.title),
-      this.findJikanCover(manga.title),
-      this.findMangaDexCover(manga.title),
-    ]);
-
-    const normalizedCurrent = this.normalizeCoverUrl(manga.coverImage);
-    const normalizedAniList = this.normalizeCoverUrl(aniListCover);
-    const normalizedJikan = this.normalizeCoverUrl(jikanCover);
-    const normalizedMangaDex = this.normalizeCoverUrl(mangaDexCover);
-
-    const nextCover =
-      normalizedAniList ??
-      normalizedJikan ??
-      normalizedMangaDex ??
-      normalizedCurrent;
-
-    const source = normalizedAniList
-      ? 'anilist'
-      : normalizedJikan
-        ? 'jikan'
-        : normalizedMangaDex
-          ? 'mangadex'
-          : 'unchanged';
-
-    const changed = normalizedCurrent !== nextCover;
-    if (changed) {
+    const result = await this.resolveBestCoverForManga(manga);
+    if (result.changed) {
       await this.prisma.manga.update({
         where: { id: manga.id },
-        data: { coverImage: nextCover },
+        data: { coverImage: result.coverImage },
       });
     }
 
+    return result;
+  }
+
+  async repairMissingCovers(limit = 100, apply = false) {
+    const safeLimit = Math.max(1, Math.min(limit, 1000));
+    const targets = await this.prisma.manga.findMany({
+      where: {
+        OR: [{ coverImage: null }, { coverImage: '' }],
+      },
+      select: {
+        id: true,
+        title: true,
+        coverImage: true,
+      },
+      orderBy: [{ updatedAt: 'desc' }],
+      take: safeLimit,
+    });
+
+    const results: CoverRepairResult[] = [];
+    for (const manga of targets) {
+      const result = await this.resolveBestCoverForManga(manga);
+      results.push(result);
+
+      if (apply && result.changed) {
+        await this.prisma.manga.update({
+          where: { id: manga.id },
+          data: { coverImage: result.coverImage },
+        });
+      }
+    }
+
     return {
-      mangaId: manga.id,
-      title: manga.title,
-      previousCoverImage: normalizedCurrent,
-      coverImage: nextCover,
-      changed,
-      source,
+      total: targets.length,
+      updated: results.filter((item) => item.changed && item.coverImage).length,
+      unresolved: results.filter((item) => !item.coverImage).length,
+      apply,
+      results,
     };
   }
 
@@ -611,5 +625,52 @@ export class MangaAdminService {
     } catch {
       return null;
     }
+  }
+
+  private async resolveBestCoverForManga(manga: {
+    id: string;
+    title: string;
+    coverImage: string | null;
+  }): Promise<CoverRepairResult> {
+    const [aniListResult, jikanResult, mangaDexResult] = await Promise.allSettled([
+      this.findAniListCover(manga.title),
+      this.findJikanCover(manga.title),
+      this.findMangaDexCover(manga.title),
+    ]);
+
+    const aniListCover =
+      aniListResult.status === 'fulfilled' ? aniListResult.value : null;
+    const jikanCover =
+      jikanResult.status === 'fulfilled' ? jikanResult.value : null;
+    const mangaDexCover =
+      mangaDexResult.status === 'fulfilled' ? mangaDexResult.value : null;
+
+    const normalizedCurrent = this.normalizeCoverUrl(manga.coverImage);
+    const normalizedAniList = this.normalizeCoverUrl(aniListCover);
+    const normalizedJikan = this.normalizeCoverUrl(jikanCover);
+    const normalizedMangaDex = this.normalizeCoverUrl(mangaDexCover);
+
+    const nextCover =
+      normalizedAniList ??
+      normalizedJikan ??
+      normalizedMangaDex ??
+      normalizedCurrent;
+
+    const source: CoverRepairResult['source'] = normalizedAniList
+      ? 'anilist'
+      : normalizedJikan
+        ? 'jikan'
+        : normalizedMangaDex
+          ? 'mangadex'
+          : 'unchanged';
+
+    return {
+      mangaId: manga.id,
+      title: manga.title,
+      previousCoverImage: normalizedCurrent,
+      coverImage: nextCover,
+      changed: normalizedCurrent !== nextCover,
+      source,
+    };
   }
 }

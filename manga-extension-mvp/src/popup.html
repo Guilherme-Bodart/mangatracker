@@ -20,7 +20,7 @@
       * { box-sizing: border-box; }
 
       body {
-        width: 370px;
+        width: 440px;
         margin: 0;
         padding: 12px;
         font-family: "Segoe UI", Tahoma, sans-serif;
@@ -68,48 +68,149 @@
       }
 
       .subtitle {
-        margin: 0 0 12px;
+        margin: 0 0 14px;
         color: var(--muted);
         font-size: 12px;
+        line-height: 1.45;
       }
 
-      .top-row {
+      .stack {
+        display: grid;
+        gap: 12px;
+      }
+
+      .section-card {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        background: rgba(17, 30, 68, 0.78);
+      }
+
+      .section-head {
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 10px;
+      }
+
+      .section-title {
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0.2px;
+      }
+
+      .section-copy {
+        color: var(--muted);
+        font-size: 11px;
+        margin-top: 3px;
+      }
+
+      .summary-strip {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .summary-pill {
         border: 1px solid var(--border);
         border-radius: 10px;
         padding: 8px 10px;
-        background: rgba(23, 38, 84, 0.7);
+        background: rgba(10, 19, 48, 0.92);
       }
 
-      .top-row .label {
+      .summary-pill .k {
+        display: block;
+        font-size: 10px;
+        color: var(--muted);
+      }
+
+      .summary-pill .v {
+        display: block;
+        margin-top: 4px;
+        font-size: 16px;
+        font-weight: 800;
+      }
+
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 12px;
+        background: rgba(23, 38, 84, 0.55);
+      }
+
+      .toggle-copy {
+        min-width: 0;
+      }
+
+      .toggle-copy .label {
+        display: block;
+        margin: 0;
         font-size: 13px;
-        font-weight: 700;
+        font-weight: 800;
       }
 
-      .partners { margin-top: 8px; display: grid; gap: 8px; }
+      .toggle-copy .sub {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .partners {
+        display: grid;
+        gap: 8px;
+        margin-top: 10px;
+      }
 
       .partner-item {
         border: 1px solid var(--border);
         border-radius: 10px;
-        padding: 8px 10px;
-        background: rgba(17, 30, 68, 0.85);
+        padding: 10px 12px;
+        background: rgba(11, 22, 53, 0.94);
       }
 
       .partner-head {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 8px;
+        gap: 10px;
       }
 
       .partner-label {
         display: flex;
         align-items: center;
-        gap: 8px;
-        font-weight: 700;
+        gap: 10px;
+        flex: 1;
+        min-width: 0;
+        margin: 0;
+      }
+
+      .partner-label input {
+        flex: 0 0 auto;
+        margin-top: 2px;
+        width: auto;
+      }
+
+      .partner-copy {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .partner-name {
+        display: block;
+        flex: 1 1 auto;
+        min-width: 0;
+        white-space: nowrap;
+        color: var(--text);
         font-size: 14px;
+        font-weight: 800;
       }
 
       .status-chip {
@@ -117,6 +218,7 @@
         font-weight: 700;
         padding: 4px 8px;
         border-radius: 999px;
+        flex: 0 0 auto;
         background: rgba(58, 208, 122, 0.18);
         color: var(--ok);
       }
@@ -126,12 +228,19 @@
         color: var(--muted);
       }
 
-      .hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
+      .hint {
+        color: var(--muted);
+        font-size: 11px;
+        margin-top: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
 
-      label {
+      .field-label {
         display: block;
         font-weight: 700;
-        margin: 10px 0 6px;
+        margin: 0 0 6px;
         font-size: 12px;
       }
 
@@ -146,6 +255,11 @@
       }
 
       input::placeholder { color: #8b97c8; }
+
+      .field-stack {
+        display: grid;
+        gap: 10px;
+      }
 
       .actions {
         display: grid;
@@ -177,17 +291,23 @@
         margin-top: 10px;
         display: flex;
         justify-content: space-between;
+        gap: 8px;
         font-size: 12px;
       }
 
-      .links a { color: #b9c5ff; text-decoration: none; }
+      .links a {
+        flex: 1;
+        text-align: center;
+        color: #b9c5ff;
+        text-decoration: none;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        padding: 8px 10px;
+        background: rgba(20, 36, 80, 0.72);
+      }
 
       .diag-panel {
-        margin-top: 10px;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 8px;
-        background: rgba(17, 30, 68, 0.85);
+        margin-top: 0;
       }
 
       .diag-head {
@@ -197,14 +317,57 @@
         gap: 8px;
       }
 
+      .diag-toggle {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        border: 0;
+        padding: 0;
+        background: transparent;
+        color: var(--text);
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .diag-title-wrap {
+        min-width: 0;
+      }
+
       .diag-title {
-        font-size: 12px;
+        display: block;
+        font-size: 13px;
         font-weight: 800;
         letter-spacing: 0.2px;
       }
 
+      .diag-subtitle {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .diag-chevron {
+        color: var(--muted);
+        font-size: 15px;
+        transition: transform 160ms ease;
+      }
+
+      .diag-panel[data-collapsed="false"] .diag-chevron {
+        transform: rotate(180deg);
+      }
+
+      .diag-body {
+        margin-top: 10px;
+      }
+
+      .diag-panel[data-collapsed="true"] .diag-body {
+        display: none;
+      }
+
       .diag-grid {
-        margin-top: 8px;
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 6px;
@@ -277,71 +440,130 @@
 
       <p class="subtitle" data-i18n="subtitle"></p>
 
-      <div class="top-row">
-        <span class="label" data-i18n="extensionActive"></span>
-        <input id="enabled" type="checkbox" />
-      </div>
-
-      <div class="partners" id="partnersList"></div>
-
-      <div id="connectPartnerRow" class="hidden">
-        <label for="connectPartnerSlug" data-i18n="partnerToConnect"></label>
-        <select id="connectPartnerSlug"></select>
-      </div>
-
-      <label for="connectCode" data-i18n="connectCode"></label>
-      <input id="connectCode" autocomplete="off" />
-
-      <div class="actions">
-        <button id="connectBtn" type="button" data-i18n="connectAccount"></button>
-        <button id="disconnectBtn" type="button" data-i18n="disconnect"></button>
-      </div>
-
-      <div class="links">
-        <a id="openIntegrations" href="#" target="_blank" rel="noreferrer" data-i18n="openIntegrations"></a>
-        <a id="openSite" href="#" target="_blank" rel="noreferrer" data-i18n="openSite"></a>
-      </div>
-
-      <div class="diag-panel">
-        <div class="diag-head">
-          <span class="diag-title" data-i18n="diagnosticsTitle"></span>
-          <button id="refreshDiagBtn" class="diag-btn secondary" type="button" data-i18n="diagnosticsRefresh"></button>
-        </div>
-
-        <div class="diag-grid">
-          <div class="diag-item">
-            <span class="k" data-i18n="diagQueueSize"></span>
-            <span class="v" id="diagQueueSize">-</span>
+      <div class="stack">
+        <section class="section-card">
+          <div class="section-head">
+            <div>
+              <div class="section-title" data-i18n="overviewTitle"></div>
+              <div class="section-copy" data-i18n="overviewCopy"></div>
+            </div>
           </div>
-          <div class="diag-item">
-            <span class="k" data-i18n="diagDueCount"></span>
-            <span class="v" id="diagDueCount">-</span>
-          </div>
-          <div class="diag-item">
-            <span class="k" data-i18n="diagNextRetry"></span>
-            <span class="v" id="diagNextRetry">-</span>
-          </div>
-          <div class="diag-item">
-            <span class="k" data-i18n="diagEnabledPartners"></span>
-            <span class="v" id="diagEnabledPartners">-</span>
-          </div>
-          <div class="diag-item">
-            <span class="k" data-i18n="diagConnectedPartners"></span>
-            <span class="v" id="diagConnectedPartners">-</span>
-          </div>
-          <div class="diag-item">
-            <span class="k" data-i18n="diagLastUpdate"></span>
-            <span class="v" id="diagLastUpdate">-</span>
-          </div>
-          <div class="diag-item" style="grid-column: 1 / -1;">
-            <span class="k" data-i18n="diagApiBase"></span>
-            <span class="v" id="diagApiBase">-</span>
-          </div>
-        </div>
 
-        <div class="diag-actions">
-          <button id="drainQueueBtn" class="diag-btn" type="button" data-i18n="diagnosticsRetryNow"></button>
-        </div>
+          <div class="summary-strip">
+            <div class="summary-pill">
+              <span class="k" data-i18n="summaryTotal"></span>
+              <span class="v" id="summaryTotal">0</span>
+            </div>
+            <div class="summary-pill">
+              <span class="k" data-i18n="summaryEnabled"></span>
+              <span class="v" id="summaryEnabled">0</span>
+            </div>
+            <div class="summary-pill">
+              <span class="k" data-i18n="summaryConnected"></span>
+              <span class="v" id="summaryConnected">0</span>
+            </div>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-copy">
+              <span class="label" data-i18n="extensionActive"></span>
+              <span class="sub" data-i18n="extensionActiveHint"></span>
+            </div>
+            <input id="enabled" type="checkbox" />
+          </div>
+        </section>
+
+        <section class="section-card">
+          <div class="section-head">
+            <div>
+              <div class="section-title" data-i18n="sitesTitle"></div>
+              <div class="section-copy" data-i18n="sitesCopy"></div>
+            </div>
+          </div>
+
+          <div class="partners" id="partnersList"></div>
+        </section>
+
+        <section class="section-card">
+          <div class="section-head">
+            <div>
+              <div class="section-title" data-i18n="connectTitle"></div>
+              <div class="section-copy" data-i18n="connectCopy"></div>
+            </div>
+          </div>
+
+          <div class="field-stack">
+            <div id="connectPartnerRow" class="hidden">
+              <label class="field-label" for="connectPartnerSlug" data-i18n="partnerToConnect"></label>
+              <select id="connectPartnerSlug"></select>
+            </div>
+
+            <div>
+              <label class="field-label" for="connectCode" data-i18n="connectCode"></label>
+              <input id="connectCode" autocomplete="off" />
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="connectBtn" type="button" data-i18n="connectAccount"></button>
+            <button id="disconnectBtn" type="button" data-i18n="disconnect"></button>
+          </div>
+
+          <div class="links">
+            <a id="openIntegrations" href="#" target="_blank" rel="noreferrer" data-i18n="openIntegrations"></a>
+            <a id="openSite" href="#" target="_blank" rel="noreferrer" data-i18n="openSite"></a>
+          </div>
+        </section>
+
+        <section class="section-card diag-panel" id="diagPanel" data-collapsed="true">
+          <div class="diag-head">
+            <button id="diagToggleBtn" class="diag-toggle" type="button" aria-expanded="false">
+              <span class="diag-title-wrap">
+                <span class="diag-title" data-i18n="diagnosticsTitle"></span>
+                <span class="diag-subtitle" data-i18n="diagnosticsSubtitle"></span>
+              </span>
+              <span class="diag-chevron">▾</span>
+            </button>
+            <button id="refreshDiagBtn" class="diag-btn secondary" type="button" data-i18n="diagnosticsRefresh"></button>
+          </div>
+
+          <div class="diag-body">
+            <div class="diag-grid">
+              <div class="diag-item">
+                <span class="k" data-i18n="diagQueueSize"></span>
+                <span class="v" id="diagQueueSize">-</span>
+              </div>
+              <div class="diag-item">
+                <span class="k" data-i18n="diagDueCount"></span>
+                <span class="v" id="diagDueCount">-</span>
+              </div>
+              <div class="diag-item">
+                <span class="k" data-i18n="diagNextRetry"></span>
+                <span class="v" id="diagNextRetry">-</span>
+              </div>
+              <div class="diag-item">
+                <span class="k" data-i18n="diagEnabledPartners"></span>
+                <span class="v" id="diagEnabledPartners">-</span>
+              </div>
+              <div class="diag-item">
+                <span class="k" data-i18n="diagConnectedPartners"></span>
+                <span class="v" id="diagConnectedPartners">-</span>
+              </div>
+              <div class="diag-item">
+                <span class="k" data-i18n="diagLastUpdate"></span>
+                <span class="v" id="diagLastUpdate">-</span>
+              </div>
+              <div class="diag-item" style="grid-column: 1 / -1;">
+                <span class="k" data-i18n="diagApiBase"></span>
+                <span class="v" id="diagApiBase">-</span>
+              </div>
+            </div>
+
+            <div class="diag-actions">
+              <button id="drainQueueBtn" class="diag-btn" type="button" data-i18n="diagnosticsRetryNow"></button>
+            </div>
+          </div>
+        </section>
       </div>
 
       <div id="status"></div>

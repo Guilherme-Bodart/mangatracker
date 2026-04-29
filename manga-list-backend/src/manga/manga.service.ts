@@ -137,4 +137,8 @@ export class MangaService {
   async repairCoverByMangaId(mangaId: string) {
     return this.mangaAdminService.repairCoverByMangaId(mangaId);
   }
+
+  async repairMissingCovers(limit = 100, apply = false) {
+    return this.mangaAdminService.repairMissingCovers(limit, apply);
+  }
 }

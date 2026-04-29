@@ -4,14 +4,24 @@ const DEFAULT_FRONTEND_BASE_URL = "https://mangastracker.vercel.app";
 const I18N = {
   en: {
     subtitle: "Choose which sites can sync your reading progress.",
-    extensionActive: "Extension active",
+    overviewTitle: "Overview",
+    overviewCopy: "Track what is active, enabled, and already connected.",
+    summaryTotal: "Sites",
+    summaryEnabled: "Enabled",
+    summaryConnected: "Connected",
+    extensionActive: "Sync enabled",
+    extensionActiveHint: "Turn syncing on or off for all enabled sites.",
+    sitesTitle: "Sites",
+    sitesCopy: "Connected sites are listed first for quicker review.",
+    connectTitle: "Connect",
+    connectCopy: "Select a site, generate a code, then paste it here.",
     partnerToConnect: "Partner to connect",
     connectCode: "Connect code",
     connectCodePlaceholder: "Paste connect code",
     connectAccount: "Connect account",
     disconnect: "Disconnect",
-    openIntegrations: "Open Integrations",
-    openSite: "Open Manga Tracker",
+    openIntegrations: "Generate code",
+    openSite: "Open site",
     noPartners: "No active partners available.",
     loadingPartners: "Loading partners...",
     connected: "Connected",
@@ -30,6 +40,7 @@ const I18N = {
     statusSaved: "Settings saved.",
     statusPartnerSelectionSaved: "Tracked sites updated.",
     diagnosticsTitle: "Diagnostics",
+    diagnosticsSubtitle: "Queue, retries, and API health details.",
     diagnosticsRefresh: "Refresh",
     diagnosticsRetryNow: "Retry now",
     diagQueueSize: "Queue",
@@ -50,14 +61,24 @@ const I18N = {
   },
   pt: {
     subtitle: "Escolha os sites que podem sincronizar leitura.",
-    extensionActive: "Extensão ativa",
+    overviewTitle: "Resumo",
+    overviewCopy: "Veja rapidamente o que está ativo, habilitado e conectado.",
+    summaryTotal: "Sites",
+    summaryEnabled: "Habilitados",
+    summaryConnected: "Conectados",
+    extensionActive: "Sync ativo",
+    extensionActiveHint: "Liga ou desliga a sincronização para todos os sites habilitados.",
+    sitesTitle: "Sites",
+    sitesCopy: "Os conectados aparecem primeiro para facilitar a revisão.",
+    connectTitle: "Conectar",
+    connectCopy: "Selecione um site, gere o código e cole aqui.",
     partnerToConnect: "Parceiro para conectar",
     connectCode: "Código de conexão",
     connectCodePlaceholder: "Cole código de conexão",
     connectAccount: "Conectar conta",
     disconnect: "Desconectar",
-    openIntegrations: "Abrir Integrações",
-    openSite: "Abrir Manga Tracker",
+    openIntegrations: "Gerar código",
+    openSite: "Abrir site",
     noPartners: "Nenhum parceiro ativo disponível.",
     loadingPartners: "Carregando parceiros...",
     connected: "Conectado",
@@ -76,6 +97,7 @@ const I18N = {
     statusSaved: "Configurações salvas.",
     statusPartnerSelectionSaved: "Seleção de sites atualizada.",
     diagnosticsTitle: "Diagnóstico",
+    diagnosticsSubtitle: "Fila, retries e saúde da API.",
     diagnosticsRefresh: "Atualizar",
     diagnosticsRetryNow: "Forçar retry agora",
     diagQueueSize: "Fila",
@@ -101,6 +123,7 @@ const state = {
   partners: [],
   apiBaseUrl: DEFAULT_API_BASE_URL,
   isLoadingPartners: false,
+  diagnosticsCollapsed: true,
 };
 
 function byId(id) {
@@ -332,6 +355,19 @@ function updateExternalLinks() {
   byId("openSite").href = `${DEFAULT_FRONTEND_BASE_URL}/${localePath}`;
 }
 
+function updateOverview(enabledSet, partnerTokens, partners = state.partners) {
+  byId("summaryTotal").textContent = String(Array.isArray(partners) ? partners.length : 0);
+  byId("summaryEnabled").textContent = String(enabledSet?.size || 0);
+  byId("summaryConnected").textContent = String(countConnectedPartners(partnerTokens));
+}
+
+function renderDiagnosticsCollapse() {
+  const panel = byId("diagPanel");
+  const toggle = byId("diagToggleBtn");
+  panel.dataset.collapsed = state.diagnosticsCollapsed ? "true" : "false";
+  toggle.setAttribute("aria-expanded", state.diagnosticsCollapsed ? "false" : "true");
+}
+
 function setDiagnosticsValue(id, value) {
   byId(id).textContent = String(value ?? "-");
 }
@@ -472,6 +508,7 @@ async function drainQueueNow() {
 function renderPartners(partners, enabledSet, partnerTokens) {
   const list = byId("partnersList");
   list.innerHTML = "";
+  updateOverview(enabledSet, partnerTokens, partners);
 
   if (state.isLoadingPartners) {
     const node = document.createElement("div");
@@ -489,7 +526,23 @@ function renderPartners(partners, enabledSet, partnerTokens) {
     return;
   }
 
-  for (const partner of partners) {
+  const sortedPartners = [...partners].sort((left, right) => {
+    const leftConnected = Boolean(partnerTokens[left.slug]);
+    const rightConnected = Boolean(partnerTokens[right.slug]);
+    if (leftConnected !== rightConnected) {
+      return leftConnected ? -1 : 1;
+    }
+
+    const leftEnabled = enabledSet.has(left.slug);
+    const rightEnabled = enabledSet.has(right.slug);
+    if (leftEnabled !== rightEnabled) {
+      return leftEnabled ? -1 : 1;
+    }
+
+    return left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
+  });
+
+  for (const partner of sortedPartners) {
     const item = document.createElement("div");
     item.className = "partner-item";
 
@@ -501,10 +554,21 @@ function renderPartners(partners, enabledSet, partnerTokens) {
     checkbox.checked = enabledSet.has(partner.slug);
     checkbox.dataset.partnerSlug = partner.slug;
 
+    const copy = document.createElement("div");
+    copy.className = "partner-copy";
+
     const title = document.createElement("span");
+    title.className = "partner-name";
     title.textContent = partner.name;
+    copy.appendChild(title);
+
+    const hint = document.createElement("div");
+    hint.className = "hint";
+    hint.textContent = `${t("slug")}: ${partner.slug}`;
+    copy.appendChild(hint);
+
     label.appendChild(checkbox);
-    label.appendChild(title);
+    label.appendChild(copy);
 
     const chip = document.createElement("span");
     const connected = Boolean(partnerTokens[partner.slug]);
@@ -516,12 +580,7 @@ function renderPartners(partners, enabledSet, partnerTokens) {
     head.appendChild(label);
     head.appendChild(chip);
 
-    const hint = document.createElement("div");
-    hint.className = "hint";
-    hint.textContent = `${t("slug")}: ${partner.slug}`;
-
     item.appendChild(head);
-    item.appendChild(hint);
     list.appendChild(item);
   }
 }
@@ -821,6 +880,7 @@ async function init() {
   applyI18nTexts();
   renderPartners(state.partners, enabledSet, partnerTokens);
   renderConnectSelect(state.partners, enabledSet, saved.partnerSlug || "");
+  renderDiagnosticsCollapse();
 
   byId("enabled").addEventListener("change", async () => {
     await persistState();
@@ -868,6 +928,11 @@ async function init() {
 
   byId("refreshDiagBtn").addEventListener("click", () => {
     void refreshDiagnostics({ showStatus: true });
+  });
+
+  byId("diagToggleBtn").addEventListener("click", () => {
+    state.diagnosticsCollapsed = !state.diagnosticsCollapsed;
+    renderDiagnosticsCollapse();
   });
 
   byId("drainQueueBtn").addEventListener("click", () => {

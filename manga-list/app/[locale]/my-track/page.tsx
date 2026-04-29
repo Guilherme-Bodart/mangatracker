@@ -5,8 +5,6 @@ import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "@/i18n/routing";
 import { useLocale, useTranslations } from "next-intl";
 import { Filter, Loader2, Plus, User } from "lucide-react";
-import { AdsterraDesktopSideRailsLayout } from "@/components/ads/adsterra-desktop-side-rails-layout";
-import { AdsterraResponsiveBanner } from "@/components/ads/adsterra-responsive-banner";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "@/i18n/routing";
@@ -308,12 +306,8 @@ export default function MyTrackPage() {
       </div>
 
       {/* Manga List */}
-      <AdsterraDesktopSideRailsLayout className="py-8">
+      <div className="py-8">
         <div className="container mx-auto px-4">
-          <div className="mb-6 flex justify-center md:hidden">
-            <AdsterraResponsiveBanner />
-          </div>
-
           <div className="mb-8">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-2xl font-semibold">{t("heading")}</h2>
@@ -422,7 +416,7 @@ export default function MyTrackPage() {
             </div>
           )}
         </div>
-      </AdsterraDesktopSideRailsLayout>
+      </div>
 
       {/* Edit Modal */}
       {selectedManga && (

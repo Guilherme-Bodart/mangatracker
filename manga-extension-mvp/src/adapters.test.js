@@ -5,6 +5,8 @@ const {
   parseChapterFromText,
   sanitizeMangaTitle,
   parseMangaLivre,
+  parseSeriesSlugNumberPath,
+  parseSingleSlugNumberPath,
   parseGeneric,
   detectMangaPayload,
 } = require("./adapters.js");
@@ -47,6 +49,10 @@ test("parseChapterFromText avoids false positive on generic numbers", () => {
 test("sanitizeMangaTitle strips chapter suffix", () => {
   assert.equal(sanitizeMangaTitle("One Piece - Chapter 1123"), "One Piece");
   assert.equal(sanitizeMangaTitle("Naruto - Ch. 700"), "Naruto");
+  assert.equal(
+    sanitizeMangaTitle("Capítulo 259 - Providência de Alto Nível | Pluma Comics"),
+    "Providência de Alto Nível",
+  );
 });
 
 test("parseMangaLivre returns stable payload", () => {
@@ -115,6 +121,111 @@ test("parseGeneric extracts chapter from path when hints are missing", () => {
   assert.equal(payload?.externalMangaId, "my-hero-academia");
 });
 
+test("parseGeneric handles Manga Online title and chapter path", () => {
+  const documentRef = createDocument({
+    title: "The Infinite Mage - capítulo 166 (PT-BR)",
+    selectors: {
+      "meta[property='og:title']": createNode({
+        content: "The Infinite Mage",
+      }),
+    },
+  });
+
+  const payload = parseGeneric(documentRef, {
+    hostname: "mangaonline.red",
+    pathname: "/manga/the-infinite-mage/capitulo-166-pt-br/",
+    protocol: "https:",
+  });
+
+  assert.deepEqual(payload, {
+    title: "The Infinite Mage",
+    chapter: 166,
+    externalMangaId: "the-infinite-mage",
+    sourceDomain: "mangaonline.red",
+  });
+});
+
+test("parseGeneric handles MangaLivre.blog chapter slug pages", () => {
+  const documentRef = createDocument({
+    title: "The Infinite Mage - Capítulo 166",
+  });
+
+  const payload = parseGeneric(documentRef, {
+    hostname: "mangalivre.blog",
+    pathname: "/capitulo/the-infinite-mage-capitulo-166/",
+    protocol: "https:",
+  });
+
+  assert.deepEqual(payload, {
+    title: "The Infinite Mage",
+    chapter: 166,
+    externalMangaId: "the-infinite-mage",
+    sourceDomain: "mangalivre.blog",
+  });
+});
+
+test("parseGeneric extracts chapter from title-first pages like Pluma Comics", () => {
+  const documentRef = createDocument({
+    title: "Capítulo 259 - Providência de Alto Nível | Pluma Comics",
+    selectors: {
+      "meta[property='og:title']": createNode({
+        content: "Capítulo 259 - Providência de Alto Nível | Pluma Comics",
+      }),
+    },
+  });
+
+  const payload = parseGeneric(documentRef, {
+    hostname: "plumacomics.cloud",
+    pathname: "/ler/4616",
+    protocol: "https:",
+  });
+
+  assert.deepEqual(payload, {
+    title: "Providência de Alto Nível",
+    chapter: 259,
+    externalMangaId: "providencia-de-alto-nivel",
+    sourceDomain: "plumacomics.cloud",
+  });
+});
+
+test("parseSeriesSlugNumberPath handles LycanToons numeric chapter routes", () => {
+  const documentRef = createDocument({
+    title: "Eu Me Tornei o Primeiro Príncipe Rebelde",
+  });
+
+  const payload = parseSeriesSlugNumberPath(documentRef, {
+    hostname: "lycantoons.com",
+    pathname: "/series/eu-me-tornei-o-primeiro-principe-rebelde/33",
+    protocol: "https:",
+  });
+
+  assert.deepEqual(payload, {
+    title: "Eu Me Tornei o Primeiro Príncipe Rebelde",
+    chapter: 33,
+    externalMangaId: "eu-me-tornei-o-primeiro-principe-rebelde",
+    sourceDomain: "lycantoons.com",
+  });
+});
+
+test("parseSingleSlugNumberPath handles ToonLivre numeric chapter routes", () => {
+  const documentRef = createDocument({
+    title: "Reencarnei Como Um Cirurgião Lendário - Capítulo 190",
+  });
+
+  const payload = parseSingleSlugNumberPath(documentRef, {
+    hostname: "toonlivre.net",
+    pathname: "/reencarnei-como-um-cirurgiao-lendario/190",
+    protocol: "https:",
+  });
+
+  assert.deepEqual(payload, {
+    title: "Reencarnei Como Um Cirurgião Lendário",
+    chapter: 190,
+    externalMangaId: "reencarnei-como-um-cirurgiao-lendario",
+    sourceDomain: "toonlivre.net",
+  });
+});
+
 test("parseGeneric returns null without chapter evidence", () => {
   const documentRef = createDocument({
     title: "Random Manga",
@@ -152,4 +263,26 @@ test("detectMangaPayload routes by domain and protocol", () => {
     protocol: "chrome-extension:",
   });
   assert.equal(unsupportedProtocol, null);
+
+  const lycanDoc = createDocument({
+    title: "Eu Me Tornei o Primeiro Príncipe Rebelde - Capítulo 33",
+  });
+  const fromLycan = detectMangaPayload(lycanDoc, {
+    hostname: "lycantoons.com",
+    pathname: "/series/eu-me-tornei-o-primeiro-principe-rebelde/33",
+    protocol: "https:",
+  });
+  assert.equal(fromLycan?.chapter, 33);
+  assert.equal(fromLycan?.externalMangaId, "eu-me-tornei-o-primeiro-principe-rebelde");
+
+  const toonLivreDoc = createDocument({
+    title: "Reencarnei Como Um Cirurgião Lendário - Capítulo 190",
+  });
+  const fromToonLivre = detectMangaPayload(toonLivreDoc, {
+    hostname: "toonlivre.net",
+    pathname: "/reencarnei-como-um-cirurgiao-lendario/190",
+    protocol: "https:",
+  });
+  assert.equal(fromToonLivre?.chapter, 190);
+  assert.equal(fromToonLivre?.externalMangaId, "reencarnei-como-um-cirurgiao-lendario");
 });

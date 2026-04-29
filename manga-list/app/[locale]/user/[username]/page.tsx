@@ -5,8 +5,6 @@ import { useAuth } from "@/contexts/auth-context";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname } from "@/i18n/routing";
 import { Filter, User } from "lucide-react";
-import { AdsterraDesktopSideRailsLayout } from "@/components/ads/adsterra-desktop-side-rails-layout";
-import { AdsterraResponsiveBanner } from "@/components/ads/adsterra-responsive-banner";
 import { Button } from "@/components/ui/button";
 import { usePublicProfilePage } from "@/hooks/use-public-profile-page";
 import { PublicProfileHero } from "@/components/profile/public-profile/public-profile-hero";
@@ -137,12 +135,8 @@ export default function PublicProfilePage() {
         }
       />
 
-      <AdsterraDesktopSideRailsLayout className="pb-8">
+      <div className="pb-8">
         <div className="container mx-auto space-y-4 px-4">
-          <div className="flex justify-center md:hidden">
-            <AdsterraResponsiveBanner />
-          </div>
-
           {isFiltersOpen ? (
             <PublicProfileMangaControls
               t={t}
@@ -195,7 +189,7 @@ export default function PublicProfilePage() {
             onPageChange={setCurrentPage}
           />
         </div>
-      </AdsterraDesktopSideRailsLayout>
+      </div>
 
       <PublicProfileMangaDetailsDialog
         t={t}

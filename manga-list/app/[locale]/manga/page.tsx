@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { AdsterraResponsiveBanner } from "@/components/ads/adsterra-responsive-banner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -222,10 +221,6 @@ export default function BrowsePage() {
             <SelectItem value="anilist">{t("providers.anilist")}</SelectItem>
           </SelectContent>
         </Select>
-      </div>
-
-      <div className="mb-6 flex justify-center">
-        <AdsterraResponsiveBanner />
       </div>
 
       {/* Genre Filters */}

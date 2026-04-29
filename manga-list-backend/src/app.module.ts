@@ -15,7 +15,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 
 const localEnvPath = resolve(process.cwd(), '.env.local');
 if (existsSync(localEnvPath)) {
-  loadDotenv({ path: localEnvPath, override: true });
+  loadDotenv({ path: localEnvPath, override: false });
 }
 
 @Module({

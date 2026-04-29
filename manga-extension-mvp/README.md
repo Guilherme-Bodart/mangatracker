@@ -10,6 +10,7 @@ Extensão de navegador (Manifest V3) para sincronizar progresso de leitura com a
 - Envia `x-idempotency-key` por evento para reduzir duplicidade.
 - Mantem fila local persistente com retry/backoff para falhas temporarias de rede/API.
 - Tem adapter específico para `mangalivre.tv`.
+- Reconhece leituras em `mangalivre.tv`, `mangaonline.red`, `mangalivre.blog`, `plumacomics.cloud`, `lycantoons.com` e `toonlivre.net`.
 
 ## Aviso
 - Capítulos podem não refletir 100% o estado real em todos os títulos.

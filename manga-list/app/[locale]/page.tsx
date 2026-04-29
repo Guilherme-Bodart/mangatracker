@@ -3,8 +3,6 @@ import { cookies } from "next/headers";
 import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { AdsterraDesktopSideRailsLayout } from "@/components/ads/adsterra-desktop-side-rails-layout";
-import { AdsterraMediumRectangle } from "@/components/ads/adsterra-medium-rectangle";
 import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
 import { logger } from "@/lib/logger";
 import { BookOpen, Share2, Compass } from "lucide-react";
@@ -63,14 +61,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="px-4 py-6 md:hidden">
-        <div className="container mx-auto max-w-sm space-y-4">
-          <AdsterraMediumRectangle />
-          <AdsterraMediumRectangle />
-        </div>
-      </section>
-
-      <AdsterraDesktopSideRailsLayout>
+      <div>
         {/* Trending Manga */}
         {trendingManga.length > 0 && (
           <section className="py-16 px-4">
@@ -188,14 +179,7 @@ export default async function HomePage() {
             </div>
           </section>
         )}
-      </AdsterraDesktopSideRailsLayout>
-
-      <section className="px-4 py-6 md:hidden">
-        <div className="container mx-auto max-w-sm space-y-4">
-          <AdsterraMediumRectangle />
-          <AdsterraMediumRectangle />
-        </div>
-      </section>
+      </div>
     </div>
   );
 }

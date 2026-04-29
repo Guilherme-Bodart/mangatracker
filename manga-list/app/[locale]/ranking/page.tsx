@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
-import { AdsterraDesktopSideRailsLayout } from "@/components/ads/adsterra-desktop-side-rails-layout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +43,7 @@ export default function RankingPage() {
   }, []);
 
   return (
-    <AdsterraDesktopSideRailsLayout className="px-4 py-10">
+    <div className="px-4 py-10">
       <div className="container mx-auto px-0">
         <div className="mb-6">
           <h1 className="text-3xl font-bold">{t("title")}</h1>
@@ -145,6 +144,6 @@ export default function RankingPage() {
           </div>
         )}
       </div>
-    </AdsterraDesktopSideRailsLayout>
+    </div>
   );
 }

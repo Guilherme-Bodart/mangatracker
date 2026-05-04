@@ -123,6 +123,9 @@ model IntegrationPartner {
   previousClientSecretHash String?
   previousClientSecretExpiresAt DateTime?
   allowedDomains   String[]                @default([])
+  parserMode       String?
+  parserTitleSelectors String[]            @default([])
+  parserChapterSelectors String[]          @default([])
   isActive         Boolean                 @default(true)
   connections      UserPartnerConnection[]
   externalMangaMaps ExternalMangaMap[]

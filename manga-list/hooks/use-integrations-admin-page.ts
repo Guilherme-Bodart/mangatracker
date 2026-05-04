@@ -38,6 +38,9 @@ export type IntegrationsAdminCreateFormState = {
   slug: string;
   name: string;
   allowedDomains: string;
+  parserMode: string;
+  parserTitleSelectors: string;
+  parserChapterSelectors: string;
   isActive: boolean;
 };
 
@@ -75,6 +78,9 @@ export function useIntegrationsAdminPage({
     slug: "",
     name: "",
     allowedDomains: "",
+    parserMode: "generic",
+    parserTitleSelectors: "",
+    parserChapterSelectors: "",
     isActive: true,
   });
   const [connectionFilter, setConnectionFilter] = useState("");
@@ -193,12 +199,36 @@ export function useIntegrationsAdminPage({
             .split(",")
             .map((item) => item.trim())
             .filter(Boolean),
+          parserMode:
+            createForm.parserMode.trim() === ""
+              ? undefined
+              : (createForm.parserMode.trim() as
+                  | "generic"
+                  | "mangalivre"
+                  | "seriesSlugNumberPath"
+                  | "singleSlugNumberPath"),
+          parserTitleSelectors: createForm.parserTitleSelectors
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean),
+          parserChapterSelectors: createForm.parserChapterSelectors
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean),
           isActive: createForm.isActive,
         });
         setNewSecret(created.clientSecret);
         setNewSecretRotationInfo(null);
         toast.success(t("messages.partnerCreatedSuccess"));
-        setCreateForm({ slug: "", name: "", allowedDomains: "", isActive: true });
+        setCreateForm({
+          slug: "",
+          name: "",
+          allowedDomains: "",
+          parserMode: "generic",
+          parserTitleSelectors: "",
+          parserChapterSelectors: "",
+          isActive: true,
+        });
         await refreshCurrentFilters();
       } catch (error: unknown) {
         handleApiError(error, t("messages.createPartnerError"));

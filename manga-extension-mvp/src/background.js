@@ -1,6 +1,7 @@
-const DEFAULT_API_BASE_URL = "http://localhost:3001";
+const DEFAULT_API_BASE_URL = "https://mangatracker-qkdy.onrender.com";
 const SYNC_QUEUE_STORAGE_KEY = "syncQueueV1";
 const SYNC_QUEUE_RETRY_ALARM = "syncQueueRetryAlarm";
+const PARTNER_CONFIG_REFRESH_ALARM = "partnerConfigRefresh";
 const MAX_QUEUE_SIZE = 200;
 const MAX_DRAIN_ITEMS_PER_RUN = 30;
 const INITIAL_RETRY_DELAY_MS = 5_000;
@@ -10,6 +11,13 @@ const MAX_ATTEMPTS = 20;
 const SYNC_REQUEST_TIMEOUT_MS = 15_000;
 const EXTERNAL_CONNECT_MESSAGE_TYPE = "MANGA_TRACKER_CONNECT_CODE";
 const DYNAMIC_CONTENT_SCRIPT_ID = "manga-tracker-dynamic-content";
+const PARTNER_CONFIG_REFRESH_INTERVAL_MINUTES = 15;
+const KNOWN_PARSER_MODES = new Set([
+  "generic",
+  "mangalivre",
+  "seriesSlugNumberPath",
+  "singleSlugNumberPath",
+]);
 
 let drainQueuePromise = null;
 let queueLock = Promise.resolve();
@@ -21,6 +29,9 @@ async function getConfig() {
     "accessToken",
     "partnerTokens",
     "enabled",
+    "enabledPartnerSlugs",
+    "partnerDomainsMap",
+    "allowedDomains",
   ]);
 }
 
@@ -140,6 +151,21 @@ function normalizeApiBaseUrl(rawValue) {
   return String(rawValue || DEFAULT_API_BASE_URL).replace(/\/+$/, "");
 }
 
+function normalizeParserMode(value) {
+  const normalized = String(value || "").trim();
+  return KNOWN_PARSER_MODES.has(normalized) ? normalized : null;
+}
+
+function normalizeSelectorList(values) {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  return values
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+}
+
 function normalizeDomain(value) {
   return String(value || "").trim().toLowerCase();
 }
@@ -200,6 +226,168 @@ function buildEnabledOrigins(config) {
   }
 
   return Array.from(origins);
+}
+
+function normalizePartnerRecord(partner) {
+  const slug = toNonEmptyString(partner?.slug, 100);
+  const name = toNonEmptyString(partner?.name, 200);
+  if (!slug || !name) {
+    return null;
+  }
+
+  const allowedDomains = Array.isArray(partner?.allowedDomains)
+    ? partner.allowedDomains.map((domain) => normalizeDomain(domain)).filter(Boolean)
+    : [];
+
+  return {
+    slug,
+    name,
+    allowedDomains,
+    parserMode: normalizeParserMode(partner?.parserMode),
+    parserTitleSelectors: normalizeSelectorList(partner?.parserTitleSelectors),
+    parserChapterSelectors: normalizeSelectorList(partner?.parserChapterSelectors),
+  };
+}
+
+function buildPartnerDomainsMap(partners) {
+  const map = {};
+  for (const partner of partners) {
+    map[partner.slug] = Array.isArray(partner.allowedDomains)
+      ? partner.allowedDomains
+      : [];
+  }
+  return map;
+}
+
+function buildPartnerParserMap(partners) {
+  const map = {};
+  for (const partner of partners) {
+    map[partner.slug] = {
+      parserMode: normalizeParserMode(partner.parserMode),
+      parserTitleSelectors: normalizeSelectorList(partner.parserTitleSelectors),
+      parserChapterSelectors: normalizeSelectorList(partner.parserChapterSelectors),
+    };
+  }
+  return map;
+}
+
+function buildLegacyCompatibility(partners, enabledPartnerSlugs, partnerTokens, fallbackSlug) {
+  for (const slug of enabledPartnerSlugs) {
+    const partner = partners.find((candidate) => candidate.slug === slug);
+    const token = partnerTokens[slug];
+    if (!partner || !token) {
+      continue;
+    }
+
+    return {
+      partnerSlug: slug,
+      accessToken: token,
+      allowedDomains: partner.allowedDomains,
+    };
+  }
+
+  if (fallbackSlug) {
+    const partner = partners.find((candidate) => candidate.slug === fallbackSlug);
+    if (partner) {
+      return {
+        partnerSlug: fallbackSlug,
+        accessToken: partnerTokens[fallbackSlug] || "",
+        allowedDomains: partner.allowedDomains,
+      };
+    }
+  }
+
+  return {
+    partnerSlug: "",
+    accessToken: "",
+    allowedDomains: [],
+  };
+}
+
+async function fetchPublicPartners(apiBaseUrl) {
+  const response = await fetch(`${apiBaseUrl}/integrations/partners/public`);
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`partners/public failed (${response.status}): ${text.slice(0, 300)}`);
+  }
+
+  const data = await response.json();
+  if (!Array.isArray(data)) {
+    return [];
+  }
+
+  return data.map(normalizePartnerRecord).filter(Boolean);
+}
+
+async function schedulePartnerConfigRefresh() {
+  chrome.alarms.create(PARTNER_CONFIG_REFRESH_ALARM, {
+    periodInMinutes: PARTNER_CONFIG_REFRESH_INTERVAL_MINUTES,
+  });
+}
+
+async function syncRemotePartnerCatalog(trigger = "unknown") {
+  const current = await chrome.storage.sync.get([
+    "apiBaseUrl",
+    "enabledPartnerSlugs",
+    "partnerTokens",
+    "partnerDomainsMap",
+    "partnerParserMap",
+    "partnerSlug",
+    "accessToken",
+    "allowedDomains",
+  ]);
+
+  const apiBaseUrl = normalizeApiBaseUrl(current.apiBaseUrl);
+  const partners = await fetchPublicPartners(apiBaseUrl);
+  const enabledPartnerSlugs = Array.isArray(current.enabledPartnerSlugs)
+    ? current.enabledPartnerSlugs.filter((slug) => typeof slug === "string" && slug.trim())
+    : [];
+  const partnerTokens =
+    current.partnerTokens && typeof current.partnerTokens === "object"
+      ? current.partnerTokens
+      : {};
+  const currentDomainsMap =
+    current.partnerDomainsMap && typeof current.partnerDomainsMap === "object"
+      ? current.partnerDomainsMap
+      : {};
+  const currentParserMap =
+    current.partnerParserMap && typeof current.partnerParserMap === "object"
+      ? current.partnerParserMap
+      : {};
+  const nextDomainsMap = {
+    ...currentDomainsMap,
+    ...buildPartnerDomainsMap(partners),
+  };
+  const nextParserMap = {
+    ...currentParserMap,
+    ...buildPartnerParserMap(partners),
+  };
+  const legacy = buildLegacyCompatibility(
+    partners,
+    enabledPartnerSlugs,
+    partnerTokens,
+    current.partnerSlug,
+  );
+
+  await chrome.storage.sync.set({
+    apiBaseUrl,
+    availablePartners: partners,
+    partnerDomainsMap: nextDomainsMap,
+    partnerParserMap: nextParserMap,
+    partnerSlug: legacy.partnerSlug || current.partnerSlug || "",
+    accessToken: legacy.accessToken || current.accessToken || "",
+    allowedDomains:
+      legacy.allowedDomains.length > 0
+        ? legacy.allowedDomains
+        : Array.isArray(current.allowedDomains)
+          ? current.allowedDomains
+          : [],
+  });
+
+  console.log("Partner catalog sync completed", {
+    trigger,
+    partners: partners.length,
+  });
 }
 
 async function filterGrantedOrigins(origins) {
@@ -407,6 +595,11 @@ async function connectFromExternalMessage(rawPayload) {
     accessToken: exchangeResult.accessToken,
     apiBaseUrl: exchangeResult.apiBaseUrl,
   });
+  try {
+    await syncRemotePartnerCatalog("external-connect");
+  } catch (error) {
+    console.warn("Partner catalog sync failed after external connect", error);
+  }
 
   return {
     ok: true,
@@ -770,11 +963,19 @@ chrome.runtime.onMessageExternal.addListener((message, _sender, sendResponse) =>
 });
 
 chrome.runtime.onStartup.addListener(() => {
+  void syncRemotePartnerCatalog("startup").catch((error) => {
+    console.warn("Partner catalog sync failed on startup", error);
+  });
+  void schedulePartnerConfigRefresh();
   void syncDynamicContentScript("startup");
   void drainQueue("startup");
 });
 
 chrome.runtime.onInstalled.addListener(() => {
+  void syncRemotePartnerCatalog("installed").catch((error) => {
+    console.warn("Partner catalog sync failed on install", error);
+  });
+  void schedulePartnerConfigRefresh();
   void syncDynamicContentScript("installed");
   void drainQueue("installed");
 });
@@ -782,6 +983,13 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm?.name === SYNC_QUEUE_RETRY_ALARM) {
     void drainQueue("alarm");
+    return;
+  }
+
+  if (alarm?.name === PARTNER_CONFIG_REFRESH_ALARM) {
+    void syncRemotePartnerCatalog("alarm").catch((error) => {
+      console.warn("Partner catalog sync failed from alarm", error);
+    });
   }
 });
 
@@ -795,6 +1003,12 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   ) {
     void syncDynamicContentScript("storage-change");
   }
+
+  if (changes.apiBaseUrl) {
+    void syncRemotePartnerCatalog("api-base-change").catch((error) => {
+      console.warn("Partner catalog sync failed after apiBaseUrl change", error);
+    });
+  }
 });
 
 chrome.permissions?.onAdded?.addListener(() => {
@@ -805,4 +1019,8 @@ chrome.permissions?.onRemoved?.addListener(() => {
   void syncDynamicContentScript("permission-removed");
 });
 
+void schedulePartnerConfigRefresh();
+void syncRemotePartnerCatalog("boot").catch((error) => {
+  console.warn("Partner catalog sync failed on boot", error);
+});
 void syncDynamicContentScript("boot");

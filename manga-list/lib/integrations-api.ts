@@ -1,10 +1,19 @@
 import { apiRequest } from "@/lib/api-client";
 
+export type PartnerParserMode =
+  | "generic"
+  | "mangalivre"
+  | "seriesSlugNumberPath"
+  | "singleSlugNumberPath";
+
 export type ConnectablePartner = {
   id: string;
   slug: string;
   name: string;
   allowedDomains: string[];
+  parserMode: PartnerParserMode | null;
+  parserTitleSelectors: string[];
+  parserChapterSelectors: string[];
 };
 
 export type IntegrationConnection = {
@@ -99,6 +108,9 @@ export type AdminPartner = {
   slug: string;
   name: string;
   allowedDomains: string[];
+  parserMode: PartnerParserMode | null;
+  parserTitleSelectors: string[];
+  parserChapterSelectors: string[];
   isActive: boolean;
   secretRotation: {
     previousSecretExpiresAt: string | null;
@@ -224,6 +236,9 @@ export async function createAdminPartner(input: {
   slug: string;
   name: string;
   allowedDomains?: string[];
+  parserMode?: PartnerParserMode;
+  parserTitleSelectors?: string[];
+  parserChapterSelectors?: string[];
   isActive?: boolean;
   clientSecret?: string;
 }) {
@@ -239,6 +254,9 @@ export async function updateAdminPartner(
   input: {
     name?: string;
     allowedDomains?: string[];
+    parserMode?: PartnerParserMode;
+    parserTitleSelectors?: string[];
+    parserChapterSelectors?: string[];
     isActive?: boolean;
   },
 ) {

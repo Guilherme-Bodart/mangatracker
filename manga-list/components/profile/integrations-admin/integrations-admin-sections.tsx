@@ -84,6 +84,54 @@ export function CreatePartnerCard({
               }
             />
           </div>
+          <div className="space-y-2">
+            <Label>{t("createCard.parserModeLabel")}</Label>
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={createForm.parserMode}
+              onChange={(event) =>
+                setCreateForm((prev) => ({
+                  ...prev,
+                  parserMode: event.target.value,
+                }))
+              }
+            >
+              <option value="generic">{t("createCard.parserModeGeneric")}</option>
+              <option value="mangalivre">{t("createCard.parserModeMangaLivre")}</option>
+              <option value="seriesSlugNumberPath">
+                {t("createCard.parserModeSeriesSlugNumberPath")}
+              </option>
+              <option value="singleSlugNumberPath">
+                {t("createCard.parserModeSingleSlugNumberPath")}
+              </option>
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label>{t("createCard.parserTitleSelectorsLabel")}</Label>
+            <Input
+              placeholder={t("createCard.parserTitleSelectorsPlaceholder")}
+              value={createForm.parserTitleSelectors}
+              onChange={(event) =>
+                setCreateForm((prev) => ({
+                  ...prev,
+                  parserTitleSelectors: event.target.value,
+                }))
+              }
+            />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>{t("createCard.parserChapterSelectorsLabel")}</Label>
+            <Input
+              placeholder={t("createCard.parserChapterSelectorsPlaceholder")}
+              value={createForm.parserChapterSelectors}
+              onChange={(event) =>
+                setCreateForm((prev) => ({
+                  ...prev,
+                  parserChapterSelectors: event.target.value,
+                }))
+              }
+            />
+          </div>
           <div className="md:col-span-2 flex items-center space-x-2">
             <Checkbox
               id="is-active"
@@ -284,6 +332,22 @@ export function PartnersCard({
                   {partner.allowedDomains.length
                     ? partner.allowedDomains.join(", ")
                     : t("partners.noDomainRestriction")}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {t("partners.parserModeLabel")}{" "}
+                  {partner.parserMode ?? t("partners.parserModeFallback")}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {t("partners.parserTitleSelectorsLabel")}{" "}
+                  {partner.parserTitleSelectors.length
+                    ? partner.parserTitleSelectors.join(", ")
+                    : t("partners.parserSelectorsFallback")}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {t("partners.parserChapterSelectorsLabel")}{" "}
+                  {partner.parserChapterSelectors.length
+                    ? partner.parserChapterSelectors.join(", ")
+                    : t("partners.parserSelectorsFallback")}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {t("partners.statusLabel")}{" "}

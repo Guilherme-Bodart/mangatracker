@@ -2,10 +2,24 @@ function shouldRunOnDomain(allowedDomains, hostname) {
   if (!Array.isArray(allowedDomains) || allowedDomains.length === 0) {
     return false;
   }
-  const normalizedHost = hostname.trim().toLowerCase();
-  return allowedDomains.some(
-    (domain) => domain.trim().toLowerCase() === normalizedHost,
-  );
+  const normalizedHost = String(hostname || "").trim().toLowerCase().replace(/^www\./, "");
+  return allowedDomains.some((domain) => {
+    const normalizedDomain = String(domain || "")
+      .trim()
+      .toLowerCase()
+      .replace(/^www\./, "");
+
+    if (!normalizedDomain) {
+      return false;
+    }
+
+    if (normalizedDomain.startsWith("*.")) {
+      const baseDomain = normalizedDomain.slice(2);
+      return normalizedHost === baseDomain || normalizedHost.endsWith(`.${baseDomain}`);
+    }
+
+    return normalizedDomain === normalizedHost;
+  });
 }
 
 function resolvePartnerForHost(partnerDomainsMap, enabledPartnerSlugs, hostname) {
@@ -34,6 +48,7 @@ async function run() {
     "partnerSlug",
     "enabledPartnerSlugs",
     "partnerDomainsMap",
+    "partnerParserMap",
   ]);
   if (!config.enabled) return;
 
@@ -54,13 +69,21 @@ async function run() {
     return;
   }
 
+  const partnerConfig =
+    config.partnerParserMap &&
+    typeof config.partnerParserMap === "object" &&
+    config.partnerParserMap[partnerSlug] &&
+    typeof config.partnerParserMap[partnerSlug] === "object"
+      ? config.partnerParserMap[partnerSlug]
+      : undefined;
+
   const detectFn = globalThis.detectMangaPayload;
   if (typeof detectFn !== "function") {
     console.error("detectMangaPayload is not available");
     return;
   }
 
-  const payload = detectFn(document, window.location);
+  const payload = detectFn(document, window.location, partnerConfig);
   if (!payload) return;
 
   chrome.runtime.sendMessage({

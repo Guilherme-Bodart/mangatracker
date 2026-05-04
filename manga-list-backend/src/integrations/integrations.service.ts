@@ -162,6 +162,9 @@ export class IntegrationsService {
         slug: true,
         name: true,
         allowedDomains: true,
+        parserMode: true,
+        parserTitleSelectors: true,
+        parserChapterSelectors: true,
         isActive: true,
         previousClientSecretExpiresAt: true,
         createdAt: true,
@@ -198,6 +201,9 @@ export class IntegrationsService {
         slug: partner.slug,
         name: partner.name,
         allowedDomains: partner.allowedDomains,
+        parserMode: this.normalizePartnerParserMode(partner.parserMode),
+        parserTitleSelectors: partner.parserTitleSelectors,
+        parserChapterSelectors: partner.parserChapterSelectors,
         isActive: partner.isActive,
         createdAt: partner.createdAt,
         updatedAt: partner.updatedAt,
@@ -212,7 +218,7 @@ export class IntegrationsService {
   }
 
   async listConnectablePartners() {
-    return this.prisma.integrationPartner.findMany({
+    const partners = await this.prisma.integrationPartner.findMany({
       where: { isActive: true },
       orderBy: [{ name: 'asc' }],
       select: {
@@ -220,8 +226,21 @@ export class IntegrationsService {
         slug: true,
         name: true,
         allowedDomains: true,
+        parserMode: true,
+        parserTitleSelectors: true,
+        parserChapterSelectors: true,
       },
     });
+
+    return partners.map((partner) => ({
+      id: partner.id,
+      slug: partner.slug,
+      name: partner.name,
+      allowedDomains: partner.allowedDomains,
+      parserMode: this.normalizePartnerParserMode(partner.parserMode),
+      parserTitleSelectors: partner.parserTitleSelectors,
+      parserChapterSelectors: partner.parserChapterSelectors,
+    }));
   }
 
   async createPartnerApplication(
@@ -624,6 +643,13 @@ export class IntegrationsService {
         name: dto.name.trim(),
         clientSecretHash,
         allowedDomains: this.normalizeDomains(dto.allowedDomains),
+        parserMode: this.normalizePartnerParserMode(dto.parserMode),
+        parserTitleSelectors: this.normalizePartnerSelectors(
+          dto.parserTitleSelectors,
+        ),
+        parserChapterSelectors: this.normalizePartnerSelectors(
+          dto.parserChapterSelectors,
+        ),
         isActive: dto.isActive ?? true,
       },
       select: {
@@ -631,6 +657,9 @@ export class IntegrationsService {
         slug: true,
         name: true,
         allowedDomains: true,
+        parserMode: true,
+        parserTitleSelectors: true,
+        parserChapterSelectors: true,
         isActive: true,
         previousClientSecretExpiresAt: true,
         createdAt: true,
@@ -644,6 +673,9 @@ export class IntegrationsService {
       slug: created.slug,
       name: created.name,
       allowedDomains: created.allowedDomains,
+      parserMode: this.normalizePartnerParserMode(created.parserMode),
+      parserTitleSelectors: created.parserTitleSelectors,
+      parserChapterSelectors: created.parserChapterSelectors,
       isActive: created.isActive,
       createdAt: created.createdAt,
       updatedAt: created.updatedAt,
@@ -836,6 +868,23 @@ export class IntegrationsService {
         ...(dto.allowedDomains !== undefined
           ? { allowedDomains: this.normalizeDomains(dto.allowedDomains) }
           : {}),
+        ...(dto.parserMode !== undefined
+          ? { parserMode: this.normalizePartnerParserMode(dto.parserMode) }
+          : {}),
+        ...(dto.parserTitleSelectors !== undefined
+          ? {
+              parserTitleSelectors: this.normalizePartnerSelectors(
+                dto.parserTitleSelectors,
+              ),
+            }
+          : {}),
+        ...(dto.parserChapterSelectors !== undefined
+          ? {
+              parserChapterSelectors: this.normalizePartnerSelectors(
+                dto.parserChapterSelectors,
+              ),
+            }
+          : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
       },
       select: {
@@ -843,6 +892,9 @@ export class IntegrationsService {
         slug: true,
         name: true,
         allowedDomains: true,
+        parserMode: true,
+        parserTitleSelectors: true,
+        parserChapterSelectors: true,
         isActive: true,
         previousClientSecretExpiresAt: true,
         createdAt: true,
@@ -855,6 +907,9 @@ export class IntegrationsService {
         slug: updated.slug,
         name: updated.name,
         allowedDomains: updated.allowedDomains,
+        parserMode: this.normalizePartnerParserMode(updated.parserMode),
+        parserTitleSelectors: updated.parserTitleSelectors,
+        parserChapterSelectors: updated.parserChapterSelectors,
         isActive: updated.isActive,
         createdAt: updated.createdAt,
         updatedAt: updated.updatedAt,
@@ -1779,6 +1834,40 @@ export class IntegrationsService {
           .filter((domain) => domain.length > 0),
       ),
     );
+  }
+
+  private normalizePartnerParserMode(
+    value: string | null | undefined,
+  ): 'generic' | 'mangalivre' | 'seriesSlugNumberPath' | 'singleSlugNumberPath' | null {
+    const normalized = String(value || '').trim();
+    if (!normalized) {
+      return null;
+    }
+
+    switch (normalized) {
+      case 'generic':
+      case 'mangalivre':
+      case 'seriesSlugNumberPath':
+      case 'singleSlugNumberPath':
+        return normalized;
+      default:
+        throw new BadRequestException('Unsupported parser mode');
+    }
+  }
+
+  private normalizePartnerSelectors(values: string[] | undefined): string[] {
+    if (!values) {
+      return [];
+    }
+
+    return Array.from(
+      new Set(
+        values
+          .map((value) => String(value || '').trim())
+          .filter((value) => value.length > 0)
+          .map((value) => value.slice(0, 160)),
+      ),
+    ).slice(0, 20);
   }
 
   private normalizeWebhookUrl(value: string): string {

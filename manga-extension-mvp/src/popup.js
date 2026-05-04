@@ -1,6 +1,13 @@
 ﻿const DEFAULT_API_BASE_URL = "https://mangatracker-qkdy.onrender.com";
 const DEFAULT_FRONTEND_BASE_URL = "https://mangastracker.vercel.app";
 
+const KNOWN_PARSER_MODES = new Set([
+  "generic",
+  "mangalivre",
+  "seriesSlugNumberPath",
+  "singleSlugNumberPath",
+]);
+
 const I18N = {
   en: {
     subtitle: "Choose which sites can sync your reading progress.",
@@ -140,6 +147,21 @@ function t(key) {
 
 function normalizeDomain(value) {
   return String(value || "").trim().toLowerCase();
+}
+
+function normalizeParserMode(value) {
+  const normalized = String(value || "").trim();
+  return KNOWN_PARSER_MODES.has(normalized) ? normalized : null;
+}
+
+function normalizeSelectorList(values) {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  return values
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
 }
 
 function stripDomainInput(value) {
@@ -299,6 +321,9 @@ async function fetchPublicPartners(apiBaseUrl) {
       allowedDomains: Array.isArray(partner.allowedDomains)
         ? partner.allowedDomains.map((domain) => normalizeDomain(domain)).filter(Boolean)
         : [],
+      parserMode: normalizeParserMode(partner.parserMode),
+      parserTitleSelectors: normalizeSelectorList(partner.parserTitleSelectors),
+      parserChapterSelectors: normalizeSelectorList(partner.parserChapterSelectors),
     }))
     .filter((partner) => partner.slug && partner.name);
 }
@@ -642,6 +667,42 @@ function buildPartnerDomainsMap(partners) {
   return map;
 }
 
+function buildPartnerParserMap(partners) {
+  const map = {};
+  for (const partner of partners) {
+    map[partner.slug] = {
+      parserMode: normalizeParserMode(partner.parserMode),
+      parserTitleSelectors: normalizeSelectorList(partner.parserTitleSelectors),
+      parserChapterSelectors: normalizeSelectorList(partner.parserChapterSelectors),
+    };
+  }
+  return map;
+}
+
+async function persistPartnerCatalog(partners = state.partners) {
+  const current = await chrome.storage.sync.get([
+    "enabledPartnerSlugs",
+    "partnerTokens",
+  ]);
+
+  const enabledPartnerSlugs = Array.isArray(current.enabledPartnerSlugs)
+    ? current.enabledPartnerSlugs.filter((slug) => typeof slug === "string" && slug.trim())
+    : [];
+  const partnerTokens =
+    current.partnerTokens && typeof current.partnerTokens === "object"
+      ? current.partnerTokens
+      : {};
+  const legacy = buildLegacyCompatibility(partners, enabledPartnerSlugs, partnerTokens);
+
+  await chrome.storage.sync.set({
+    apiBaseUrl: state.apiBaseUrl,
+    partnerDomainsMap: buildPartnerDomainsMap(partners),
+    partnerParserMap: buildPartnerParserMap(partners),
+    popupLang: state.lang,
+    ...legacy,
+  });
+}
+
 async function persistState(partners = state.partners) {
   const enabled = byId("enabled").checked;
 
@@ -658,12 +719,14 @@ async function persistState(partners = state.partners) {
 
   const legacy = buildLegacyCompatibility(partners, enabledPartnerSlugs, partnerTokens);
   const partnerDomainsMap = buildPartnerDomainsMap(partners);
+  const partnerParserMap = buildPartnerParserMap(partners);
 
   await chrome.storage.sync.set({
     enabled,
     apiBaseUrl: state.apiBaseUrl,
     enabledPartnerSlugs,
     partnerDomainsMap,
+    partnerParserMap,
     partnerTokens,
     popupLang: state.lang,
     ...legacy,
@@ -849,6 +912,7 @@ async function refreshPartnersInBackground() {
 
     const partners = await fetchPublicPartners(state.apiBaseUrl);
     state.partners = partners;
+    await persistPartnerCatalog(partners);
   } catch {
     state.partners = [];
   } finally {

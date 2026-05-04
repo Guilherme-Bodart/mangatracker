@@ -1,4 +1,10 @@
 const MAX_CHAPTER_VALUE = 100000;
+const KNOWN_PARSER_MODES = new Set([
+  "generic",
+  "mangalivre",
+  "seriesSlugNumberPath",
+  "singleSlugNumberPath",
+]);
 
 function normalizeWhitespace(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
@@ -16,6 +22,37 @@ function normalizeHostname(hostname) {
     .trim()
     .toLowerCase()
     .replace(/^www\./, "");
+}
+
+function normalizeParserMode(value) {
+  const normalized = String(value || "").trim();
+  return KNOWN_PARSER_MODES.has(normalized) ? normalized : null;
+}
+
+function normalizeSelectorList(values) {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  return values
+    .map((value) => normalizeWhitespace(value))
+    .filter(Boolean);
+}
+
+function normalizePartnerConfig(config) {
+  if (!config || typeof config !== "object") {
+    return {
+      parserMode: null,
+      parserTitleSelectors: [],
+      parserChapterSelectors: [],
+    };
+  }
+
+  return {
+    parserMode: normalizeParserMode(config.parserMode),
+    parserTitleSelectors: normalizeSelectorList(config.parserTitleSelectors),
+    parserChapterSelectors: normalizeSelectorList(config.parserChapterSelectors),
+  };
 }
 
 function normalizeChapterNumber(value) {
@@ -175,6 +212,13 @@ function collectRawTitleCandidates(documentRef, extraSelectors = []) {
   ].filter(Boolean);
 }
 
+function collectTextBySelectors(documentRef, selectors, allowPlainNumber = false) {
+  return normalizeSelectorList(selectors).map((selector) => ({
+    value: readNodeText(documentRef?.querySelector?.(selector)),
+    allowPlainNumber,
+  }));
+}
+
 function findChapterFromHints(hints) {
   for (const hint of hints) {
     const chapter = parseChapterFromText(hint.value, {
@@ -222,7 +266,7 @@ function deriveExternalMangaId(pathname, title) {
   return slugify(title) || "unknown-manga";
 }
 
-function parseSeriesSlugNumberPath(documentRef, locationRef) {
+function parseSeriesSlugNumberPath(documentRef, locationRef, options = {}) {
   const match = String(locationRef?.pathname || "").match(/^\/series\/([^/]+)\/(\d+)\/?$/i);
   if (!match) {
     return null;
@@ -234,7 +278,10 @@ function parseSeriesSlugNumberPath(documentRef, locationRef) {
     return null;
   }
 
-  const rawTitleCandidates = collectRawTitleCandidates(documentRef);
+  const rawTitleCandidates = collectRawTitleCandidates(
+    documentRef,
+    options.parserTitleSelectors,
+  );
   const title =
     pickFirstNonEmpty(rawTitleCandidates.map((value) => sanitizeMangaTitle(value))) ||
     titleizeSlug(mangaSlug);
@@ -250,7 +297,7 @@ function parseSeriesSlugNumberPath(documentRef, locationRef) {
   };
 }
 
-function parseSingleSlugNumberPath(documentRef, locationRef) {
+function parseSingleSlugNumberPath(documentRef, locationRef, options = {}) {
   const match = String(locationRef?.pathname || "").match(/^\/([^/]+)\/(\d+)\/?$/i);
   if (!match) {
     return null;
@@ -262,7 +309,10 @@ function parseSingleSlugNumberPath(documentRef, locationRef) {
     return null;
   }
 
-  const rawTitleCandidates = collectRawTitleCandidates(documentRef);
+  const rawTitleCandidates = collectRawTitleCandidates(
+    documentRef,
+    options.parserTitleSelectors,
+  );
   const title =
     pickFirstNonEmpty(rawTitleCandidates.map((value) => sanitizeMangaTitle(value))) ||
     titleizeSlug(mangaSlug);
@@ -278,7 +328,7 @@ function parseSingleSlugNumberPath(documentRef, locationRef) {
   };
 }
 
-function parseMangaLivre(documentRef, locationRef) {
+function parseMangaLivre(documentRef, locationRef, options = {}) {
   const match = String(locationRef?.pathname || "").match(
     /^\/manga\/([^/]+)\/capitulo-(\d+)\/?$/i,
   );
@@ -292,22 +342,14 @@ function parseMangaLivre(documentRef, locationRef) {
     return null;
   }
 
-  const ogTitle = readNodeText(
-    documentRef?.querySelector?.("meta[property='og:title']"),
-  );
-  const h1Title = readNodeText(documentRef?.querySelector?.("h1"));
-  const pageTitle = normalizeWhitespace(documentRef?.title);
   const slugTitle = titleizeSlug(mangaSlug);
 
-  const normalizedHeadingTitle = sanitizeMangaTitle(h1Title);
-  const normalizedOgTitle = sanitizeMangaTitle(ogTitle);
-  const normalizedPageTitle = sanitizeMangaTitle(pageTitle);
-
-  const trustedCandidates = [
-    normalizedHeadingTitle,
-    normalizedOgTitle,
-    normalizedPageTitle,
-  ].filter((candidate) => isLikelySameMangaTitle(candidate, slugTitle));
+  const trustedCandidates = collectRawTitleCandidates(
+    documentRef,
+    options.parserTitleSelectors,
+  )
+    .map((value) => sanitizeMangaTitle(value))
+    .filter((candidate) => isLikelySameMangaTitle(candidate, slugTitle));
 
   const title = trustedCandidates[0] || slugTitle;
   if (!title) {
@@ -322,8 +364,12 @@ function parseMangaLivre(documentRef, locationRef) {
   };
 }
 
-function parseGeneric(documentRef, locationRef) {
-  const rawTitleCandidates = collectRawTitleCandidates(documentRef);
+function parseGeneric(documentRef, locationRef, options = {}) {
+  const normalizedOptions = normalizePartnerConfig(options);
+  const rawTitleCandidates = collectRawTitleCandidates(
+    documentRef,
+    normalizedOptions.parserTitleSelectors,
+  );
   const titleCandidates = rawTitleCandidates
     .map((value) => sanitizeMangaTitle(value))
     .filter(Boolean);
@@ -358,6 +404,11 @@ function parseGeneric(documentRef, locationRef) {
       value: readNodeText(documentRef?.querySelector?.("[id*='chapter' i]")),
       allowPlainNumber: false,
     },
+    ...collectTextBySelectors(
+      documentRef,
+      normalizedOptions.parserChapterSelectors,
+      true,
+    ),
     ...rawTitleCandidates.map((value) => ({
       value,
       allowPlainNumber: false,
@@ -381,7 +432,23 @@ function parseGeneric(documentRef, locationRef) {
   };
 }
 
-function detectMangaPayload(documentRef, locationRef) {
+function inferParserModeFromHostname(hostname) {
+  if (hostname === "mangalivre.tv" || hostname.endsWith(".mangalivre.tv")) {
+    return "mangalivre";
+  }
+
+  if (hostname === "lycantoons.com" || hostname.endsWith(".lycantoons.com")) {
+    return "seriesSlugNumberPath";
+  }
+
+  if (hostname === "toonlivre.net" || hostname.endsWith(".toonlivre.net")) {
+    return "singleSlugNumberPath";
+  }
+
+  return "generic";
+}
+
+function detectMangaPayload(documentRef, locationRef, partnerConfig) {
   const protocol = String(locationRef?.protocol || "").toLowerCase();
   if (protocol && protocol !== "https:" && protocol !== "http:") {
     return null;
@@ -392,19 +459,32 @@ function detectMangaPayload(documentRef, locationRef) {
     return null;
   }
 
-  if (hostname === "mangalivre.tv" || hostname.endsWith(".mangalivre.tv")) {
-    return parseMangaLivre(documentRef, locationRef);
+  const normalizedConfig = normalizePartnerConfig(partnerConfig);
+  const parserMode =
+    normalizedConfig.parserMode || inferParserModeFromHostname(hostname);
+
+  if (parserMode === "mangalivre") {
+    return (
+      parseMangaLivre(documentRef, locationRef, normalizedConfig) ||
+      parseGeneric(documentRef, locationRef, normalizedConfig)
+    );
   }
 
-  if (hostname === "lycantoons.com" || hostname.endsWith(".lycantoons.com")) {
-    return parseSeriesSlugNumberPath(documentRef, locationRef) || parseGeneric(documentRef, locationRef);
+  if (parserMode === "seriesSlugNumberPath") {
+    return (
+      parseSeriesSlugNumberPath(documentRef, locationRef, normalizedConfig) ||
+      parseGeneric(documentRef, locationRef, normalizedConfig)
+    );
   }
 
-  if (hostname === "toonlivre.net" || hostname.endsWith(".toonlivre.net")) {
-    return parseSingleSlugNumberPath(documentRef, locationRef) || parseGeneric(documentRef, locationRef);
+  if (parserMode === "singleSlugNumberPath") {
+    return (
+      parseSingleSlugNumberPath(documentRef, locationRef, normalizedConfig) ||
+      parseGeneric(documentRef, locationRef, normalizedConfig)
+    );
   }
 
-  return parseGeneric(documentRef, locationRef);
+  return parseGeneric(documentRef, locationRef, normalizedConfig);
 }
 
 const exportedAdapters = {

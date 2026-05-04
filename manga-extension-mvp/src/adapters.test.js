@@ -121,6 +121,35 @@ test("parseGeneric extracts chapter from path when hints are missing", () => {
   assert.equal(payload?.externalMangaId, "my-hero-academia");
 });
 
+test("parseGeneric accepts extra selectors from partner config", () => {
+  const documentRef = createDocument({
+    selectors: {
+      ".post-title": createNode({ textContent: "Legendary Surgeon" }),
+      ".reader-current": createNode({ textContent: "Chapter 190" }),
+    },
+  });
+
+  const payload = parseGeneric(
+    documentRef,
+    {
+      hostname: "dynamic.example.com",
+      pathname: "/read/legendary-surgeon",
+      protocol: "https:",
+    },
+    {
+      parserTitleSelectors: [".post-title"],
+      parserChapterSelectors: [".reader-current"],
+    },
+  );
+
+  assert.deepEqual(payload, {
+    title: "Legendary Surgeon",
+    chapter: 190,
+    externalMangaId: "legendary-surgeon",
+    sourceDomain: "dynamic.example.com",
+  });
+});
+
 test("parseGeneric handles Manga Online title and chapter path", () => {
   const documentRef = createDocument({
     title: "The Infinite Mage - capítulo 166 (PT-BR)",
@@ -285,4 +314,29 @@ test("detectMangaPayload routes by domain and protocol", () => {
   });
   assert.equal(fromToonLivre?.chapter, 190);
   assert.equal(fromToonLivre?.externalMangaId, "reencarnei-como-um-cirurgiao-lendario");
+});
+
+test("detectMangaPayload honors parser mode from partner config", () => {
+  const documentRef = createDocument({
+    title: "The Great Mage Returns After 4000 Years - Chapter 12",
+  });
+
+  const payload = detectMangaPayload(
+    documentRef,
+    {
+      hostname: "partner.example.com",
+      pathname: "/series/the-great-mage-returns-after-4000-years/12",
+      protocol: "https:",
+    },
+    {
+      parserMode: "seriesSlugNumberPath",
+    },
+  );
+
+  assert.deepEqual(payload, {
+    title: "The Great Mage Returns After 4000 Years",
+    chapter: 12,
+    externalMangaId: "the-great-mage-returns-after-4000-years",
+    sourceDomain: "partner.example.com",
+  });
 });

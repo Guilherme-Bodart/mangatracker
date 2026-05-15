@@ -1,13 +1,16 @@
 const DEFAULT_API_BASE_URL = "https://mangatracker-qkdy.onrender.com";
 const SYNC_QUEUE_STORAGE_KEY = "syncQueueV1";
+const RECENT_SUCCESSFUL_SYNC_STORAGE_KEY = "recentSuccessfulSyncV1";
 const SYNC_QUEUE_RETRY_ALARM = "syncQueueRetryAlarm";
 const PARTNER_CONFIG_REFRESH_ALARM = "partnerConfigRefresh";
 const MAX_QUEUE_SIZE = 200;
+const MAX_RECENT_SUCCESSFUL_SYNC_ENTRIES = 500;
 const MAX_DRAIN_ITEMS_PER_RUN = 30;
 const INITIAL_RETRY_DELAY_MS = 5_000;
 const CONFIG_RETRY_DELAY_MS = 5 * 60_000;
 const MAX_RETRY_DELAY_MS = 60 * 60_000;
 const MAX_ATTEMPTS = 20;
+const RECENT_SUCCESSFUL_SYNC_TTL_MS = 10 * 60_000;
 const SYNC_REQUEST_TIMEOUT_MS = 15_000;
 const EXTERNAL_CONNECT_MESSAGE_TYPE = "MANGA_TRACKER_CONNECT_CODE";
 const DYNAMIC_CONTENT_SCRIPT_ID = "manga-tracker-dynamic-content";
@@ -72,6 +75,10 @@ function queueFingerprint(payload) {
   return `${payload.partnerSlug}:${payload.sourceDomain}:${payload.externalMangaId}`;
 }
 
+function successfulSyncFingerprint(payload) {
+  return `${payload.partnerSlug}:${payload.sourceDomain}:${payload.externalMangaId}:${payload.chapter}`;
+}
+
 function randomId() {
   if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") {
     return globalThis.crypto.randomUUID();
@@ -103,6 +110,49 @@ async function saveQueue(queue) {
   await chrome.storage.local.set({
     [SYNC_QUEUE_STORAGE_KEY]: queue,
   });
+}
+
+async function loadRecentSuccessfulSyncs(nowMs = Date.now()) {
+  const data = await chrome.storage.local.get([RECENT_SUCCESSFUL_SYNC_STORAGE_KEY]);
+  const raw =
+    data[RECENT_SUCCESSFUL_SYNC_STORAGE_KEY] &&
+    typeof data[RECENT_SUCCESSFUL_SYNC_STORAGE_KEY] === "object"
+      ? data[RECENT_SUCCESSFUL_SYNC_STORAGE_KEY]
+      : {};
+  const recent = {};
+
+  for (const [key, expiresAt] of Object.entries(raw)) {
+    const normalizedExpiresAt = Number(expiresAt);
+    if (Number.isFinite(normalizedExpiresAt) && normalizedExpiresAt > nowMs) {
+      recent[key] = normalizedExpiresAt;
+    }
+  }
+
+  return recent;
+}
+
+async function saveRecentSuccessfulSyncs(recent) {
+  const entries = Object.entries(recent)
+    .filter(([, expiresAt]) => Number.isFinite(Number(expiresAt)))
+    .sort((left, right) => Number(right[1]) - Number(left[1]))
+    .slice(0, MAX_RECENT_SUCCESSFUL_SYNC_ENTRIES);
+
+  await chrome.storage.local.set({
+    [RECENT_SUCCESSFUL_SYNC_STORAGE_KEY]: Object.fromEntries(entries),
+  });
+}
+
+async function wasRecentlySynced(payload) {
+  const recent = await loadRecentSuccessfulSyncs();
+  return Boolean(recent[successfulSyncFingerprint(payload)]);
+}
+
+async function rememberSuccessfulSync(payload) {
+  const nowMs = Date.now();
+  const recent = await loadRecentSuccessfulSyncs(nowMs);
+  recent[successfulSyncFingerprint(payload)] =
+    nowMs + RECENT_SUCCESSFUL_SYNC_TTL_MS;
+  await saveRecentSuccessfulSyncs(recent);
 }
 
 async function scheduleDrainAlarm(queue) {
@@ -138,7 +188,26 @@ function isRetryableStatus(statusCode) {
   if (statusCode >= 500) {
     return true;
   }
-  return [401, 403, 408, 425, 429].includes(statusCode);
+  return [408, 425, 429].includes(statusCode);
+}
+
+function parseRetryAfterDelayMs(response) {
+  const rawValue = response.headers.get("Retry-After");
+  if (!rawValue) {
+    return null;
+  }
+
+  const seconds = Number.parseInt(rawValue, 10);
+  if (Number.isFinite(seconds) && seconds > 0) {
+    return seconds * 1000;
+  }
+
+  const retryAtMs = Date.parse(rawValue);
+  if (!Number.isFinite(retryAtMs)) {
+    return null;
+  }
+
+  return Math.max(0, retryAtMs - Date.now());
 }
 
 function withQueueLock(task) {
@@ -676,11 +745,14 @@ async function sendSyncNow(item) {
   if (!response.ok) {
     const text = await response.text();
     if (isRetryableStatus(response.status)) {
+      const retryAfterDelayMs =
+        response.status === 429 ? parseRetryAfterDelayMs(response) : null;
       return {
         outcome: "retry",
         reason: "retryable-http-status",
         status: response.status,
         message: text.slice(0, 500),
+        retryDelayMs: retryAfterDelayMs ?? undefined,
       };
     }
 
@@ -693,6 +765,7 @@ async function sendSyncNow(item) {
   }
 
   const data = await response.json();
+  await rememberSuccessfulSync(payload);
   return {
     outcome: "success",
     status: response.status,
@@ -779,6 +852,10 @@ function mergeOrInsertQueueItem(queue, nextPayload) {
 async function enqueueSync(rawPayload) {
   const payload = normalizePayload(rawPayload);
   if (!payload) {
+    return;
+  }
+
+  if (await wasRecentlySynced(payload)) {
     return;
   }
 

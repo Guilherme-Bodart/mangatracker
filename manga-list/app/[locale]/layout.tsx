@@ -4,6 +4,7 @@ import "../globals.css";
 import { Header } from "@/components/layouts/header";
 import { Footer } from "@/components/layouts/footer";
 import { getMessages } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { LangAndFontProvider } from "@/components/providers/lang-and-font-provider";
 import { Providers } from "@/components/providers/providers";
@@ -35,6 +36,7 @@ export default async function LocaleLayout({
   const isValidLocale = routing.locales.includes(locale as "en" | "pt");
   const effectiveLocale = isValidLocale ? locale : routing.defaultLocale;
 
+  setRequestLocale(effectiveLocale);
   const messages = await getMessages({ locale: effectiveLocale });
 
   return (

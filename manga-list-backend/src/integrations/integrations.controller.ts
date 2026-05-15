@@ -9,6 +9,7 @@ import {
   Request,
   UnauthorizedException,
   UseGuards,
+  Header,
 } from '@nestjs/common';
 import { Request as ExpressRequest } from 'express';
 import { CsrfGuard } from '../auth/guards/csrf.guard';
@@ -140,6 +141,7 @@ export class IntegrationsController {
     return this.integrationsService.listConnectablePartners();
   }
 
+  @Header('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400')
   @Get('partners/public')
   async listPublicPartners() {
     return this.integrationsService.listConnectablePartners();

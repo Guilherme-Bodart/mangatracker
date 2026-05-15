@@ -10,6 +10,7 @@ import {
   UseGuards,
   Request,
   UnauthorizedException,
+  Header,
 } from '@nestjs/common';
 import { Request as ExpressRequest } from 'express';
 import { MangaService } from './manga.service';
@@ -60,6 +61,7 @@ export class MangaController {
    * Get top/popular manga (public)
    * GET /manga/top?page=1
    */
+  @Header('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400')
   @Get('top')
   async getTopManga(@Query() query: TopMangaQueryDto) {
     return this.mangaService.getTopManga(query.page, query.allowNsfw);

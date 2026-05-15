@@ -1,48 +1,24 @@
-﻿import { getTranslations } from "next-intl/server";
-import { cookies } from "next/headers";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
-import { logger } from "@/lib/logger";
 import { BookOpen, Share2, Compass } from "lucide-react";
+import { HomeSignedOutCta } from "@/components/home/home-signed-out-cta";
+import { TrendingMangaSection } from "@/components/home/trending-manga-section";
+import { routing } from "@/i18n/routing";
 
-interface TrendingManga {
-  mal_id: number;
-  title: string;
-  images: {
-    jpg: {
-      large_image_url: string;
-    };
-  };
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }));
 }
 
-type TopMangaResponse = {
-  data?: TrendingManga[];
-};
-
-async function getTrendingManga() {
-  try {
-    const data = await apiRequest<TopMangaResponse>("/manga/top?page=1", {
-      cache: "no-store",
-    });
-    return data.data?.slice(0, 6) || [];
-  } catch (error) {
-    logger.error(
-      "Error fetching trending manga:",
-      getApiErrorMessage(error, "Request failed"),
-    );
-    return [];
-  }
-}
-
-export default async function HomePage() {
+export default async function HomePage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
   const t = await getTranslations("Home");
-  const cookieStore = await cookies();
-  const isLoggedIn =
-    !!cookieStore.get("auth_token")?.value ||
-    !!cookieStore.get("csrf_session")?.value;
-  const trendingManga = await getTrendingManga();
 
   return (
     <div className="min-h-screen">
@@ -62,48 +38,7 @@ export default async function HomePage() {
       </section>
 
       <div>
-        {/* Trending Manga */}
-        {trendingManga.length > 0 && (
-          <section className="py-16 px-4">
-            <div className="container mx-auto">
-              <div className="mb-8 flex items-center justify-between">
-                <div>
-                  <h2 className="mb-2 text-3xl font-bold">
-                    {t("trending.title")}
-                  </h2>
-                  <p className="text-muted-foreground">
-                    {t("trending.subtitle")}
-                  </p>
-                </div>
-                <Button asChild variant="outline">
-                  <Link href="/manga">{t("trending.viewAll")}</Link>
-                </Button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-                {trendingManga.map((manga: TrendingManga) => (
-                  <Card
-                    key={manga.mal_id}
-                    className="overflow-hidden transition-shadow hover:shadow-lg"
-                  >
-                    <div className="relative aspect-[2/3] overflow-hidden">
-                      <img
-                        src={manga.images.jpg.large_image_url}
-                        alt={manga.title}
-                        className="h-full w-full object-cover transition-transform hover:scale-105"
-                      />
-                    </div>
-                    <CardContent className="p-3">
-                      <h3 className="line-clamp-2 text-sm font-semibold">
-                        {manga.title}
-                      </h3>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
+        <TrendingMangaSection />
 
         {/* Features */}
         <section className="bg-transparent px-4 py-16">
@@ -164,21 +99,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {!isLoggedIn && (
-          <section className="px-4 py-20">
-            <div className="container mx-auto max-w-3xl text-center">
-              <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-                {t("cta.title")}
-              </h2>
-              <p className="mb-8 text-xl text-muted-foreground">
-                {t("cta.subtitle")}
-              </p>
-              <Button asChild size="lg" className="px-8 py-6 text-lg">
-                <Link href="/auth/register">{t("cta.button")}</Link>
-              </Button>
-            </div>
-          </section>
-        )}
+        <HomeSignedOutCta />
       </div>
     </div>
   );

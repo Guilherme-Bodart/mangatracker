@@ -96,6 +96,14 @@ export class IntegrationsController {
   }
 
   @UseGuards(IntegrationRateLimitGuard)
+  @Post('connect/refresh')
+  async refreshConnectionToken(@Request() req: ExpressRequest) {
+    return this.integrationsService.refreshConnectionToken(
+      req.headers.authorization,
+    );
+  }
+
+  @UseGuards(IntegrationRateLimitGuard)
   @Post('public/apply')
   async createPartnerApplication(
     @Request() req: ExpressRequest,

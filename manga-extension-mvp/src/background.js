@@ -279,6 +279,101 @@ function toNonEmptyString(value, maxLength = 500) {
   return normalized.slice(0, maxLength);
 }
 
+function decodeJwtPayload(token) {
+  const parts = String(token || "").split(".");
+  if (parts.length < 2) {
+    return null;
+  }
+
+  try {
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padding = (4 - (base64.length % 4)) % 4;
+    const padded = base64.padEnd(base64.length + padding, "=");
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
+}
+
+function resolveAccessTokenForPartner(config, partnerSlug) {
+  const partnerTokens =
+    config.partnerTokens && typeof config.partnerTokens === "object"
+      ? config.partnerTokens
+      : {};
+  const partnerToken = partnerSlug ? toNonEmptyString(partnerTokens[partnerSlug], 2000) : "";
+  if (partnerToken) {
+    return partnerToken;
+  }
+
+  const legacyToken = toNonEmptyString(config.accessToken, 2000);
+  const legacyPayload = decodeJwtPayload(legacyToken);
+  if (legacyToken && legacyPayload?.psl === partnerSlug) {
+    return legacyToken;
+  }
+
+  return "";
+}
+
+async function saveRefreshedPartnerToken(params) {
+  const current = await chrome.storage.sync.get([
+    "apiBaseUrl",
+    "partnerSlug",
+    "partnerTokens",
+    "accessToken",
+  ]);
+  const partnerTokens =
+    current.partnerTokens && typeof current.partnerTokens === "object"
+      ? { ...current.partnerTokens }
+      : {};
+
+  partnerTokens[params.partnerSlug] = params.accessToken;
+
+  const updates = {
+    apiBaseUrl: params.apiBaseUrl || current.apiBaseUrl || DEFAULT_API_BASE_URL,
+    partnerTokens,
+  };
+
+  if (current.partnerSlug === params.partnerSlug || !current.accessToken) {
+    updates.partnerSlug = params.partnerSlug;
+    updates.accessToken = params.accessToken;
+  }
+
+  await chrome.storage.sync.set(updates);
+}
+
+async function refreshIntegrationToken(apiBaseUrl, partnerSlug, accessToken) {
+  const response = await fetch(`${apiBaseUrl}/integrations/connect/refresh`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`connect/refresh failed (${response.status}): ${text.slice(0, 500)}`);
+  }
+
+  const data = await response.json();
+  const refreshedToken = toNonEmptyString(data?.accessToken, 2000);
+  if (!refreshedToken) {
+    throw new Error("connect/refresh response missing accessToken");
+  }
+
+  const refreshedPayload = decodeJwtPayload(refreshedToken);
+  if (refreshedPayload?.psl !== partnerSlug) {
+    throw new Error("connect/refresh returned token for a different partner");
+  }
+
+  await saveRefreshedPartnerToken({
+    apiBaseUrl,
+    partnerSlug,
+    accessToken: refreshedToken,
+  });
+
+  return refreshedToken;
+}
+
 function normalizeExternalConnectPayload(rawPayload) {
   if (!rawPayload || typeof rawPayload !== "object") {
     return null;
@@ -433,8 +528,10 @@ async function sendSyncNow(item) {
     config.partnerTokens && typeof config.partnerTokens === "object"
       ? config.partnerTokens
       : {};
-  const accessToken =
-    (partnerSlug && partnerTokens[partnerSlug]) || config.accessToken;
+  let accessToken = resolveAccessTokenForPartner(
+    { ...config, partnerTokens },
+    partnerSlug,
+  );
   if (!partnerSlug || !accessToken) {
     return {
       outcome: "retry",
@@ -453,22 +550,31 @@ async function sendSyncNow(item) {
     sourceDomain: payload.sourceDomain,
   };
 
+  const sendRequest = async (token) => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => {
+      controller.abort();
+    }, SYNC_REQUEST_TIMEOUT_MS);
+
+    try {
+      return await fetch(`${apiBaseUrl}/integrations/sync`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "x-idempotency-key": item.idempotencyKey,
+        },
+        signal: controller.signal,
+        body: JSON.stringify(body),
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
+
   let response;
-  const controller = new AbortController();
-  const timeout = setTimeout(() => {
-    controller.abort();
-  }, SYNC_REQUEST_TIMEOUT_MS);
   try {
-    response = await fetch(`${apiBaseUrl}/integrations/sync`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-        "x-idempotency-key": item.idempotencyKey,
-      },
-      signal: controller.signal,
-      body: JSON.stringify(body),
-    });
+    response = await sendRequest(accessToken);
   } catch (error) {
     return {
       outcome: "retry",
@@ -476,8 +582,25 @@ async function sendSyncNow(item) {
       status: null,
       message: error instanceof Error ? error.message : "network error",
     };
-  } finally {
-    clearTimeout(timeout);
+  }
+
+  if (response.status === 401) {
+    try {
+      accessToken = await refreshIntegrationToken(
+        apiBaseUrl,
+        partnerSlug,
+        accessToken,
+      );
+      response = await sendRequest(accessToken);
+    } catch (error) {
+      return {
+        outcome: "retry",
+        reason: "token-refresh-failed",
+        status: 401,
+        message: error instanceof Error ? error.message : "token refresh failed",
+        retryDelayMs: CONFIG_RETRY_DELAY_MS,
+      };
+    }
   }
 
   if (!response.ok) {

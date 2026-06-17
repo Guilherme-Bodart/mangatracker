@@ -50,8 +50,10 @@ describe('MangaService', () => {
   };
   const mangaAdminServiceMock = {
     listDuplicateGroups: jest.fn(),
+    listMissingCovers: jest.fn(),
     mergeDuplicateGroup: jest.fn(),
     repairCoverByMangaId: jest.fn(),
+    repairMissingCovers: jest.fn(),
   };
 
   beforeEach(() => {
@@ -331,5 +333,33 @@ describe('MangaService', () => {
         process.env.LATEST_CHAPTERS_CONCURRENCY = previousValue;
       }
     }
+  });
+
+  it('should delegate missing cover repair to admin service', async () => {
+    const summary = {
+      total: 2,
+      updated: 1,
+      unresolved: 1,
+      apply: true,
+      results: [],
+    };
+    mangaAdminServiceMock.repairMissingCovers.mockResolvedValue(summary);
+
+    await expect(service.repairMissingCovers(25, true)).resolves.toBe(summary);
+    expect(mangaAdminServiceMock.repairMissingCovers).toHaveBeenCalledWith(
+      25,
+      true,
+    );
+  });
+
+  it('should delegate missing cover listing to admin service', async () => {
+    const response = {
+      total: 1,
+      items: [{ id: 'manga-1', title: 'No Cover' }],
+    };
+    mangaAdminServiceMock.listMissingCovers.mockResolvedValue(response);
+
+    await expect(service.listMissingCovers(15)).resolves.toBe(response);
+    expect(mangaAdminServiceMock.listMissingCovers).toHaveBeenCalledWith(15);
   });
 });

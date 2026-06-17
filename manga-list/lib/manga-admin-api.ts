@@ -26,6 +26,11 @@ export type MangaDuplicateGroupsResponse = {
   groups: MangaDuplicateGroup[];
 };
 
+export type MangaMissingCoversResponse = {
+  total: number;
+  items: MangaDuplicateItem[];
+};
+
 export type MangaDuplicateMergeResponse = {
   canonicalMangaId: string;
   canonicalTitle: string;
@@ -46,10 +51,25 @@ export type MangaRepairCoverResponse = {
   source: "anilist" | "jikan" | "mangadex" | "unchanged";
 };
 
+export type MangaRepairMissingCoversResponse = {
+  total: number;
+  updated: number;
+  unresolved: number;
+  apply: boolean;
+  results: MangaRepairCoverResponse[];
+};
+
 export async function listDuplicateMangaGroups(limit = 30) {
   const safeLimit = Math.max(1, Math.min(limit, 100));
   return apiRequest<MangaDuplicateGroupsResponse>(
     `/manga/admin/duplicates?limit=${safeLimit}`,
+  );
+}
+
+export async function listMissingMangaCovers(limit = 50) {
+  const safeLimit = Math.max(1, Math.min(limit, 200));
+  return apiRequest<MangaMissingCoversResponse>(
+    `/manga/admin/covers/missing?limit=${safeLimit}`,
   );
 }
 
@@ -74,3 +94,13 @@ export async function repairMangaCover(mangaId: string) {
   );
 }
 
+export async function repairMissingMangaCovers(limit = 50) {
+  const safeLimit = Math.max(1, Math.min(limit, 200));
+  return apiRequest<MangaRepairMissingCoversResponse>(
+    `/manga/admin/covers/missing/repair?limit=${safeLimit}`,
+    {
+      method: "POST",
+      csrf: "authenticated-required",
+    },
+  );
+}

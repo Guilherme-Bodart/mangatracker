@@ -7,9 +7,12 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ApiClientError, getApiErrorMessage } from "@/lib/api-client";
 import {
+  listMissingMangaCovers,
   listDuplicateMangaGroups,
   mergeDuplicateMangaGroup,
   repairMangaCover,
+  repairMissingMangaCovers,
+  type MangaDuplicateItem,
   type MangaDuplicateGroup,
 } from "@/lib/manga-admin-api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,10 +37,12 @@ export default function MangaAdminPage() {
   const { user, isLoading: isAuthLoading } = useAuth();
 
   const [groups, setGroups] = useState<MangaDuplicateGroup[]>([]);
+  const [missingCoverItems, setMissingCoverItems] = useState<MangaDuplicateItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [canonicalByGroup, setCanonicalByGroup] = useState<Record<string, string>>({});
   const [isMergingByGroup, setIsMergingByGroup] = useState<Record<string, boolean>>({});
   const [isRepairingByManga, setIsRepairingByManga] = useState<Record<string, boolean>>({});
+  const [isRepairingMissingCovers, setIsRepairingMissingCovers] = useState(false);
 
   const handleForbidden = useCallback(() => {
     toast.error(t("messages.forbidden"));
@@ -47,11 +52,15 @@ export default function MangaAdminPage() {
   const loadGroups = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await listDuplicateMangaGroups(30);
-      setGroups(data.groups || []);
+      const [duplicatesData, missingCoversData] = await Promise.all([
+        listDuplicateMangaGroups(30),
+        listMissingMangaCovers(50),
+      ]);
+      setGroups(duplicatesData.groups || []);
+      setMissingCoverItems(missingCoversData.items || []);
       setCanonicalByGroup((current) => {
         const next: Record<string, string> = { ...current };
-        for (const group of data.groups || []) {
+        for (const group of duplicatesData.groups || []) {
           if (!next[group.normalizedTitle]) {
             next[group.normalizedTitle] = group.canonicalMangaId;
           }
@@ -83,6 +92,11 @@ export default function MangaAdminPage() {
   const totalCandidates = useMemo(
     () => groups.reduce((acc, group) => acc + group.items.length, 0),
     [groups],
+  );
+
+  const duplicateItemsWithoutCover = useMemo(
+    () => missingCoverItems.length,
+    [missingCoverItems],
   );
 
   if (isAuthLoading || !user) {
@@ -146,6 +160,38 @@ export default function MangaAdminPage() {
     }
   };
 
+  const onRepairMissingCovers = async () => {
+    setIsRepairingMissingCovers(true);
+    try {
+      const result = await repairMissingMangaCovers(50);
+      if (result.updated > 0) {
+        toast.success(
+          t("messages.repairMissingCoversSuccess", {
+            updated: result.updated,
+            unresolved: result.unresolved,
+            total: result.total,
+          }),
+        );
+      } else {
+        toast.info(
+          t("messages.repairMissingCoversNoChange", {
+            unresolved: result.unresolved,
+            total: result.total,
+          }),
+        );
+      }
+      await loadGroups();
+    } catch (error: unknown) {
+      if (error instanceof ApiClientError && error.status === 403) {
+        handleForbidden();
+        return;
+      }
+      toast.error(getApiErrorMessage(error, t("messages.repairMissingCoversError")));
+    } finally {
+      setIsRepairingMissingCovers(false);
+    }
+  };
+
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -162,13 +208,79 @@ export default function MangaAdminPage() {
         <CardHeader>
           <CardTitle>{t("summary.title")}</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-wrap gap-3 text-sm">
-          <Badge variant="secondary">
-            {t("summary.groups", { count: groups.length })}
-          </Badge>
-          <Badge variant="secondary">
-            {t("summary.items", { count: totalCandidates })}
-          </Badge>
+        <CardContent className="space-y-4 text-sm">
+          <div className="flex flex-wrap gap-3">
+            <Badge variant="secondary">
+              {t("summary.groups", { count: groups.length })}
+            </Badge>
+            <Badge variant="secondary">
+              {t("summary.items", { count: totalCandidates })}
+            </Badge>
+            <Badge variant="secondary">
+              {t("summary.missingCovers", { count: duplicateItemsWithoutCover })}
+            </Badge>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3">
+            <p className="text-muted-foreground">
+              {t("summary.repairMissingCoversDescription")}
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => void onRepairMissingCovers()}
+              disabled={isRepairingMissingCovers}
+            >
+              {isRepairingMissingCovers
+                ? t("actions.repairingMissingCovers")
+                : t("actions.repairMissingCovers")}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("missingCovers.title")}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {missingCoverItems.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {t("missingCovers.empty")}
+            </p>
+          ) : (
+            missingCoverItems.map((item) => (
+              <div
+                key={item.id}
+                className="rounded-md border p-3 flex flex-wrap items-center gap-3"
+              >
+                <img
+                  src={FALLBACK_COVER_IMAGE}
+                  alt={item.title}
+                  className="h-16 w-11 rounded object-contain border p-2"
+                />
+
+                <div className="min-w-[200px] flex-1">
+                  <p className="font-medium leading-tight">{item.title}</p>
+                  <div className="mt-1 text-xs text-muted-foreground flex flex-wrap gap-2">
+                    <span>MAL: {item.malId}</span>
+                    <span>AniList: {item.anilistId ?? "n/a"}</span>
+                    <span>{t("group.userEntries", { count: item.userEntries })}</span>
+                    <span>{t("group.externalMaps", { count: item.externalMaps })}</span>
+                  </div>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void onRepairCover(item.id)}
+                  disabled={!!isRepairingByManga[item.id]}
+                >
+                  {isRepairingByManga[item.id]
+                    ? t("actions.repairingCover")
+                    : t("actions.repairCover")}
+                </Button>
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
 
@@ -284,4 +396,3 @@ export default function MangaAdminPage() {
     </div>
   );
 }
-

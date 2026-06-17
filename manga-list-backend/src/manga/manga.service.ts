@@ -127,6 +127,10 @@ export class MangaService {
     return this.mangaAdminService.listDuplicateGroups(limit);
   }
 
+  async listMissingCovers(limit = 50) {
+    return this.mangaAdminService.listMissingCovers(limit);
+  }
+
   async mergeDuplicateGroup(canonicalMangaId: string, duplicateMangaIds: string[]) {
     return this.mangaAdminService.mergeDuplicateGroup(
       canonicalMangaId,

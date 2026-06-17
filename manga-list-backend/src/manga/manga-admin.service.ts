@@ -16,6 +16,8 @@ type AdminDuplicateItem = {
   updatedAt: string;
 };
 
+type AdminMissingCoverItem = AdminDuplicateItem;
+
 type CoverRepairResult = {
   mangaId: string;
   title: string;
@@ -138,6 +140,49 @@ export class MangaAdminService {
     return {
       totalGroups: groups.length,
       groups,
+    };
+  }
+
+  async listMissingCovers(limit = 50) {
+    const safeLimit = Math.max(1, Math.min(limit, 200));
+    const mangas = await this.prisma.manga.findMany({
+      where: {
+        OR: [{ coverImage: null }, { coverImage: '' }],
+      },
+      select: {
+        id: true,
+        title: true,
+        malId: true,
+        anilistId: true,
+        coverImage: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: {
+          select: {
+            userMangas: true,
+            externalMangaMaps: true,
+          },
+        },
+      },
+      orderBy: [{ updatedAt: 'desc' }],
+      take: safeLimit,
+    });
+
+    const items: AdminMissingCoverItem[] = mangas.map((item) => ({
+      id: item.id,
+      title: item.title,
+      malId: item.malId,
+      anilistId: item.anilistId,
+      coverImage: this.normalizeCoverUrl(item.coverImage),
+      userEntries: item._count.userMangas,
+      externalMaps: item._count.externalMangaMaps,
+      score: this.computeCanonicalScore(item),
+      updatedAt: item.updatedAt.toISOString(),
+    }));
+
+    return {
+      total: items.length,
+      items,
     };
   }
 

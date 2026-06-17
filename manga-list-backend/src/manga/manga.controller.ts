@@ -176,6 +176,34 @@ export class MangaController {
   }
 
   /**
+   * List manga records without covers (admin)
+   * GET /manga/admin/covers/missing?limit=50
+   */
+  @UseGuards(JwtAuthGuard, MangaAdminGuard)
+  @Get('admin/covers/missing')
+  async listMissingCovers(@Query('limit') limit?: string) {
+    const parsed = Number.parseInt(String(limit ?? '50'), 10);
+    const safeLimit = Number.isFinite(parsed)
+      ? Math.max(1, Math.min(parsed, 200))
+      : 50;
+    return this.mangaService.listMissingCovers(safeLimit);
+  }
+
+  /**
+   * Repair missing manga covers in batches (admin)
+   * POST /manga/admin/covers/missing/repair?limit=50
+   */
+  @UseGuards(JwtAuthGuard, CsrfGuard, MangaAdminGuard)
+  @Post('admin/covers/missing/repair')
+  async repairMissingCovers(@Query('limit') limit?: string) {
+    const parsed = Number.parseInt(String(limit ?? '50'), 10);
+    const safeLimit = Number.isFinite(parsed)
+      ? Math.max(1, Math.min(parsed, 200))
+      : 50;
+    return this.mangaService.repairMissingCovers(safeLimit, true);
+  }
+
+  /**
    * Repair manga cover by forcing provider refresh (admin)
    * POST /manga/admin/:id/repair-cover
    */

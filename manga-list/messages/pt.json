@@ -895,7 +895,9 @@
     "summary": {
       "title": "Resumo",
       "groups": "Grupos: {count}",
-      "items": "Itens: {count}"
+      "items": "Itens: {count}",
+      "missingCovers": "Sem capa: {count}",
+      "repairMissingCoversDescription": "Procura capas para ate 50 mangas sem imagem usando AniList, Jikan e MangaDex."
     },
     "actions": {
       "refresh": "Atualizar",
@@ -903,7 +905,9 @@
       "mergeGroup": "Mesclar grupo",
       "merging": "Mesclando...",
       "repairCover": "Reparar capa",
-      "repairingCover": "Reparando..."
+      "repairingCover": "Reparando...",
+      "repairMissingCovers": "Buscar capas faltantes",
+      "repairingMissingCovers": "Buscando capas..."
     },
     "group": {
       "title": "Título normalizado: {normalizedTitle}",
@@ -915,6 +919,10 @@
       "duplicate": "Duplicado",
       "selectCanonical": "Selecionar mangá canônico"
     },
+    "missingCovers": {
+      "title": "Mangás sem capa",
+      "empty": "Nenhum mangá sem capa encontrado."
+    },
     "messages": {
       "forbidden": "Você não tem permissão para acessar esta página",
       "loadError": "Falha ao carregar duplicados",
@@ -923,7 +931,10 @@
       "mergeError": "Falha ao mesclar grupo duplicado",
       "repairCoverChanged": "Capa atualizada usando {source}",
       "repairCoverNoChange": "Nenhuma capa melhor foi encontrada",
-      "repairCoverError": "Falha ao reparar capa"
+      "repairCoverError": "Falha ao reparar capa",
+      "repairMissingCoversSuccess": "Capas atualizadas: {updated} de {total}. Sem resultado: {unresolved}.",
+      "repairMissingCoversNoChange": "Nenhuma capa nova encontrada. Verificados: {total}. Sem resultado: {unresolved}.",
+      "repairMissingCoversError": "Falha ao buscar capas faltantes"
     }
   }
 }

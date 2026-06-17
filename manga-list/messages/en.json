@@ -894,7 +894,9 @@
     "summary": {
       "title": "Overview",
       "groups": "Groups: {count}",
-      "items": "Items: {count}"
+      "items": "Items: {count}",
+      "missingCovers": "Missing covers: {count}",
+      "repairMissingCoversDescription": "Searches covers for up to 50 manga without images using AniList, Jikan, and MangaDex."
     },
     "actions": {
       "refresh": "Refresh",
@@ -902,7 +904,9 @@
       "mergeGroup": "Merge group",
       "merging": "Merging...",
       "repairCover": "Repair cover",
-      "repairingCover": "Repairing..."
+      "repairingCover": "Repairing...",
+      "repairMissingCovers": "Find missing covers",
+      "repairingMissingCovers": "Finding covers..."
     },
     "group": {
       "title": "Normalized title: {normalizedTitle}",
@@ -914,6 +918,10 @@
       "duplicate": "Duplicate",
       "selectCanonical": "Select canonical manga"
     },
+    "missingCovers": {
+      "title": "Manga without covers",
+      "empty": "No manga without covers found."
+    },
     "messages": {
       "forbidden": "You do not have permission to access this page",
       "loadError": "Failed to load duplicate groups",
@@ -922,7 +930,10 @@
       "mergeError": "Failed to merge duplicate group",
       "repairCoverChanged": "Cover updated from {source}",
       "repairCoverNoChange": "No better cover found",
-      "repairCoverError": "Failed to repair cover"
+      "repairCoverError": "Failed to repair cover",
+      "repairMissingCoversSuccess": "Updated covers: {updated} of {total}. Unresolved: {unresolved}.",
+      "repairMissingCoversNoChange": "No new covers found. Checked: {total}. Unresolved: {unresolved}.",
+      "repairMissingCoversError": "Failed to find missing covers"
     }
   }
 }

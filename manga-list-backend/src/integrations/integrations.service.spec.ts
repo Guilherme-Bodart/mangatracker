@@ -70,6 +70,7 @@ describe('IntegrationsService', () => {
 
   const jwtService = {
     sign: jest.fn(() => 'integration-token'),
+    verify: jest.fn(),
   };
 
   const configService = {
@@ -290,6 +291,80 @@ describe('IntegrationsService', () => {
 
     expect(prisma.userPartnerConnection.upsert).toHaveBeenCalled();
     expect(result.accessToken).toBe('integration-token');
+  });
+
+  it('exchanges connect code without clientSecret for browser extension flow', async () => {
+    prisma.integrationPartner.findFirst.mockResolvedValue({
+      id: 'partner-1',
+      slug: 'site-a',
+      allowedDomains: ['site-a.com'],
+      clientSecretHash: await bcrypt.hash('server-secret', 4),
+      isActive: true,
+    });
+
+    await cacheManager.set('integrations:connect:code-extension', {
+      userId: 'user-1',
+      partnerId: 'partner-1',
+      partnerSlug: 'site-a',
+      scopes: ['manga:write'],
+      sourceDomain: 'site-a.com',
+    });
+
+    const result = await service.exchangeConnectionCode({
+      partnerSlug: 'site-a',
+      code: 'code-extension',
+      sourceDomain: 'site-a.com',
+    });
+
+    expect(prisma.userPartnerConnection.upsert).toHaveBeenCalled();
+    expect(result.accessToken).toBe('integration-token');
+  });
+
+  it('refreshes an expired integration token when connection is still active', async () => {
+    jwtService.verify.mockReturnValue({
+      sub: 'user-1',
+      pid: 'partner-1',
+      psl: 'site-a',
+      scp: ['manga:write'],
+      typ: 'integration',
+    });
+    prisma.integrationPartner.findFirst.mockResolvedValue({
+      id: 'partner-1',
+      slug: 'site-a',
+      isActive: true,
+    });
+    prisma.userPartnerConnection.findFirst.mockResolvedValue({
+      id: 'conn-1',
+      scopes: ['manga:write'],
+      isActive: true,
+    });
+    jwtService.sign.mockReturnValueOnce('refreshed-token');
+
+    const result = await service.refreshConnectionToken('Bearer expired-token');
+
+    expect(jwtService.verify).toHaveBeenCalledWith('expired-token', {
+      secret: 'jwt-secret',
+      ignoreExpiration: true,
+    });
+    expect(jwtService.sign).toHaveBeenCalledWith(
+      {
+        sub: 'user-1',
+        pid: 'partner-1',
+        psl: 'site-a',
+        scp: ['manga:write'],
+        typ: 'integration',
+      },
+      {
+        secret: 'jwt-secret',
+        expiresIn: 60 * 60 * 24 * 30,
+      },
+    );
+    expect(result).toEqual({
+      accessToken: 'refreshed-token',
+      tokenType: 'Bearer',
+      expiresInSeconds: 60 * 60 * 24 * 30,
+      scopes: ['manga:write'],
+    });
   });
 
   it('accepts previous partner secret during transition window and audits usage', async () => {

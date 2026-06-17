@@ -5,6 +5,7 @@ describe('IntegrationsController', () => {
   const integrationsService = {
     startConnection: jest.fn(),
     exchangeConnectionCode: jest.fn(),
+    refreshConnectionToken: jest.fn(),
     createPartnerApplication: jest.fn(),
     getPublicApplicationStatus: jest.fn(),
     verifyPublicApplicationDomain: jest.fn(),
@@ -86,6 +87,31 @@ describe('IntegrationsController', () => {
     expect(result).toEqual({
       id: 'app-1',
       status: 'PENDING',
+    });
+  });
+
+  it('should refresh connection token from authorization header', async () => {
+    integrationsService.refreshConnectionToken.mockResolvedValue({
+      accessToken: 'new-token',
+      tokenType: 'Bearer',
+      expiresInSeconds: 2592000,
+      scopes: ['manga:write'],
+    });
+
+    const result = await controller.refreshConnectionToken({
+      headers: {
+        authorization: 'Bearer old-token',
+      },
+    } as never);
+
+    expect(integrationsService.refreshConnectionToken).toHaveBeenCalledWith(
+      'Bearer old-token',
+    );
+    expect(result).toEqual({
+      accessToken: 'new-token',
+      tokenType: 'Bearer',
+      expiresInSeconds: 2592000,
+      scopes: ['manga:write'],
     });
   });
 

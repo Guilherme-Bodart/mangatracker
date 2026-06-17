@@ -69,6 +69,14 @@ type IntegrationConnectPayload = {
   sourceDomain?: string;
 };
 
+type IntegrationTokenPayload = {
+  sub: string;
+  pid: string;
+  psl: string;
+  scp: string[];
+  typ: 'integration';
+};
+
 type JikanSearchItem = {
   mal_id: number;
   title?: string | null;
@@ -1157,10 +1165,7 @@ export class IntegrationsService {
       throw error;
     }
 
-    const publicPartnerSlugs = this.getPublicPartnerSlugs();
-    const isPublicPartner = publicPartnerSlugs.has(partner.slug.toLowerCase());
-
-    if (!isPublicPartner) {
+    if (dto.clientSecret?.trim()) {
       await this.assertPartnerClientSecret(
         partner,
         dto.clientSecret,
@@ -1212,28 +1217,104 @@ export class IntegrationsService {
       },
     });
 
-    const expiresInSeconds = 60 * 60 * 24 * 30;
-    const accessToken = this.jwtService.sign(
-      {
-        sub: payload.userId,
-        pid: payload.partnerId,
-        psl: payload.partnerSlug,
-        scp: payload.scopes,
-        typ: 'integration',
-      },
-      {
-        secret: this.getIntegrationJwtSecret(),
-        expiresIn: expiresInSeconds,
-      },
-    );
+    const token = this.issueIntegrationAccessToken({
+      userId: payload.userId,
+      partnerId: payload.partnerId,
+      partnerSlug: payload.partnerSlug,
+      scopes: payload.scopes,
+    });
 
     recordIntegrationExchangeResult('success');
 
     return {
-      accessToken,
+      accessToken: token.accessToken,
       tokenType: 'Bearer',
-      expiresInSeconds,
+      expiresInSeconds: token.expiresInSeconds,
       scopes: payload.scopes,
+    };
+  }
+
+  async refreshConnectionToken(authHeader: string | undefined): Promise<{
+    accessToken: string;
+    tokenType: 'Bearer';
+    expiresInSeconds: number;
+    scopes: string[];
+  }> {
+    const rawToken = this.extractBearerToken(authHeader);
+    if (!rawToken) {
+      throw new UnauthorizedException('Missing integration access token');
+    }
+
+    let payload: IntegrationTokenPayload;
+    try {
+      payload = this.jwtService.verify<IntegrationTokenPayload>(rawToken, {
+        secret: this.getIntegrationJwtSecret(),
+        ignoreExpiration: true,
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid integration access token');
+    }
+
+    if (
+      payload.typ !== 'integration' ||
+      !payload.sub ||
+      !payload.pid ||
+      !payload.psl ||
+      !Array.isArray(payload.scp)
+    ) {
+      throw new UnauthorizedException('Invalid integration token payload');
+    }
+
+    const partner = await this.prisma.integrationPartner.findFirst({
+      where: {
+        id: payload.pid,
+        slug: payload.psl,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        slug: true,
+      },
+    });
+    if (!partner) {
+      throw new UnauthorizedException('Integration partner is not allowed');
+    }
+
+    const connection = await this.prisma.userPartnerConnection.findFirst({
+      where: {
+        userId: payload.sub,
+        partnerId: payload.pid,
+        isActive: true,
+      },
+      select: {
+        scopes: true,
+      },
+    });
+    if (!connection) {
+      throw new UnauthorizedException('Partner is not connected for this user');
+    }
+
+    if (
+      connection.scopes.length > 0 &&
+      !connection.scopes.includes('manga:write')
+    ) {
+      throw new ForbiddenException('Missing manga:write scope');
+    }
+
+    const scopes = connection.scopes.length > 0 ? connection.scopes : payload.scp;
+    if (scopes.length > 0 && !scopes.includes('manga:write')) {
+      throw new ForbiddenException('Missing manga:write scope');
+    }
+
+    return {
+      ...this.issueIntegrationAccessToken({
+        userId: payload.sub,
+        partnerId: payload.pid,
+        partnerSlug: payload.psl,
+        scopes,
+      }),
+      tokenType: 'Bearer',
+      scopes,
     };
   }
 
@@ -2101,6 +2182,46 @@ export class IntegrationsService {
       throw new UnauthorizedException('Integration token secret is not configured');
     }
     return secret;
+  }
+
+  private issueIntegrationAccessToken(input: {
+    userId: string;
+    partnerId: string;
+    partnerSlug: string;
+    scopes: string[];
+  }): { accessToken: string; expiresInSeconds: number } {
+    const expiresInSeconds = 60 * 60 * 24 * 30;
+    const accessToken = this.jwtService.sign(
+      {
+        sub: input.userId,
+        pid: input.partnerId,
+        psl: input.partnerSlug,
+        scp: input.scopes,
+        typ: 'integration',
+      },
+      {
+        secret: this.getIntegrationJwtSecret(),
+        expiresIn: expiresInSeconds,
+      },
+    );
+
+    return {
+      accessToken,
+      expiresInSeconds,
+    };
+  }
+
+  private extractBearerToken(authHeader: string | undefined): string | null {
+    if (!authHeader) {
+      return null;
+    }
+
+    const [type, token] = authHeader.split(' ');
+    if (type !== 'Bearer' || !token) {
+      return null;
+    }
+
+    return token;
   }
 
   private buildConnectCodeCacheKey(code: string): string {

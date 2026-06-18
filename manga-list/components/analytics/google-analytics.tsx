@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Script from "next/script";
 import { GoogleAnalyticsPageView } from "@/components/analytics/google-analytics-page-view";
 
@@ -25,7 +26,9 @@ export function GoogleAnalytics() {
           gtag('event', 'page_view', { page_path: window.__mtGaLastPagePath });
         `}
       </Script>
-      <GoogleAnalyticsPageView measurementId={measurementId} />
+      <Suspense fallback={null}>
+        <GoogleAnalyticsPageView measurementId={measurementId} />
+      </Suspense>
     </>
   );
 }

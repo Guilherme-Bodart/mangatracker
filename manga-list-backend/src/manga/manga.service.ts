@@ -131,7 +131,10 @@ export class MangaService {
     return this.mangaAdminService.listMissingCovers(limit);
   }
 
-  async mergeDuplicateGroup(canonicalMangaId: string, duplicateMangaIds: string[]) {
+  async mergeDuplicateGroup(
+    canonicalMangaId: string,
+    duplicateMangaIds: string[],
+  ) {
     return this.mangaAdminService.mergeDuplicateGroup(
       canonicalMangaId,
       duplicateMangaIds,
@@ -140,6 +143,10 @@ export class MangaService {
 
   async repairCoverByMangaId(mangaId: string) {
     return this.mangaAdminService.repairCoverByMangaId(mangaId);
+  }
+
+  async repairFullMangaById(mangaId: string) {
+    return this.mangaAdminService.repairFullMangaById(mangaId);
   }
 
   async repairMissingCovers(limit = 100, apply = false) {

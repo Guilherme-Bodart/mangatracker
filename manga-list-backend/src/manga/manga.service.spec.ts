@@ -53,6 +53,7 @@ describe('MangaService', () => {
     listMissingCovers: jest.fn(),
     mergeDuplicateGroup: jest.fn(),
     repairCoverByMangaId: jest.fn(),
+    repairFullMangaById: jest.fn(),
     repairMissingCovers: jest.fn(),
   };
 
@@ -361,5 +362,21 @@ describe('MangaService', () => {
 
     await expect(service.listMissingCovers(15)).resolves.toBe(response);
     expect(mangaAdminServiceMock.listMissingCovers).toHaveBeenCalledWith(15);
+  });
+
+  it('should delegate full manga repair to admin service', async () => {
+    const response = {
+      mangaId: 'manga-1',
+      changed: true,
+      matchedTitle: 'My S-Class Hunters',
+    };
+    mangaAdminServiceMock.repairFullMangaById.mockResolvedValue(response);
+
+    await expect(service.repairFullMangaById('manga-1')).resolves.toBe(
+      response,
+    );
+    expect(mangaAdminServiceMock.repairFullMangaById).toHaveBeenCalledWith(
+      'manga-1',
+    );
   });
 });

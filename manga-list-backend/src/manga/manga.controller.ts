@@ -216,6 +216,16 @@ export class MangaController {
   }
 
   /**
+   * Repair full manga metadata by resolving external provider data (admin)
+   * POST /manga/admin/:id/repair-full
+   */
+  @UseGuards(JwtAuthGuard, CsrfGuard, MangaAdminGuard)
+  @Post('admin/:id/repair-full')
+  async repairFullMangaById(@Param('id') id: string) {
+    return this.mangaService.repairFullMangaById(id);
+  }
+
+  /**
    * Update manga in user's list (protected)
    * PATCH /manga/list/:id
    */

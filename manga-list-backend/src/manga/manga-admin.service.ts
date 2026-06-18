@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { MangaStatus, Prisma } from '@prisma/client';
 import { ExternalApiHttpClient } from '../common/http/external-api-client';
 import { MangaDexService } from '../mangadex/mangadex.service';
@@ -27,12 +31,46 @@ type CoverRepairResult = {
   source: 'anilist' | 'jikan' | 'mangadex' | 'unchanged';
 };
 
+type FullMangaRepairResult = {
+  mangaId: string;
+  previous: {
+    title: string;
+    malId: number;
+    anilistId: number | null;
+    coverImage: string | null;
+  };
+  manga: {
+    title: string;
+    malId: number;
+    anilistId: number | null;
+    coverImage: string | null;
+    author: string | null;
+    genres: string[];
+    totalChapters: number | null;
+    description: string | null;
+    descriptionPt: string | null;
+    publicationStatus: string | null;
+    lastChapter: string | null;
+  };
+  changed: boolean;
+  searchedTitles: string[];
+  matchedTitle: string | null;
+  sources: string[];
+  skippedUniqueFields: Array<'malId' | 'anilistId'>;
+};
+
 type JikanSearchItem = {
+  mal_id?: number | null;
   title?: string | null;
   title_english?: string | null;
   title_japanese?: string | null;
   title_synonyms?: string[] | null;
   titles?: Array<{ title?: string | null }> | null;
+  status?: string | null;
+  chapters?: number | null;
+  synopsis?: string | null;
+  authors?: Array<{ name?: string | null }> | null;
+  genres?: Array<{ name?: string | null }> | null;
   images?: {
     jpg?: {
       large_image_url?: string | null;
@@ -42,6 +80,8 @@ type JikanSearchItem = {
 };
 
 type AniListSearchItem = {
+  id?: number | null;
+  idMal?: number | null;
   title?: {
     romaji?: string | null;
     english?: string | null;
@@ -52,6 +92,34 @@ type AniListSearchItem = {
     large?: string | null;
     medium?: string | null;
   } | null;
+  genres?: string[] | null;
+  chapters?: number | null;
+  description?: string | null;
+  status?: string | null;
+  staff?: {
+    nodes?: Array<{ name?: { full?: string | null } | null }> | null;
+  } | null;
+};
+
+type MangaDexMetadata = {
+  id: string;
+  title: string | null;
+  titles: string[];
+  coverImage: string | null;
+  description: string | null;
+  descriptionPt: string | null;
+  publicationStatus: string | null;
+  lastChapter: string | null;
+};
+
+type MangaUpdatesSearchResponse = {
+  results?: Array<{
+    record?: {
+      series_id?: number;
+      title?: string | null;
+    };
+    hit_title?: string | null;
+  }>;
 };
 
 @Injectable()
@@ -186,7 +254,10 @@ export class MangaAdminService {
     };
   }
 
-  async mergeDuplicateGroup(canonicalMangaId: string, duplicateMangaIds: string[]) {
+  async mergeDuplicateGroup(
+    canonicalMangaId: string,
+    duplicateMangaIds: string[],
+  ) {
     const uniqueDuplicateIds = Array.from(
       new Set(
         duplicateMangaIds
@@ -311,7 +382,10 @@ export class MangaAdminService {
           summary.movedExternalMaps += mapCount;
         }
 
-        const stillReferenced = await this.countMangaReferences(tx, duplicate.id);
+        const stillReferenced = await this.countMangaReferences(
+          tx,
+          duplicate.id,
+        );
         if (stillReferenced === 0) {
           await tx.manga.delete({
             where: { id: duplicate.id },
@@ -351,6 +425,182 @@ export class MangaAdminService {
     return result;
   }
 
+  async repairFullMangaById(mangaId: string): Promise<FullMangaRepairResult> {
+    const manga = await this.prisma.manga.findUnique({
+      where: { id: mangaId },
+      select: {
+        id: true,
+        malId: true,
+        anilistId: true,
+        title: true,
+        coverImage: true,
+        author: true,
+        genres: true,
+        totalChapters: true,
+        description: true,
+        descriptionPt: true,
+        publicationStatus: true,
+        lastChapter: true,
+      },
+    });
+
+    if (!manga) {
+      throw new NotFoundException('Manga not found');
+    }
+
+    const metadata = await this.resolveRepairMetadata(manga.title);
+    const skippedUniqueFields: FullMangaRepairResult['skippedUniqueFields'] =
+      [];
+
+    const updateData: Prisma.MangaUpdateInput = {};
+    if (metadata.title && metadata.title !== manga.title) {
+      updateData.title = metadata.title;
+    }
+
+    const nextMalId = this.resolvePositiveNumber(
+      metadata.jikan?.mal_id,
+      metadata.anilist?.idMal,
+    );
+    if (nextMalId && nextMalId !== manga.malId) {
+      if (await this.canUseMalId(nextMalId, manga.id)) {
+        updateData.malId = nextMalId;
+      } else {
+        skippedUniqueFields.push('malId');
+      }
+    }
+
+    const nextAniListId = this.resolvePositiveNumber(metadata.anilist?.id);
+    if (nextAniListId && nextAniListId !== manga.anilistId) {
+      if (await this.canUseAniListId(nextAniListId, manga.id)) {
+        updateData.anilistId = nextAniListId;
+      } else {
+        skippedUniqueFields.push('anilistId');
+      }
+    }
+
+    const nextCoverImage = this.normalizeCoverUrl(
+      metadata.coverImage ?? manga.coverImage,
+    );
+    if (
+      nextCoverImage &&
+      nextCoverImage !== this.normalizeCoverUrl(manga.coverImage)
+    ) {
+      updateData.coverImage = nextCoverImage;
+    }
+
+    const nextAuthor = this.firstNonEmpty(
+      metadata.jikan?.authors?.[0]?.name,
+      metadata.anilist?.staff?.nodes?.[0]?.name?.full,
+    );
+    if (nextAuthor && nextAuthor !== manga.author) {
+      updateData.author = nextAuthor;
+    }
+
+    const nextGenres = this.resolveGenres(metadata.jikan, metadata.anilist);
+    if (
+      nextGenres.length > 0 &&
+      !this.sameStringArray(nextGenres, manga.genres)
+    ) {
+      updateData.genres = nextGenres;
+    }
+
+    const nextTotalChapters = this.resolvePositiveNumber(
+      metadata.jikan?.chapters,
+      metadata.anilist?.chapters,
+    );
+    if (nextTotalChapters && nextTotalChapters !== manga.totalChapters) {
+      updateData.totalChapters = nextTotalChapters;
+    }
+
+    const nextDescription = this.firstNonEmpty(
+      metadata.mangaDex?.description,
+      metadata.jikan?.synopsis,
+      metadata.anilist?.description,
+    );
+    if (nextDescription && nextDescription !== manga.description) {
+      updateData.description = nextDescription;
+    }
+
+    if (
+      metadata.mangaDex?.descriptionPt &&
+      metadata.mangaDex.descriptionPt !== manga.descriptionPt
+    ) {
+      updateData.descriptionPt = metadata.mangaDex.descriptionPt;
+    }
+
+    const nextPublicationStatus = this.firstNonEmpty(
+      this.mapMangaDexStatus(metadata.mangaDex?.publicationStatus),
+      metadata.jikan?.status,
+      this.mapAniListStatus(metadata.anilist?.status),
+    );
+    if (
+      nextPublicationStatus &&
+      nextPublicationStatus !== manga.publicationStatus
+    ) {
+      updateData.publicationStatus = nextPublicationStatus;
+    }
+
+    if (
+      metadata.mangaDex?.lastChapter &&
+      metadata.mangaDex.lastChapter !== manga.lastChapter
+    ) {
+      updateData.lastChapter = metadata.mangaDex.lastChapter;
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      updateData.lastCheckedAt = new Date();
+    }
+
+    const updated =
+      Object.keys(updateData).length > 0
+        ? await this.prisma.manga.update({
+            where: { id: manga.id },
+            data: updateData,
+            select: {
+              title: true,
+              malId: true,
+              anilistId: true,
+              coverImage: true,
+              author: true,
+              genres: true,
+              totalChapters: true,
+              description: true,
+              descriptionPt: true,
+              publicationStatus: true,
+              lastChapter: true,
+            },
+          })
+        : manga;
+
+    return {
+      mangaId: manga.id,
+      previous: {
+        title: manga.title,
+        malId: manga.malId,
+        anilistId: manga.anilistId,
+        coverImage: this.normalizeCoverUrl(manga.coverImage),
+      },
+      manga: {
+        title: updated.title,
+        malId: updated.malId,
+        anilistId: updated.anilistId,
+        coverImage: this.normalizeCoverUrl(updated.coverImage),
+        author: updated.author,
+        genres: updated.genres,
+        totalChapters: updated.totalChapters,
+        description: updated.description,
+        descriptionPt: updated.descriptionPt,
+        publicationStatus: updated.publicationStatus,
+        lastChapter: updated.lastChapter,
+      },
+      changed: Object.keys(updateData).length > 0,
+      searchedTitles: metadata.searchedTitles,
+      matchedTitle: metadata.title,
+      sources: metadata.sources,
+      skippedUniqueFields,
+    };
+  }
+
   async repairMissingCovers(limit = 100, apply = false) {
     const safeLimit = Math.max(1, Math.min(limit, 1000));
     const targets = await this.prisma.manga.findMany({
@@ -386,6 +636,355 @@ export class MangaAdminService {
       apply,
       results,
     };
+  }
+
+  private async resolveRepairMetadata(originalTitle: string): Promise<{
+    title: string | null;
+    coverImage: string | null;
+    jikan: JikanSearchItem | null;
+    anilist: AniListSearchItem | null;
+    mangaDex: MangaDexMetadata | null;
+    searchedTitles: string[];
+    sources: string[];
+  }> {
+    const searchedTitles = this.uniqueTitles([originalTitle]);
+    const sources: string[] = [];
+
+    let mangaDex = await this.findMangaDexMetadata(originalTitle);
+    if (mangaDex) {
+      sources.push('mangadex');
+      searchedTitles.push(...this.uniqueTitles(mangaDex.titles));
+    }
+
+    const mangaUpdatesTitles = await this.findMangaUpdatesTitles(originalTitle);
+    if (mangaUpdatesTitles.length > 0) {
+      sources.push('mangaupdates');
+      searchedTitles.push(...mangaUpdatesTitles);
+    }
+
+    if (!mangaDex) {
+      for (const title of this.uniqueTitles(searchedTitles).slice(1, 6)) {
+        mangaDex = await this.findMangaDexMetadata(title);
+        if (mangaDex) {
+          sources.push('mangadex');
+          searchedTitles.push(...this.uniqueTitles(mangaDex.titles));
+          break;
+        }
+      }
+    }
+
+    const titleCandidates = this.uniqueTitles(searchedTitles).slice(0, 6);
+    const anilist = await this.findFirstAniListMetadata(titleCandidates);
+    if (anilist) {
+      sources.push('anilist');
+      searchedTitles.push(...this.extractAniListTitles(anilist));
+    }
+
+    const jikan = await this.findFirstJikanMetadata(
+      this.uniqueTitles(searchedTitles).slice(0, 8),
+    );
+    if (jikan) {
+      sources.push('jikan');
+      searchedTitles.push(...this.extractJikanTitles(jikan));
+    }
+
+    const finalTitles = this.uniqueTitles(searchedTitles);
+    const coverImage = this.normalizeCoverUrl(
+      this.firstNonEmpty(
+        anilist?.coverImage?.large,
+        anilist?.coverImage?.medium,
+        jikan?.images?.jpg?.large_image_url,
+        jikan?.images?.jpg?.image_url,
+        mangaDex?.coverImage,
+      ),
+    );
+
+    const fallbackCoverImage =
+      coverImage ?? (await this.resolveBestCoverForTitles(finalTitles));
+
+    return {
+      title: this.resolveEnglishTitle(anilist, jikan, mangaDex),
+      coverImage: fallbackCoverImage,
+      jikan,
+      anilist,
+      mangaDex,
+      searchedTitles: finalTitles,
+      sources,
+    };
+  }
+
+  private async findFirstAniListMetadata(
+    titles: string[],
+  ): Promise<AniListSearchItem | null> {
+    for (const title of titles) {
+      const result = await this.findAniListMetadata(title);
+      if (result) return result;
+    }
+    return null;
+  }
+
+  private async findFirstJikanMetadata(
+    titles: string[],
+  ): Promise<JikanSearchItem | null> {
+    for (const title of titles) {
+      const result = await this.findJikanMetadata(title);
+      if (result) return result;
+    }
+    return null;
+  }
+
+  private async resolveBestCoverForTitles(
+    titles: string[],
+  ): Promise<string | null> {
+    for (const title of titles.slice(0, 8)) {
+      const result = await this.resolveBestCoverForManga({
+        id: 'preview',
+        title,
+        coverImage: null,
+      });
+      if (result.coverImage) {
+        return result.coverImage;
+      }
+    }
+    return null;
+  }
+
+  private async findJikanMetadata(
+    title: string,
+  ): Promise<JikanSearchItem | null> {
+    const url = `${this.JIKAN_BASE_URL}/manga?q=${encodeURIComponent(title)}&limit=10`;
+    const payload = await this.externalApiHttpClient.fetchJsonWithRetry<{
+      data?: JikanSearchItem[];
+    }>(url, 'jikan');
+
+    const candidates = payload?.data ?? [];
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    return this.pickBestTitleMatch(
+      title,
+      candidates,
+      (item) => this.extractJikanTitles(item),
+      0.8,
+    );
+  }
+
+  private async findAniListMetadata(
+    title: string,
+  ): Promise<AniListSearchItem | null> {
+    const query = `
+      query ($search: String!, $page: Int!, $perPage: Int!) {
+        Page(page: $page, perPage: $perPage) {
+          media(search: $search, type: MANGA, sort: POPULARITY_DESC) {
+            id
+            idMal
+            title {
+              romaji
+              english
+              native
+            }
+            synonyms
+            coverImage {
+              large
+              medium
+            }
+            genres
+            chapters
+            description(asHtml: false)
+            status
+            staff {
+              nodes {
+                name {
+                  full
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch(this.ANILIST_GRAPHQL_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        query,
+        variables: {
+          search: title,
+          page: 1,
+          perPage: 10,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json()) as {
+      data?: {
+        Page?: {
+          media?: AniListSearchItem[];
+        };
+      };
+    };
+
+    const candidates = payload?.data?.Page?.media ?? [];
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    return this.pickBestTitleMatch(
+      title,
+      candidates,
+      (item) => this.extractAniListTitles(item),
+      0.76,
+    );
+  }
+
+  private async findMangaDexMetadata(
+    title: string,
+  ): Promise<MangaDexMetadata | null> {
+    try {
+      const normalizedTitle = title
+        .replace(/\s*[-|]\s*(mangalivre|manga livre)\s*$/i, '')
+        .replace(/\s*[-|]\s*cap[ií]tulo\s+\d+.*$/i, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (!normalizedTitle) {
+        return null;
+      }
+
+      const url =
+        'https://api.mangadex.org/manga?' +
+        `title=${encodeURIComponent(normalizedTitle)}` +
+        '&limit=10' +
+        '&includes[]=cover_art' +
+        '&contentRating[]=safe' +
+        '&contentRating[]=suggestive' +
+        '&contentRating[]=erotica' +
+        '&order[relevance]=desc';
+
+      const payload = await this.externalApiHttpClient.fetchJsonWithRetry<{
+        data?: Array<{
+          id?: string;
+          attributes?: {
+            title?: Record<string, string | undefined>;
+            altTitles?: Array<Record<string, string | undefined>>;
+            description?: Record<string, string | undefined>;
+            status?: string | null;
+            lastChapter?: string | null;
+          };
+          relationships?: Array<{
+            type?: string;
+            attributes?: {
+              fileName?: string | null;
+            };
+          }>;
+        }>;
+      }>(url, 'mangadex');
+
+      const candidates = payload?.data ?? [];
+      if (candidates.length === 0) {
+        return null;
+      }
+
+      const best = this.pickBestTitleMatch(
+        title,
+        candidates,
+        (item) => this.extractMangaDexTitles(item.attributes),
+        0.5,
+      );
+      if (!best?.id) {
+        return null;
+      }
+
+      const attrs = best.attributes;
+      const titles = this.extractMangaDexTitles(attrs);
+      const coverFileName = best.relationships?.find(
+        (item) => item.type === 'cover_art' && item.attributes?.fileName,
+      )?.attributes?.fileName;
+
+      return {
+        id: best.id,
+        title: this.firstNonEmpty(
+          attrs?.title?.en,
+          ...Object.values(attrs?.title ?? {}),
+        ),
+        titles,
+        coverImage: coverFileName
+          ? `https://uploads.mangadex.org/covers/${best.id}/${coverFileName}`
+          : null,
+        description: this.cleanText(attrs?.description?.en),
+        descriptionPt: this.cleanText(
+          attrs?.description?.['pt-br'] ?? attrs?.description?.pt,
+        ),
+        publicationStatus: attrs?.status ?? null,
+        lastChapter: attrs?.lastChapter ?? null,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private async findMangaUpdatesTitles(title: string): Promise<string[]> {
+    try {
+      const response = await fetch(
+        'https://api.mangaupdates.com/v1/series/search',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({ search: title }),
+        },
+      );
+
+      if (!response.ok) {
+        return [];
+      }
+
+      const payload = (await response.json()) as MangaUpdatesSearchResponse;
+      const candidates = payload.results ?? [];
+      const best = this.pickBestTitleMatch(
+        title,
+        candidates,
+        (item) => [item.record?.title ?? '', item.hit_title ?? ''],
+        0.5,
+      );
+
+      if (!best) {
+        return [];
+      }
+
+      return this.uniqueTitles([best.record?.title, best.hit_title]);
+    } catch {
+      return [];
+    }
+  }
+
+  private async canUseMalId(malId: number, mangaId: string): Promise<boolean> {
+    const existing = await this.prisma.manga.findUnique({
+      where: { malId },
+      select: { id: true },
+    });
+    return !existing || existing.id === mangaId;
+  }
+
+  private async canUseAniListId(
+    anilistId: number,
+    mangaId: string,
+  ): Promise<boolean> {
+    const existing = await this.prisma.manga.findUnique({
+      where: { anilistId },
+      select: { id: true },
+    });
+    return !existing || existing.id === mangaId;
   }
 
   private async countMangaReferences(
@@ -460,7 +1059,9 @@ export class MangaAdminService {
     const refs = item._count.userMangas * 5 + item._count.externalMangaMaps * 8;
     const recencyBonus = Math.max(
       0,
-      Math.round((item.updatedAt.getTime() - item.createdAt.getTime()) / 86_400_000),
+      Math.round(
+        (item.updatedAt.getTime() - item.createdAt.getTime()) / 86_400_000,
+      ),
     );
 
     return (
@@ -495,6 +1096,134 @@ export class MangaAdminService {
     } catch {
       return null;
     }
+  }
+
+  private firstNonEmpty(
+    ...values: Array<string | null | undefined>
+  ): string | null {
+    for (const value of values) {
+      const normalized = value?.trim();
+      if (normalized) return normalized;
+    }
+    return null;
+  }
+
+  private resolvePositiveNumber(
+    ...values: Array<number | null | undefined>
+  ): number | null {
+    for (const value of values) {
+      if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  private uniqueTitles(values: Array<string | null | undefined>): string[] {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const value of values) {
+      const title = value?.trim();
+      if (!title) continue;
+      const key = this.normalizeTitle(title);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      result.push(title);
+    }
+    return result;
+  }
+
+  private sameStringArray(left: string[], right: string[]): boolean {
+    if (left.length !== right.length) return false;
+    return left.every((value, index) => value === right[index]);
+  }
+
+  private cleanText(value: string | null | undefined): string | null {
+    const normalized = value
+      ?.replace(/\[([^\]]+)\]\(https?:\/\/[^)]+\)/g, '$1')
+      .replace(/\r\n/g, '\n')
+      .trim();
+    return normalized || null;
+  }
+
+  private extractJikanTitles(item: JikanSearchItem): string[] {
+    return this.uniqueTitles([
+      item.title,
+      item.title_english,
+      item.title_japanese,
+      ...(item.title_synonyms ?? []),
+      ...(item.titles?.map((entry) => entry.title) ?? []),
+    ]);
+  }
+
+  private extractAniListTitles(item: AniListSearchItem): string[] {
+    return this.uniqueTitles([
+      item.title?.english,
+      item.title?.romaji,
+      item.title?.native,
+      ...(item.synonyms ?? []),
+    ]);
+  }
+
+  private extractMangaDexTitles(
+    attributes:
+      | {
+          title?: Record<string, string | undefined>;
+          altTitles?: Array<Record<string, string | undefined>>;
+        }
+      | null
+      | undefined,
+  ): string[] {
+    return this.uniqueTitles([
+      ...Object.values(attributes?.title ?? {}),
+      ...(attributes?.altTitles ?? []).flatMap((entry) => Object.values(entry)),
+    ]);
+  }
+
+  private resolveEnglishTitle(
+    anilist: AniListSearchItem | null,
+    jikan: JikanSearchItem | null,
+    mangaDex: MangaDexMetadata | null,
+  ): string | null {
+    const mangaDexEnglish = mangaDex?.titles.find((title) =>
+      /^[\x00-\x7F]+$/.test(title),
+    );
+    return this.firstNonEmpty(
+      anilist?.title?.english,
+      anilist?.title?.romaji,
+      jikan?.title_english,
+      mangaDex?.title,
+      mangaDexEnglish,
+      jikan?.title,
+    );
+  }
+
+  private resolveGenres(
+    jikan: JikanSearchItem | null,
+    anilist: AniListSearchItem | null,
+  ): string[] {
+    return this.uniqueTitles([
+      ...(jikan?.genres?.map((genre) => genre.name) ?? []),
+      ...(anilist?.genres ?? []),
+    ]);
+  }
+
+  private mapAniListStatus(status: string | null | undefined): string | null {
+    if (!status) return null;
+    if (status === 'RELEASING') return 'Publishing';
+    if (status === 'FINISHED') return 'Finished';
+    if (status === 'HIATUS') return 'On Hiatus';
+    if (status === 'CANCELLED') return 'Discontinued';
+    return null;
+  }
+
+  private mapMangaDexStatus(status: string | null | undefined): string | null {
+    if (!status) return null;
+    if (status === 'ongoing') return 'Publishing';
+    if (status === 'completed') return 'Finished';
+    if (status === 'hiatus') return 'On Hiatus';
+    if (status === 'cancelled') return 'Discontinued';
+    return null;
   }
 
   private computeTitleSimilarity(left: string, right: string): number {
@@ -540,7 +1269,9 @@ export class MangaAdminService {
   ): T | null {
     let best: { item: T; score: number } | null = null;
     for (const item of items) {
-      const titles = extractTitles(item).filter((value) => value.trim().length > 0);
+      const titles = extractTitles(item).filter(
+        (value) => value.trim().length > 0,
+      );
       const score = titles.reduce((acc, title) => {
         const similarity = this.computeTitleSimilarity(query, title);
         return similarity > acc ? similarity : acc;
@@ -657,7 +1388,9 @@ export class MangaAdminService {
       return null;
     }
 
-    return best.coverImage?.large?.trim() ?? best.coverImage?.medium?.trim() ?? null;
+    return (
+      best.coverImage?.large?.trim() ?? best.coverImage?.medium?.trim() ?? null
+    );
   }
 
   private async findMangaDexCover(title: string): Promise<string | null> {
@@ -666,7 +1399,9 @@ export class MangaAdminService {
       if (!manga) {
         return null;
       }
-      return (await this.mangaDexService.getCoverImageUrl(manga.id))?.trim() ?? null;
+      return (
+        (await this.mangaDexService.getCoverImageUrl(manga.id))?.trim() ?? null
+      );
     } catch {
       return null;
     }
@@ -677,11 +1412,12 @@ export class MangaAdminService {
     title: string;
     coverImage: string | null;
   }): Promise<CoverRepairResult> {
-    const [aniListResult, jikanResult, mangaDexResult] = await Promise.allSettled([
-      this.findAniListCover(manga.title),
-      this.findJikanCover(manga.title),
-      this.findMangaDexCover(manga.title),
-    ]);
+    const [aniListResult, jikanResult, mangaDexResult] =
+      await Promise.allSettled([
+        this.findAniListCover(manga.title),
+        this.findJikanCover(manga.title),
+        this.findMangaDexCover(manga.title),
+      ]);
 
     const aniListCover =
       aniListResult.status === 'fulfilled' ? aniListResult.value : null;

@@ -14,8 +14,20 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
+    const error = searchParams.get("error");
+    const errorMessage = searchParams.get("message");
     const code = searchParams.get("code");
     const state = searchParams.get("state");
+
+    if (error) {
+      toast.error("Authentication failed", {
+        description:
+          errorMessage ||
+          "Could not complete Google login. Please try signing in again.",
+      });
+      router.push("/auth/login");
+      return;
+    }
 
     if (!code || !state) {
       toast.error("Authentication failed", {

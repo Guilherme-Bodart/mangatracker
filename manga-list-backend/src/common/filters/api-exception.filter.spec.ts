@@ -10,11 +10,13 @@ describe('ApiExceptionFilter', () => {
   const createHost = (url = '/auth/login', acceptLanguage = 'en') => {
     const status = jest.fn().mockReturnThis();
     const json = jest.fn();
+    const redirect = jest.fn();
 
-    const response = { status, json };
+    const response = { status, json, redirect };
     const request = {
       method: 'POST',
       url,
+      path: url.split('?')[0],
       headers: { 'accept-language': acceptLanguage },
     };
 
@@ -31,6 +33,7 @@ describe('ApiExceptionFilter', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.NODE_ENV = 'test';
+    delete process.env.FRONTEND_URL;
   });
 
   it('should serialize UnauthorizedException', () => {
@@ -104,5 +107,30 @@ describe('ApiExceptionFilter', () => {
         message: 'Credenciais inválidas',
       }),
     );
+  });
+
+  it('should redirect google callback failures to frontend callback page', () => {
+    process.env.FRONTEND_URL = 'https://mangastracker.vercel.app';
+    const filter = new ApiExceptionFilter();
+    const { host, response } = createHost(
+      '/auth/google/callback?state=abc',
+      'pt-BR,pt;q=0.9',
+    );
+
+    filter.catch(
+      new UnauthorizedException('Invalid or expired oauth state'),
+      host as never,
+    );
+
+    expect(response.redirect).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /^https:\/\/mangastracker\.vercel\.app\/auth\/callback\?/,
+      ),
+    );
+    const redirectUrl = response.redirect.mock.calls[0][0] as string;
+    expect(redirectUrl).toContain('error=oauth_callback_failed');
+    expect(redirectUrl).toContain('code=UNAUTHORIZED');
+    expect(response.status).not.toHaveBeenCalled();
+    expect(response.json).not.toHaveBeenCalled();
   });
 });

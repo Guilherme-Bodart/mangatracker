@@ -68,6 +68,13 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const { status, code, message, details } = this.parseException(exception);
     const localizedMessage = this.localizeMessage(locale, code, message);
 
+    if (this.shouldRedirectOAuthCallback(request)) {
+      response.redirect(
+        this.buildOAuthCallbackErrorRedirectUrl(code, localizedMessage),
+      );
+      return;
+    }
+
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(
         `Unhandled error on ${request.method} ${request.url}: ${localizedMessage}`,
@@ -85,6 +92,26 @@ export class ApiExceptionFilter implements ExceptionFilter {
     };
 
     response.status(status).json(body);
+  }
+
+  private shouldRedirectOAuthCallback(request: Request): boolean {
+    const path = request.path || request.url || request.originalUrl || '';
+    return path.startsWith('/auth/google/callback');
+  }
+
+  private buildOAuthCallbackErrorRedirectUrl(
+    code: string,
+    message: string,
+  ): string {
+    const frontendUrl = (
+      process.env.FRONTEND_URL || 'http://localhost:3000'
+    ).replace(/\/$/, '');
+    const params = new URLSearchParams({
+      error: 'oauth_callback_failed',
+      code,
+      message,
+    });
+    return `${frontendUrl}/auth/callback?${params.toString()}`;
   }
 
   private parseException(exception: unknown): {

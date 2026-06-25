@@ -13,27 +13,47 @@ export default function AuthCallbackPage() {
   const { refreshUser } = useAuth();
 
   useEffect(() => {
+    const redirectToLoginWithOAuthError = (
+      stage: string,
+      message: string,
+      code?: string,
+    ) => {
+      sessionStorage.setItem(
+        "oauth_login_error",
+        JSON.stringify({
+          stage,
+          code,
+          message,
+          createdAt: Date.now(),
+        }),
+      );
+      router.push("/auth/login");
+    };
+
     const searchParams = new URLSearchParams(window.location.search);
     const error = searchParams.get("error");
+    const errorCode = searchParams.get("code");
     const errorMessage = searchParams.get("message");
     const code = searchParams.get("code");
     const state = searchParams.get("state");
 
     if (error) {
+      const message =
+        errorMessage ||
+        "Could not complete Google login. Please try signing in again.";
       toast.error("Authentication failed", {
-        description:
-          errorMessage ||
-          "Could not complete Google login. Please try signing in again.",
+        description: message,
       });
-      router.push("/auth/login");
+      redirectToLoginWithOAuthError("google_callback", message, errorCode || error);
       return;
     }
 
     if (!code || !state) {
+      const message = "Missing OAuth verification data";
       toast.error("Authentication failed", {
-        description: "Missing OAuth verification data",
+        description: message,
       });
-      router.push("/auth/login");
+      redirectToLoginWithOAuthError("frontend_callback", message);
       return;
     }
 
@@ -55,10 +75,11 @@ export default function AuthCallbackPage() {
 
         router.push("/my-track");
       } catch (error: unknown) {
+        const message = getApiErrorMessage(error, "Could not complete social login");
         toast.error("Authentication failed", {
-          description: getApiErrorMessage(error, "Could not complete social login"),
+          description: message,
         });
-        router.push("/auth/login");
+        redirectToLoginWithOAuthError("exchange_or_session", message);
       }
     };
 

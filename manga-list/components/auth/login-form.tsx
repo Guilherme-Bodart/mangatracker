@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "@/i18n/routing";
 import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   ArrowRight,
   Loader2,
   Chrome,
+  AlertCircle,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/contexts/auth-context";
@@ -28,6 +29,44 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [oauthError, setOauthError] = useState<{
+    stage?: string;
+    code?: string;
+    message: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem("oauth_login_error");
+    if (!raw) {
+      return;
+    }
+
+    sessionStorage.removeItem("oauth_login_error");
+
+    try {
+      const parsed = JSON.parse(raw) as {
+        stage?: string;
+        code?: string;
+        message?: string;
+        createdAt?: number;
+      };
+      const isRecent =
+        typeof parsed.createdAt === "number" &&
+        Date.now() - parsed.createdAt < 5 * 60 * 1000;
+
+      if (isRecent && parsed.message) {
+        setOauthError({
+          stage: parsed.stage,
+          code: parsed.code,
+          message: parsed.message,
+        });
+      }
+    } catch {
+      setOauthError({
+        message: "Could not complete Google login. Please try again.",
+      });
+    }
+  }, []);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -62,6 +101,28 @@ export function LoginForm() {
         </h1>
         <p className="text-muted-foreground">{t("subtitle")}</p>
       </div>
+
+      {oauthError ? (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+          <div className="flex gap-2">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div className="space-y-1">
+              <p className="font-medium">Google login failed</p>
+              <p>{oauthError.message}</p>
+              {(oauthError.stage || oauthError.code) && (
+                <p className="text-xs opacity-80">
+                  {[
+                    oauthError.stage ? `stage: ${oauthError.stage}` : null,
+                    oauthError.code ? `code: ${oauthError.code}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" | ")}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <form onSubmit={onSubmit} className="space-y-6">
         <div className="space-y-4">

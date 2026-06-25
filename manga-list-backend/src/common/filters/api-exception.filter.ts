@@ -69,6 +69,9 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const localizedMessage = this.localizeMessage(locale, code, message);
 
     if (this.shouldRedirectOAuthCallback(request)) {
+      this.logger.warn(
+        `OAuth callback failed on ${request.method} ${request.url}: ${code} - ${localizedMessage}${traceId ? ` (${traceId})` : ''}`,
+      );
       response.redirect(
         this.buildOAuthCallbackErrorRedirectUrl(code, localizedMessage),
       );

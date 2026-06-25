@@ -12,12 +12,14 @@ import {
   mergeDuplicateMangaGroup,
   repairMangaCover,
   repairMissingMangaCovers,
+  updateMangaCoverManually,
   type MangaDuplicateItem,
   type MangaDuplicateGroup,
 } from "@/lib/manga-admin-api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 
 const FALLBACK_COVER_IMAGE = "/logos/logo-icon-light.svg";
 
@@ -42,6 +44,8 @@ export default function MangaAdminPage() {
   const [canonicalByGroup, setCanonicalByGroup] = useState<Record<string, string>>({});
   const [isMergingByGroup, setIsMergingByGroup] = useState<Record<string, boolean>>({});
   const [isRepairingByManga, setIsRepairingByManga] = useState<Record<string, boolean>>({});
+  const [manualCoverByManga, setManualCoverByManga] = useState<Record<string, string>>({});
+  const [isSavingManualCoverByManga, setIsSavingManualCoverByManga] = useState<Record<string, boolean>>({});
   const [isRepairingMissingCovers, setIsRepairingMissingCovers] = useState(false);
 
   const handleForbidden = useCallback(() => {
@@ -160,10 +164,37 @@ export default function MangaAdminPage() {
     }
   };
 
+  const onSaveManualCover = async (mangaId: string) => {
+    const coverImage = (manualCoverByManga[mangaId] || "").trim();
+    if (!coverImage) {
+      toast.error(t("messages.manualCoverRequired"));
+      return;
+    }
+
+    setIsSavingManualCoverByManga((prev) => ({ ...prev, [mangaId]: true }));
+    try {
+      await updateMangaCoverManually(mangaId, coverImage);
+      toast.success(t("messages.manualCoverSuccess"));
+      setManualCoverByManga((prev) => ({ ...prev, [mangaId]: "" }));
+      await loadGroups();
+    } catch (error: unknown) {
+      if (error instanceof ApiClientError && error.status === 403) {
+        handleForbidden();
+        return;
+      }
+      toast.error(getApiErrorMessage(error, t("messages.manualCoverError")));
+    } finally {
+      setIsSavingManualCoverByManga((prev) => ({
+        ...prev,
+        [mangaId]: false,
+      }));
+    }
+  };
+
   const onRepairMissingCovers = async () => {
     setIsRepairingMissingCovers(true);
     try {
-      const result = await repairMissingMangaCovers(50);
+      const result = await repairMissingMangaCovers(10);
       if (result.updated > 0) {
         toast.success(
           t("messages.repairMissingCoversSuccess", {
@@ -268,16 +299,42 @@ export default function MangaAdminPage() {
                   </div>
                 </div>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => void onRepairCover(item.id)}
-                  disabled={!!isRepairingByManga[item.id]}
-                >
-                  {isRepairingByManga[item.id]
-                    ? t("actions.repairingCover")
-                    : t("actions.repairCover")}
-                </Button>
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[360px]">
+                  <div className="flex gap-2">
+                    <Input
+                      value={manualCoverByManga[item.id] || ""}
+                      onChange={(event) =>
+                        setManualCoverByManga((prev) => ({
+                          ...prev,
+                          [item.id]: event.target.value,
+                        }))
+                      }
+                      placeholder={t("manualCover.placeholder")}
+                      inputMode="url"
+                      disabled={!!isSavingManualCoverByManga[item.id]}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void onSaveManualCover(item.id)}
+                      disabled={!!isSavingManualCoverByManga[item.id]}
+                    >
+                      {isSavingManualCoverByManga[item.id]
+                        ? t("actions.savingManualCover")
+                        : t("actions.saveManualCover")}
+                    </Button>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void onRepairCover(item.id)}
+                    disabled={!!isRepairingByManga[item.id]}
+                  >
+                    {isRepairingByManga[item.id]
+                      ? t("actions.repairingCover")
+                      : t("actions.repairCover")}
+                  </Button>
+                </div>
               </div>
             ))
           )}

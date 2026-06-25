@@ -196,10 +196,10 @@ export class MangaController {
   @UseGuards(JwtAuthGuard, CsrfGuard, MangaAdminGuard)
   @Post('admin/covers/missing/repair')
   async repairMissingCovers(@Query('limit') limit?: string) {
-    const parsed = Number.parseInt(String(limit ?? '50'), 10);
+    const parsed = Number.parseInt(String(limit ?? '10'), 10);
     const safeLimit = Number.isFinite(parsed)
-      ? Math.max(1, Math.min(parsed, 200))
-      : 50;
+      ? Math.max(1, Math.min(parsed, 25))
+      : 10;
     return this.mangaService.repairMissingCovers(safeLimit, true);
   }
 
@@ -211,6 +211,19 @@ export class MangaController {
   @Post('admin/:id/repair-cover')
   async repairCoverByMangaId(@Param('id') id: string) {
     return this.mangaService.repairCoverByMangaId(id);
+  }
+
+  /**
+   * Set manga cover manually with an external URL (admin)
+   * PATCH /manga/admin/:id/cover
+   */
+  @UseGuards(JwtAuthGuard, CsrfGuard, MangaAdminGuard)
+  @Patch('admin/:id/cover')
+  async updateCoverManually(
+    @Param('id') id: string,
+    @Body('coverImage') coverImage: string,
+  ) {
+    return this.mangaService.updateCoverManually(id, coverImage);
   }
 
   /**

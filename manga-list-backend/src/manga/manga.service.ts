@@ -142,6 +142,10 @@ export class MangaService {
     return this.mangaAdminService.repairCoverByMangaId(mangaId);
   }
 
+  async updateCoverManually(mangaId: string, coverImage: string) {
+    return this.mangaAdminService.updateCoverManually(mangaId, coverImage);
+  }
+
   async repairMissingCovers(limit = 100, apply = false) {
     return this.mangaAdminService.repairMissingCovers(limit, apply);
   }

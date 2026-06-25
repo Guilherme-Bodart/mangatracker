@@ -24,7 +24,7 @@ type CoverRepairResult = {
   previousCoverImage: string | null;
   coverImage: string | null;
   changed: boolean;
-  source: 'anilist' | 'jikan' | 'mangadex' | 'unchanged';
+  source: 'anilist' | 'jikan' | 'mangadex' | 'manual' | 'unchanged';
 };
 
 type JikanSearchItem = {
@@ -351,8 +351,43 @@ export class MangaAdminService {
     return result;
   }
 
+  async updateCoverManually(mangaId: string, coverImage: string) {
+    const manga = await this.prisma.manga.findUnique({
+      where: { id: mangaId },
+      select: {
+        id: true,
+        title: true,
+        coverImage: true,
+      },
+    });
+
+    if (!manga) {
+      throw new NotFoundException('Manga not found');
+    }
+
+    const normalizedCover = this.normalizeCoverUrl(coverImage);
+    if (!normalizedCover) {
+      throw new BadRequestException('Invalid cover image URL');
+    }
+
+    const previousCoverImage = this.normalizeCoverUrl(manga.coverImage);
+    await this.prisma.manga.update({
+      where: { id: manga.id },
+      data: { coverImage: normalizedCover },
+    });
+
+    return {
+      mangaId: manga.id,
+      title: manga.title,
+      previousCoverImage,
+      coverImage: normalizedCover,
+      changed: previousCoverImage !== normalizedCover,
+      source: 'manual' as const,
+    };
+  }
+
   async repairMissingCovers(limit = 100, apply = false) {
-    const safeLimit = Math.max(1, Math.min(limit, 1000));
+    const safeLimit = Math.max(1, Math.min(limit, 25));
     const targets = await this.prisma.manga.findMany({
       where: {
         OR: [{ coverImage: null }, { coverImage: '' }],
@@ -677,37 +712,13 @@ export class MangaAdminService {
     title: string;
     coverImage: string | null;
   }): Promise<CoverRepairResult> {
-    const [aniListResult, jikanResult, mangaDexResult] = await Promise.allSettled([
-      this.findAniListCover(manga.title),
-      this.findJikanCover(manga.title),
-      this.findMangaDexCover(manga.title),
-    ]);
-
-    const aniListCover =
-      aniListResult.status === 'fulfilled' ? aniListResult.value : null;
-    const jikanCover =
-      jikanResult.status === 'fulfilled' ? jikanResult.value : null;
-    const mangaDexCover =
-      mangaDexResult.status === 'fulfilled' ? mangaDexResult.value : null;
-
     const normalizedCurrent = this.normalizeCoverUrl(manga.coverImage);
-    const normalizedAniList = this.normalizeCoverUrl(aniListCover);
-    const normalizedJikan = this.normalizeCoverUrl(jikanCover);
-    const normalizedMangaDex = this.normalizeCoverUrl(mangaDexCover);
-
-    const nextCover =
-      normalizedAniList ??
-      normalizedJikan ??
-      normalizedMangaDex ??
-      normalizedCurrent;
-
-    const source: CoverRepairResult['source'] = normalizedAniList
-      ? 'anilist'
-      : normalizedJikan
-        ? 'jikan'
-        : normalizedMangaDex
-          ? 'mangadex'
-          : 'unchanged';
+    const providerResult = await this.findFirstAvailableCover(manga.title);
+    const nextCover = providerResult.coverImage ?? normalizedCurrent;
+    const source: CoverRepairResult['source'] =
+      providerResult.coverImage && providerResult.source
+        ? providerResult.source
+        : 'unchanged';
 
     return {
       mangaId: manga.id,
@@ -717,5 +728,28 @@ export class MangaAdminService {
       changed: normalizedCurrent !== nextCover,
       source,
     };
+  }
+
+  private async findFirstAvailableCover(title: string): Promise<{
+    coverImage: string | null;
+    source: Exclude<CoverRepairResult['source'], 'unchanged'> | null;
+  }> {
+    const providers: Array<{
+      source: Exclude<CoverRepairResult['source'], 'unchanged'>;
+      find: (title: string) => Promise<string | null>;
+    }> = [
+      { source: 'anilist', find: (value) => this.findAniListCover(value) },
+      { source: 'jikan', find: (value) => this.findJikanCover(value) },
+      { source: 'mangadex', find: (value) => this.findMangaDexCover(value) },
+    ];
+
+    for (const provider of providers) {
+      const cover = this.normalizeCoverUrl(await provider.find(title));
+      if (cover) {
+        return { coverImage: cover, source: provider.source };
+      }
+    }
+
+    return { coverImage: null, source: null };
   }
 }

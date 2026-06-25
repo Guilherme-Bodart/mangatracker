@@ -433,7 +433,7 @@ export class AuthController {
       throw new BadRequestException('OAuth state not found');
     }
 
-    const contextHash = this.getOAuthContextHash(req);
+    const contextHash = this.tryGetOAuthContextHash(req);
     const parsedState = await this.authService.validateAndConsumeOAuthState(
       state,
       contextHash,

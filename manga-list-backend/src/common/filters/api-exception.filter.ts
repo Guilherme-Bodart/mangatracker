@@ -250,7 +250,15 @@ export class ApiExceptionFilter implements ExceptionFilter {
       return direct;
     }
 
+    if (this.isOAuthMessage(message)) {
+      return message;
+    }
+
     return PT_MESSAGES_BY_CODE[code] ?? message;
+  }
+
+  private isOAuthMessage(message: string): boolean {
+    return /\b(oauth|google)\b/i.test(message);
   }
 
   private resolveTraceId(request: Request): string | undefined {

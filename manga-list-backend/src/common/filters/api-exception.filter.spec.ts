@@ -133,4 +133,23 @@ describe('ApiExceptionFilter', () => {
     expect(response.status).not.toHaveBeenCalled();
     expect(response.json).not.toHaveBeenCalled();
   });
+
+  it('should preserve specific google oauth failure messages in callback redirect', () => {
+    process.env.FRONTEND_URL = 'https://mangastracker.vercel.app';
+    const filter = new ApiExceptionFilter();
+    const { host, response } = createHost(
+      '/auth/google/callback?state=abc',
+      'pt-BR,pt;q=0.9',
+    );
+
+    filter.catch(
+      new UnauthorizedException('Google OAuth failed: invalid_grant'),
+      host as never,
+    );
+
+    const redirectUrl = response.redirect.mock.calls[0][0] as string;
+    expect(new URL(redirectUrl).searchParams.get('message')).toBe(
+      'Google OAuth failed: invalid_grant',
+    );
+  });
 });

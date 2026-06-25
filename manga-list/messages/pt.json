@@ -897,7 +897,7 @@
       "groups": "Grupos: {count}",
       "items": "Itens: {count}",
       "missingCovers": "Sem capa: {count}",
-      "repairMissingCoversDescription": "Procura capas para ate 50 mangas sem imagem usando AniList, Jikan e MangaDex."
+      "repairMissingCoversDescription": "Procura capas para ate 10 mangas sem imagem usando AniList, Jikan e MangaDex."
     },
     "actions": {
       "refresh": "Atualizar",
@@ -906,6 +906,8 @@
       "merging": "Mesclando...",
       "repairCover": "Reparar capa",
       "repairingCover": "Reparando...",
+      "saveManualCover": "Salvar URL",
+      "savingManualCover": "Salvando...",
       "repairMissingCovers": "Buscar capas faltantes",
       "repairingMissingCovers": "Buscando capas..."
     },
@@ -923,6 +925,9 @@
       "title": "Mangás sem capa",
       "empty": "Nenhum mangá sem capa encontrado."
     },
+    "manualCover": {
+      "placeholder": "URL externa da capa"
+    },
     "messages": {
       "forbidden": "Você não tem permissão para acessar esta página",
       "loadError": "Falha ao carregar duplicados",
@@ -932,6 +937,9 @@
       "repairCoverChanged": "Capa atualizada usando {source}",
       "repairCoverNoChange": "Nenhuma capa melhor foi encontrada",
       "repairCoverError": "Falha ao reparar capa",
+      "manualCoverRequired": "Informe uma URL de capa",
+      "manualCoverSuccess": "Capa salva manualmente",
+      "manualCoverError": "Falha ao salvar URL da capa",
       "repairMissingCoversSuccess": "Capas atualizadas: {updated} de {total}. Sem resultado: {unresolved}.",
       "repairMissingCoversNoChange": "Nenhuma capa nova encontrada. Verificados: {total}. Sem resultado: {unresolved}.",
       "repairMissingCoversError": "Falha ao buscar capas faltantes"

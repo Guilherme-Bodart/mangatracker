@@ -23,6 +23,7 @@ import { CACHE_TTL_MS } from '../cache/cache-ttl.constants';
 type ParsedOAuthState = {
   nonce: string;
   issuedAt: number;
+  contextHash: string | null;
 };
 
 type OAuthExchangePayload = {
@@ -30,6 +31,7 @@ type OAuthExchangePayload = {
   contextHash: string | null;
   stateNonce: string;
   userAgentHash: string;
+  issuedAt?: number;
 };
 
 @Injectable()
@@ -500,11 +502,11 @@ export class AuthService {
   async createOAuthState(contextHash: string): Promise<string> {
     const nonce = randomBytes(16).toString('hex');
     const issuedAt = Date.now();
-    const unsigned = `${nonce}.${issuedAt}`;
+    const unsigned = `${nonce}.${issuedAt}.${contextHash}`;
     const signature = this.signOAuthState(unsigned);
     const state = `${unsigned}.${signature}`;
 
-    await this.cacheManager.set(
+    await this.trySetOAuthCache(
       `oauth:state:${nonce}`,
       contextHash,
       CACHE_TTL_MS.OAUTH_STATE,
@@ -519,13 +521,25 @@ export class AuthService {
   ): Promise<ParsedOAuthState> {
     const parsedState = this.parseAndValidateOAuthState(state);
     const cacheKey = `oauth:state:${parsedState.nonce}`;
-    const cachedContextHash = await this.cacheManager.get<string>(cacheKey);
+    const cachedContextHash = await this.tryGetOAuthCache<string>(cacheKey);
 
     if (!cachedContextHash) {
-      throw new UnauthorizedException('Invalid or expired oauth state');
+      this.logger.warn(
+        `OAuth state cache miss for nonce ${parsedState.nonce}; falling back to signed state validation`,
+      );
+
+      if (
+        expectedContextHash &&
+        parsedState.contextHash &&
+        parsedState.contextHash !== expectedContextHash
+      ) {
+        throw new UnauthorizedException('OAuth state context mismatch');
+      }
+
+      return parsedState;
     }
 
-    await this.cacheManager.del(cacheKey);
+    await this.tryDeleteOAuthCache(cacheKey);
 
     if (expectedContextHash && cachedContextHash !== expectedContextHash) {
       throw new UnauthorizedException('OAuth state context mismatch');
@@ -546,15 +560,16 @@ export class AuthService {
       contextHash,
       stateNonce,
       userAgentHash,
+      issuedAt: Date.now(),
     };
 
-    await this.cacheManager.set(
+    await this.trySetOAuthCache(
       `oauth:code:${code}`,
       payload,
       CACHE_TTL_MS.OAUTH_EXCHANGE_CODE,
     );
 
-    return code;
+    return this.createSignedOAuthExchangeCode(code, payload);
   }
 
   async exchangeOAuthCode(
@@ -564,14 +579,7 @@ export class AuthService {
     userAgentHash: string,
   ) {
     const parsedState = this.parseAndValidateOAuthState(state);
-    const cacheKey = `oauth:code:${code}`;
-    const payload = await this.cacheManager.get<OAuthExchangePayload>(cacheKey);
-
-    if (!payload) {
-      throw new UnauthorizedException('Invalid or expired exchange code');
-    }
-
-    await this.cacheManager.del(cacheKey);
+    const payload = await this.resolveOAuthExchangePayload(code);
 
     if (
       contextHash &&
@@ -731,15 +739,165 @@ export class AuthService {
     return this.jwtService.sign({ sub: userId, tv: tokenVersion });
   }
 
+  private createSignedOAuthExchangeCode(
+    opaqueCode: string,
+    payload: OAuthExchangePayload,
+  ): string {
+    const encodedPayload = Buffer.from(JSON.stringify(payload)).toString(
+      'base64url',
+    );
+    const unsigned = `${opaqueCode}.${encodedPayload}`;
+    const signature = this.signOAuthState(`oauth-code.${unsigned}`);
+    return `${unsigned}.${signature}`;
+  }
+
+  private async resolveOAuthExchangePayload(
+    code: string,
+  ): Promise<OAuthExchangePayload> {
+    const parts = code.split('.');
+    const opaqueCode = parts.length === 3 ? parts[0] : code;
+    const cacheKey = `oauth:code:${opaqueCode}`;
+    const cachedPayload =
+      await this.tryGetOAuthCache<OAuthExchangePayload>(cacheKey);
+
+    if (cachedPayload) {
+      await this.tryDeleteOAuthCache(cacheKey);
+      return cachedPayload;
+    }
+
+    if (parts.length !== 3) {
+      throw new UnauthorizedException('Invalid or expired exchange code');
+    }
+
+    this.logger.warn(
+      `OAuth exchange code cache miss for code ${opaqueCode}; falling back to signed code validation`,
+    );
+
+    return this.parseSignedOAuthExchangeCode(code);
+  }
+
+  private async tryGetOAuthCache<T>(key: string): Promise<T | undefined> {
+    try {
+      return await this.cacheManager.get<T>(key);
+    } catch (error) {
+      this.logger.warn(
+        `OAuth cache read failed for ${key}: ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
+      return undefined;
+    }
+  }
+
+  private async trySetOAuthCache<T>(
+    key: string,
+    value: T,
+    ttl: number,
+  ): Promise<void> {
+    try {
+      await this.cacheManager.set(key, value, ttl);
+    } catch (error) {
+      this.logger.warn(
+        `OAuth cache write failed for ${key}: ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
+    }
+  }
+
+  private async tryDeleteOAuthCache(key: string): Promise<void> {
+    try {
+      await this.cacheManager.del(key);
+    } catch (error) {
+      this.logger.warn(
+        `OAuth cache delete failed for ${key}: ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
+    }
+  }
+
+  private parseSignedOAuthExchangeCode(code: string): OAuthExchangePayload {
+    const parts = code.split('.');
+    if (parts.length !== 3) {
+      throw new UnauthorizedException('Invalid exchange code format');
+    }
+
+    const [opaqueCode, encodedPayload, signature] = parts;
+    if (!/^[a-f0-9]{64}$/.test(opaqueCode)) {
+      throw new UnauthorizedException('Invalid exchange code nonce');
+    }
+
+    if (!/^[A-Za-z0-9_-]+$/.test(encodedPayload)) {
+      throw new UnauthorizedException('Invalid exchange code payload');
+    }
+
+    if (!/^[a-f0-9]{64}$/.test(signature)) {
+      throw new UnauthorizedException('Invalid exchange code signature');
+    }
+
+    const unsigned = `${opaqueCode}.${encodedPayload}`;
+    const expectedSignature = this.signOAuthState(`oauth-code.${unsigned}`);
+    this.assertTimingSafeSignature(signature, expectedSignature, 'exchange code');
+
+    const payload = this.decodeOAuthExchangePayload(encodedPayload);
+    const issuedAt = payload.issuedAt;
+    if (typeof issuedAt !== 'number' || !Number.isFinite(issuedAt)) {
+      throw new UnauthorizedException('Invalid exchange code timestamp');
+    }
+
+    const ageMs = Date.now() - issuedAt;
+    if (ageMs < -60_000 || ageMs > CACHE_TTL_MS.OAUTH_EXCHANGE_CODE) {
+      throw new UnauthorizedException('Expired exchange code');
+    }
+
+    return payload;
+  }
+
+  private decodeOAuthExchangePayload(
+    encodedPayload: string,
+  ): OAuthExchangePayload {
+    let decoded: unknown;
+    try {
+      decoded = JSON.parse(
+        Buffer.from(encodedPayload, 'base64url').toString('utf8'),
+      ) as unknown;
+    } catch {
+      throw new UnauthorizedException('Invalid exchange code payload');
+    }
+
+    const payload = decoded as Partial<OAuthExchangePayload>;
+    const contextHash = payload.contextHash;
+    const stateNonce = payload.stateNonce;
+    const userAgentHash = payload.userAgentHash;
+    if (
+      typeof payload.userId !== 'string' ||
+      (contextHash !== null && typeof contextHash !== 'string') ||
+      !/^[a-f0-9]{32}$/.test(stateNonce ?? '') ||
+      !/^[a-f0-9]{64}$/.test(userAgentHash ?? '') ||
+      typeof payload.issuedAt !== 'number'
+    ) {
+      throw new UnauthorizedException('Invalid exchange code payload');
+    }
+
+    return {
+      userId: payload.userId,
+      contextHash,
+      stateNonce: stateNonce as string,
+      userAgentHash: userAgentHash as string,
+      issuedAt: payload.issuedAt,
+    };
+  }
+
   private parseAndValidateOAuthState(state: string): ParsedOAuthState {
     const parts = state.split('.');
-    if (parts.length !== 3) {
+    if (parts.length !== 3 && parts.length !== 4) {
       throw new UnauthorizedException('Invalid oauth state format');
     }
 
-    const [nonce, issuedAtRaw, signature] = parts;
+    const [nonce, issuedAtRaw] = parts;
+    const contextHash = parts.length === 4 ? parts[2] : null;
+    const signature = parts[parts.length - 1];
     if (!/^[a-f0-9]{32}$/.test(nonce)) {
       throw new UnauthorizedException('Invalid oauth state nonce');
+    }
+
+    if (contextHash !== null && !/^[a-f0-9]{64}$/.test(contextHash)) {
+      throw new UnauthorizedException('Invalid oauth state context');
     }
 
     if (!/^[a-f0-9]{64}$/.test(signature)) {
@@ -757,19 +915,29 @@ export class AuthService {
       throw new UnauthorizedException('Expired oauth state');
     }
 
-    const unsigned = `${nonce}.${issuedAtRaw}`;
+    const unsigned =
+      contextHash === null
+        ? `${nonce}.${issuedAtRaw}`
+        : `${nonce}.${issuedAtRaw}.${contextHash}`;
     const expectedSignature = this.signOAuthState(unsigned);
+    this.assertTimingSafeSignature(signature, expectedSignature, 'oauth state');
 
+    return { nonce, issuedAt, contextHash };
+  }
+
+  private assertTimingSafeSignature(
+    signature: string,
+    expectedSignature: string,
+    label: string,
+  ): void {
     const receivedBuffer = Buffer.from(signature, 'hex');
     const expectedBuffer = Buffer.from(expectedSignature, 'hex');
     if (
       receivedBuffer.length !== expectedBuffer.length ||
       !timingSafeEqual(receivedBuffer, expectedBuffer)
     ) {
-      throw new UnauthorizedException('Invalid oauth state signature');
+      throw new UnauthorizedException(`Invalid ${label} signature`);
     }
-
-    return { nonce, issuedAt };
   }
 
   private signOAuthState(value: string): string {

@@ -48,7 +48,7 @@ export type MangaRepairCoverResponse = {
   previousCoverImage: string | null;
   coverImage: string | null;
   changed: boolean;
-  source: "anilist" | "jikan" | "mangadex" | "unchanged";
+  source: "anilist" | "jikan" | "mangadex" | "manual" | "unchanged";
 };
 
 export type MangaRepairMissingCoversResponse = {
@@ -94,8 +94,22 @@ export async function repairMangaCover(mangaId: string) {
   );
 }
 
+export async function updateMangaCoverManually(
+  mangaId: string,
+  coverImage: string,
+) {
+  return apiRequest<MangaRepairCoverResponse>(
+    `/manga/admin/${encodeURIComponent(mangaId)}/cover`,
+    {
+      method: "PATCH",
+      csrf: "authenticated-required",
+      body: { coverImage },
+    },
+  );
+}
+
 export async function repairMissingMangaCovers(limit = 50) {
-  const safeLimit = Math.max(1, Math.min(limit, 200));
+  const safeLimit = Math.max(1, Math.min(limit, 25));
   return apiRequest<MangaRepairMissingCoversResponse>(
     `/manga/admin/covers/missing/repair?limit=${safeLimit}`,
     {

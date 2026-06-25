@@ -53,6 +53,7 @@ describe('MangaService', () => {
     listMissingCovers: jest.fn(),
     mergeDuplicateGroup: jest.fn(),
     repairCoverByMangaId: jest.fn(),
+    updateCoverManually: jest.fn(),
     repairMissingCovers: jest.fn(),
   };
 
@@ -349,6 +350,26 @@ describe('MangaService', () => {
     expect(mangaAdminServiceMock.repairMissingCovers).toHaveBeenCalledWith(
       25,
       true,
+    );
+  });
+
+  it('should delegate manual cover updates to admin service', async () => {
+    const response = {
+      mangaId: 'manga-1',
+      title: 'Manual Cover',
+      previousCoverImage: null,
+      coverImage: 'https://example.com/cover.jpg',
+      changed: true,
+      source: 'manual',
+    };
+    mangaAdminServiceMock.updateCoverManually.mockResolvedValue(response);
+
+    await expect(
+      service.updateCoverManually('manga-1', 'https://example.com/cover.jpg'),
+    ).resolves.toBe(response);
+    expect(mangaAdminServiceMock.updateCoverManually).toHaveBeenCalledWith(
+      'manga-1',
+      'https://example.com/cover.jpg',
     );
   });
 

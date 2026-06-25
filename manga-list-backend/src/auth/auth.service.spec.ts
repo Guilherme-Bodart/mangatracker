@@ -220,6 +220,45 @@ describe('AuthService', () => {
     expect(result.token).toBe('jwt-token');
   });
 
+  it('should exchange signed oauth code when cache is missing', async () => {
+    const contextHash = service.buildOAuthContextHash('session-1', 'agent-a');
+    const userAgentHash = service.buildUserAgentHash('agent-a');
+    const state = await service.createOAuthState(contextHash);
+    const parsedState = await service.validateAndConsumeOAuthState(
+      state,
+      contextHash,
+    );
+    const code = await service.createOAuthExchangeCode(
+      'user-123',
+      contextHash,
+      parsedState.nonce,
+      userAgentHash,
+    );
+    const [opaqueCode] = code.split('.');
+    await cacheManager.del(`oauth:code:${opaqueCode}`);
+
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'user-123',
+      username: 'guilh',
+      email: 'guilh@example.com',
+      tokenVersion: 0,
+      avatarUrl: null,
+      bannerUrl: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    jwtService.sign.mockReturnValue('jwt-token');
+
+    const result = await service.exchangeOAuthCode(
+      code,
+      state,
+      contextHash,
+      userAgentHash,
+    );
+
+    expect(result.token).toBe('jwt-token');
+  });
+
   it('should reject oauth exchange when context hash does not match', async () => {
     const contextHash = service.buildOAuthContextHash('session-1', 'agent-a');
     const userAgentHash = service.buildUserAgentHash('agent-a');
@@ -247,7 +286,7 @@ describe('AuthService', () => {
     ).rejects.toThrow('OAuth exchange context mismatch');
   });
 
-  it('should consume oauth state and reject replay', async () => {
+  it('should consume cached oauth state and allow signed fallback if cache is missing', async () => {
     const contextHash = service.buildOAuthContextHash('session-1', 'agent-a');
     const state = await service.createOAuthState(contextHash);
 
@@ -262,7 +301,12 @@ describe('AuthService', () => {
 
     await expect(
       service.validateAndConsumeOAuthState(state, contextHash),
-    ).rejects.toThrow('Invalid or expired oauth state');
+    ).resolves.toEqual(
+      expect.objectContaining({
+        nonce: expect.any(String),
+        issuedAt: expect.any(Number),
+      }),
+    );
   });
 
   it('should consume oauth state when oauth context cookie is missing', async () => {

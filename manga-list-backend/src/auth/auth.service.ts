@@ -506,7 +506,7 @@ export class AuthService {
     const signature = this.signOAuthState(unsigned);
     const state = `${unsigned}.${signature}`;
 
-    await this.cacheManager.set(
+    await this.trySetOAuthCache(
       `oauth:state:${nonce}`,
       contextHash,
       CACHE_TTL_MS.OAUTH_STATE,
@@ -521,7 +521,7 @@ export class AuthService {
   ): Promise<ParsedOAuthState> {
     const parsedState = this.parseAndValidateOAuthState(state);
     const cacheKey = `oauth:state:${parsedState.nonce}`;
-    const cachedContextHash = await this.cacheManager.get<string>(cacheKey);
+    const cachedContextHash = await this.tryGetOAuthCache<string>(cacheKey);
 
     if (!cachedContextHash) {
       this.logger.warn(
@@ -539,7 +539,7 @@ export class AuthService {
       return parsedState;
     }
 
-    await this.cacheManager.del(cacheKey);
+    await this.tryDeleteOAuthCache(cacheKey);
 
     if (expectedContextHash && cachedContextHash !== expectedContextHash) {
       throw new UnauthorizedException('OAuth state context mismatch');
@@ -563,7 +563,7 @@ export class AuthService {
       issuedAt: Date.now(),
     };
 
-    await this.cacheManager.set(
+    await this.trySetOAuthCache(
       `oauth:code:${code}`,
       payload,
       CACHE_TTL_MS.OAUTH_EXCHANGE_CODE,
@@ -758,10 +758,10 @@ export class AuthService {
     const opaqueCode = parts.length === 3 ? parts[0] : code;
     const cacheKey = `oauth:code:${opaqueCode}`;
     const cachedPayload =
-      await this.cacheManager.get<OAuthExchangePayload>(cacheKey);
+      await this.tryGetOAuthCache<OAuthExchangePayload>(cacheKey);
 
     if (cachedPayload) {
-      await this.cacheManager.del(cacheKey);
+      await this.tryDeleteOAuthCache(cacheKey);
       return cachedPayload;
     }
 
@@ -774,6 +774,41 @@ export class AuthService {
     );
 
     return this.parseSignedOAuthExchangeCode(code);
+  }
+
+  private async tryGetOAuthCache<T>(key: string): Promise<T | undefined> {
+    try {
+      return await this.cacheManager.get<T>(key);
+    } catch (error) {
+      this.logger.warn(
+        `OAuth cache read failed for ${key}: ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
+      return undefined;
+    }
+  }
+
+  private async trySetOAuthCache<T>(
+    key: string,
+    value: T,
+    ttl: number,
+  ): Promise<void> {
+    try {
+      await this.cacheManager.set(key, value, ttl);
+    } catch (error) {
+      this.logger.warn(
+        `OAuth cache write failed for ${key}: ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
+    }
+  }
+
+  private async tryDeleteOAuthCache(key: string): Promise<void> {
+    try {
+      await this.cacheManager.del(key);
+    } catch (error) {
+      this.logger.warn(
+        `OAuth cache delete failed for ${key}: ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
+    }
   }
 
   private parseSignedOAuthExchangeCode(code: string): OAuthExchangePayload {

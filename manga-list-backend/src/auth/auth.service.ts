@@ -27,7 +27,7 @@ type ParsedOAuthState = {
 
 type OAuthExchangePayload = {
   userId: string;
-  contextHash: string;
+  contextHash: string | null;
   stateNonce: string;
   userAgentHash: string;
 };
@@ -515,7 +515,7 @@ export class AuthService {
 
   async validateAndConsumeOAuthState(
     state: string,
-    expectedContextHash: string,
+    expectedContextHash: string | null,
   ): Promise<ParsedOAuthState> {
     const parsedState = this.parseAndValidateOAuthState(state);
     const cacheKey = `oauth:state:${parsedState.nonce}`;
@@ -527,7 +527,7 @@ export class AuthService {
 
     await this.cacheManager.del(cacheKey);
 
-    if (cachedContextHash !== expectedContextHash) {
+    if (expectedContextHash && cachedContextHash !== expectedContextHash) {
       throw new UnauthorizedException('OAuth state context mismatch');
     }
 
@@ -536,7 +536,7 @@ export class AuthService {
 
   async createOAuthExchangeCode(
     userId: string,
-    contextHash: string,
+    contextHash: string | null,
     stateNonce: string,
     userAgentHash: string,
   ): Promise<string> {
@@ -573,7 +573,11 @@ export class AuthService {
 
     await this.cacheManager.del(cacheKey);
 
-    if (contextHash && payload.contextHash !== contextHash) {
+    if (
+      contextHash &&
+      payload.contextHash &&
+      payload.contextHash !== contextHash
+    ) {
       throw new UnauthorizedException('OAuth exchange context mismatch');
     }
 

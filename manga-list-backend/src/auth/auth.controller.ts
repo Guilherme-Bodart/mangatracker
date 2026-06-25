@@ -12,7 +12,6 @@ import {
   HttpStatus,
   Req,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { Request as ExpressRequest, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
@@ -25,7 +24,10 @@ import { AuthRateLimitGuard } from './guards/auth-rate-limit.guard';
 import { CsrfGuard } from './guards/csrf.guard';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { GoogleAuthGuard } from './guards/google-auth.guard';
+import {
+  GoogleAuthGuard,
+  GoogleCallbackGuard,
+} from './guards/google-auth.guard';
 import { CACHE_TTL_MS } from '../cache/cache-ttl.constants';
 import { randomBytes } from 'crypto';
 
@@ -410,7 +412,7 @@ export class AuthController {
   }
 
   @Get('google/callback')
-  @UseGuards(AuthGuard('google'))
+  @UseGuards(GoogleCallbackGuard)
   async googleAuthRedirect(
     @Request()
     req: ExpressRequest & {

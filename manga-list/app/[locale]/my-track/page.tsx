@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
@@ -68,11 +68,6 @@ export default function MyTrackPage() {
     try {
       const data = await apiRequest<UserManga[]>("/manga/list");
       setMangaList(data);
-
-      const latestChaptersData = await apiRequest<Record<string, LatestChapter[]>>(
-        "/manga/list/latest-chapters",
-      );
-      setLatestChaptersByManga(latestChaptersData);
     } catch (error) {
       logger.error("Failed to fetch manga list", error);
     } finally {

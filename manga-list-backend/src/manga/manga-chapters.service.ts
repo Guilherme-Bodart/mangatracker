@@ -26,40 +26,10 @@ export class MangaChaptersService {
   ) {}
 
   async getLatestChaptersForUserList(
-    userId: string,
+    _userId: string,
   ): Promise<Record<string, LatestChapterDto[]>> {
-    const userMangas = await this.prisma.userManga.findMany({
-      where: { userId },
-      select: {
-        manga: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-      },
-    });
-
-    const uniqueMangas = new Map<string, { id: string; title: string }>();
-    for (const entry of userMangas) {
-      uniqueMangas.set(entry.manga.id, entry.manga);
-    }
-
-    const result: Record<string, LatestChapterDto[]> = {};
-    const mangas = Array.from(uniqueMangas.values());
-
-    await this.runWithConcurrencyLimit(
-      mangas,
-      this.latestChaptersConcurrency,
-      async (manga) => {
-        result[manga.id] = await this.getLatestChaptersForManga(
-          manga.id,
-          manga.title,
-        );
-      },
-    );
-
-    return result;
+    // Feature temporariamente desativada para evitar requisições externas em massa
+    return {};
   }
 
   private async getLatestChaptersForManga(
@@ -70,21 +40,35 @@ export class MangaChaptersService {
     const cached = await this.cacheManager.get<LatestChapterDto[]>(cacheKey);
     if (cached) return cached;
 
-    const dexManga = await this.mangaDexService.searchMangaByTitle(title);
-    let latestChapters: LatestChapterDto[] = [];
+    try {
+      const fetchPromise = (async () => {
+        const dexManga = await this.mangaDexService.searchMangaByTitle(title);
+        let latestChapters: LatestChapterDto[] = [];
 
-    if (dexManga) {
-      latestChapters = await this.mangaDexService.getLatestChapters(dexManga.id, 2);
-    }
+        if (dexManga) {
+          latestChapters = await this.mangaDexService.getLatestChapters(dexManga.id, 2);
+        }
 
-    if (latestChapters.length === 0) {
-      latestChapters = await this.mangaUpdatesService.getLatestChaptersByTitle(
-        title,
+        if (latestChapters.length === 0) {
+          latestChapters = await this.mangaUpdatesService.getLatestChaptersByTitle(
+            title,
+          );
+        }
+
+        return latestChapters;
+      })();
+
+      const timeoutPromise = new Promise<LatestChapterDto[]>((resolve) =>
+        setTimeout(() => resolve([]), 3000),
       );
-    }
 
-    await this.cacheManager.set(cacheKey, latestChapters, 60 * 60 * 1000);
-    return latestChapters;
+      const latestChapters = await Promise.race([fetchPromise, timeoutPromise]);
+
+      await this.cacheManager.set(cacheKey, latestChapters, 60 * 60 * 1000);
+      return latestChapters;
+    } catch {
+      return [];
+    }
   }
 
   private async runWithConcurrencyLimit<T>(

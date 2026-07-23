@@ -15,6 +15,13 @@ export class CsrfGuard implements CanActivate {
     const request = context
       .switchToHttp()
       .getRequest<Request & { user?: { id: string } }>();
+
+    // Bearer token requests (JWT in Authorization header) are immune to browser CSRF
+    const authHeader = request.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      return true;
+    }
+
     const userId = request.user?.id;
 
     const cookieToken = this.readCookie(request, 'csrf_token');
